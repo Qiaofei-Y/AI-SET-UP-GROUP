@@ -38,6 +38,7 @@
 | [07 路线图](docs/07-roadmap.md) | 阶段性目标与里程碑 |
 | [08 资源与链接](docs/08-resources.md) | 美国生态的模型源、运行时、云 GPU、合规资源 |
 | [09 MVP 工程任务清单](docs/09-mvp-engineering-tasks.md) | 五个里程碑、可验收的任务拆解、执行顺序 |
+| [10 Figma 图表](docs/10-figma-diagrams.md) | 流程图与架构图的 FigJam 链接及源码 |
 
 ## 一句话定位
 
