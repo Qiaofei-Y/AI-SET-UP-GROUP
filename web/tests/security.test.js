@@ -95,10 +95,14 @@ ok('chat.js renders message text via textContent (not innerHTML)',
 ok('chat.js typed input is passed to ask() (escaped downstream)',
    /ask\(v,\s*v\)/.test(chat));
 
-// ---------- 6. build.js: free-text need box is not injected into output ----------
+// ---------- 6. build.js: free-text need box value is not read into generated output ----------
+// (build.js may WRITE a prefill into the box, but must never READ its value into
+//  the installer / manifest / cloud manual — that value is attacker-controllable text.)
 const build = read(path.join(WEB, 'assets', 'build.js'));
-ok('build.js does not read the free-text need box into generation',
-   !/getElementById\(\s*['"]needText['"]\s*\)/.test(build));
+const chainedRead = /getElementById\(\s*['"]needText['"]\s*\)\s*\.value/.test(build); // getElementById('needText').value
+const boxValueRead = /\bbox\.value\b(?!\s*=[^=])/.test(build);                       // box.value used as a read (not "box.value = ")
+ok('build.js never reads the free-text need box value into generation (write-only prefill)',
+   !chainedRead && !boxValueRead);
 
 // ---------- 7. i18n stores only a language code ----------
 const i18n = read(path.join(WEB, 'assets', 'i18n.js'));

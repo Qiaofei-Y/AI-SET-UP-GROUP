@@ -45,3 +45,48 @@
 .chat-form .snd:hover{background:var(--accent-2)}
 .chat-hint{max-width:760px;margin:8px auto 0;font-size:11.5px;color:var(--ink-2);text-align:center}
 @media (max-width:720px){ .chat-side{display:none} }
+
+/* ---- product upgrade: header actions ---- */
+.chat-top .modelchip{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.chat-top .kbtn{font-family:var(--sans);font-size:12.5px;color:#413c34;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:6px 11px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chat-top .kbtn:hover{border-color:var(--accent);color:var(--accent-2)}
+/* ---- message actions (copy / feedback) ---- */
+.msg-actions{display:flex;gap:6px;margin-top:8px;opacity:0;transition:opacity .15s}
+.chat-msg.a:hover .msg-actions{opacity:1}
+.iconbtn{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font-size:12px;padding:4px 9px;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.iconbtn:hover{border-color:var(--accent);color:var(--accent-2)}
+.iconbtn.on{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft)}
+/* teach the correct answer */
+.teach-box{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px;max-width:520px}
+.teach-box .lbl{font-size:12px;color:var(--ink-2);margin-bottom:8px}
+.teach-box textarea{width:100%;border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;background:var(--paper);color:var(--ink);resize:vertical;min-height:56px;outline:none}
+.teach-box textarea:focus{border-color:var(--accent)}
+.teach-box .row{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.teach-box .mini{font-size:12.5px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer}
+.teach-box .mini.save{background:var(--accent);color:#fff}
+.teach-box .mini.cancel{background:var(--surface);color:var(--ink-2);border:1px solid var(--line-2)}
+/* toast */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13px;padding:11px 18px;border-radius:999px;opacity:0;transition:.25s;z-index:80;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast b{color:#9fe6d5}
+/* knowledge slide-over */
+.kmask{position:fixed;inset:0;background:rgba(27,26,23,.28);opacity:0;pointer-events:none;transition:.2s;z-index:70}
+.kmask.open{opacity:1;pointer-events:auto}
+.kpanel{position:fixed;top:0;right:0;height:100%;width:380px;max-width:92vw;background:var(--surface);border-left:1px solid var(--line);box-shadow:-18px 0 44px rgba(27,26,23,.12);transform:translateX(100%);transition:transform .22s ease;z-index:75;display:flex;flex-direction:column}
+.kpanel.open{transform:none}
+.kpanel-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.kpanel-head h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.kpanel-head .x{border:none;background:transparent;font-size:18px;color:var(--ink-2);cursor:pointer;line-height:1}
+.kpanel-body{flex:1;overflow-y:auto;padding:16px 20px}
+.kdrop{border:1.5px dashed #A9C9C2;border-radius:12px;padding:22px;text-align:center;background:var(--accent-soft);cursor:pointer;margin-bottom:16px}
+.kdrop:hover{border-color:var(--accent)}
+.kdrop .ic{font-size:24px;margin-bottom:8px}
+.kdrop h4{font-size:14px;font-weight:600;margin-bottom:3px}
+.kdrop p{font-size:12px;color:var(--ink-2)}
+.kfile{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--soft)}
+.kfile:last-child{border:none}
+.kfile .fi{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-size:9px;font-weight:700;color:#fff;flex:none}
+.kfile .fi.pdf{background:#B4622F}.kfile .fi.xls{background:#3E8E63}.kfile .fi.doc{background:#3B6FD4}.kfile .fi.eml{background:#8A6D3B}.kfile .fi.new{background:#12695E}
+.kfile .m{flex:1;min-width:0}.kfile .m h4{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kfile .m p{font-size:11px;color:var(--ink-2)}
+
+.chat-msg.a .chat-bub{white-space:pre-wrap}

@@ -154,3 +154,7 @@
   .statband .row{grid-template-columns:1fr 1fr}
 }
 @media (max-width:720px){ .shot-side{display:none} .shot-body{height:auto} }
+
+.feat .go{font-family:var(--mono);font-size:12px;color:var(--accent);display:inline-block;margin-top:8px}
+a.feat{transition:.15s}
+a.feat:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}

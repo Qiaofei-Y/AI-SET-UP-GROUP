@@ -211,6 +211,27 @@
     parent.appendChild(b);
   }
 
+  // template slug (from homepage ?template=) → wizard need + a tailored prefill
+  var TEMPLATES = {
+    company: { need: 'company', en: 'A private AI that reads my company PDFs, Excel and internal docs', zh: '一个能读公司 PDF、Excel 和内部资料的私有 AI' },
+    legal: { need: 'company', en: 'An AI that reviews contracts and finds clauses, terms and risks', zh: '一个审阅合同、查找条款与风险的 AI' },
+    writing: { need: 'writing', en: 'A writing assistant that drafts and polishes in my voice', zh: '一个按我的风格起草、润色的写作助手' },
+    research: { need: 'research', en: 'A research assistant that reads papers and summarizes with sources', zh: '一个读论文并带来源归纳的研究助手' },
+    support: { need: 'company', en: 'A customer support AI that answers from my product docs and FAQs', zh: '一个基于产品文档和 FAQ 回答的客服 AI' },
+    data: { need: 'research', en: 'A data analyst AI I can ask about my spreadsheets in plain words', zh: '一个能用人话问我表格的数据分析 AI' }
+  };
+  function applyTemplate() {
+    var slug = (location.search.match(/[?&]template=([a-z]+)/) || [])[1];
+    var tpl = TEMPLATES[slug];
+    if (!tpl) return;
+    STATE.need = tpl.need;
+    document.querySelectorAll('#step0 .tmpl').forEach(function (el) {
+      el.classList.toggle('sel', el.getAttribute('data-need') === tpl.need);
+    });
+    var box = document.getElementById('needText');
+    if (box) box.value = (window.__lang === 'zh' ? tpl.zh : tpl.en);
+  }
+
   // ---- wire up ----
   document.addEventListener('DOMContentLoaded', function () {
     // template selection
@@ -220,6 +241,7 @@
         el.classList.add('sel'); STATE.need = el.getAttribute('data-need');
       });
     });
+    applyTemplate();
     // device form
     ['os', 'gpu', 'vram', 'ram'].forEach(function (k) {
       var sel = $('f_' + k);
