@@ -40,6 +40,10 @@
 | [09 MVP 工程任务清单](docs/09-mvp-engineering-tasks.md) | 五个里程碑、可验收的任务拆解、执行顺序 |
 | [10 Figma 图表](docs/10-figma-diagrams.md) | 流程图与架构图的 FigJam 链接及源码 |
 | [11 AI 架构与模型路由](docs/11-ai-architecture-and-model-routing.md) | 方案顾问用什么 API、本地 vs 云端、隐私边界 |
+| [12 商业企划书](docs/12-business-plan.md) | 市场、模式、竞争、运营流程、里程碑与财务 |
+| [13 测试与实验](docs/13-validation-testing-and-experiments.md) | 假设验证、可用性测试、Beta 计划、指标、埋点、A/B |
+| [14 用户引导与激活](docs/14-user-onboarding-and-activation.md) | 激活漏斗、首次体验、留存、升级引导、FAQ |
+| [15 营销手册](docs/15-marketing-playbook.md) | 各渠道广告 + 教程 + 可直接用的英文脚本文案 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 | [web/ 可用网站](web/) | 营销首页 + 引导流程,自动生成本地安装包 / 云端部署手册 |
 
