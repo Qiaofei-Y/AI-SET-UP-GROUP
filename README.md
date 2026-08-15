@@ -41,6 +41,7 @@
 | [10 Figma 图表](docs/10-figma-diagrams.md) | 流程图与架构图的 FigJam 链接及源码 |
 | [11 AI 架构与模型路由](docs/11-ai-architecture-and-model-routing.md) | 方案顾问用什么 API、本地 vs 云端、隐私边界 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
+| [web/ 可用网站](web/) | 营销首页 + 引导流程,自动生成本地安装包 / 云端部署手册 |
 
 ## 一句话定位
 

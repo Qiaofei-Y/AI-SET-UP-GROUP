@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build My AI — Set up your AI</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<header class="topbar"><div class="wrap"><div class="row">
+  <a class="brand" href="index.html"><span class="logo">◆</span> Build My AI</a>
+  <div class="rt">
+    <div class="langsw">
+      <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
+    </div>
+    <a class="btn ghost" href="index.html" data-en="← Home" data-zh="← 首页">← Home</a>
+  </div>
+</div></div></header>
+
+<div class="wrap">
+  <div class="build-head">
+    <div class="eyebrow" data-en="BUILD MY AI" data-zh="搭建我的 AI">BUILD MY AI</div>
+    <div class="progress" id="progress">
+      <div class="dot on"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="steplabel" id="steplabel">Step 1/4 · Need</div>
+  </div>
+
+  <!-- STEP 0 : NEED -->
+  <div class="panel" id="step0">
+    <h2 data-en="What do you want your AI to do?" data-zh="你想让 AI 帮你做什么?">What do you want your AI to do?</h2>
+    <p class="lead" data-en="Describe it in one sentence, or pick a template. We solve the technical parts." data-zh="用一句话描述,或选个模板。技术问题我们来解决。">Describe it in one sentence, or pick a template. We solve the technical parts.</p>
+    <div class="needbox">
+      <input id="needText" data-en-ph="e.g. a private AI that reads my company PDFs and Excel files" data-zh-ph="例如:一个能读公司 PDF 和 Excel 的私有 AI" placeholder="e.g. a private AI that reads my company PDFs and Excel files">
+    </div>
+    <div class="tmpls">
+      <div class="tmpl sel" data-need="company"><div class="ic">🏢</div><h4 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h4><p data-en="Reads your internal docs" data-zh="读你的内部资料">Reads your internal docs</p></div>
+      <div class="tmpl" data-need="writing"><div class="ic">✍️</div><h4 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h4><p data-en="Draft, polish, rewrite" data-zh="起草、润色、改写">Draft, polish, rewrite</p></div>
+      <div class="tmpl" data-need="research"><div class="ic">🔬</div><h4 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h4><p data-en="Read papers, summarize" data-zh="读论文,归纳总结">Read papers, summarize</p></div>
+      <div class="tmpl" data-need="general"><div class="ic">💬</div><h4 data-en="General Assistant" data-zh="通用助手">General Assistant</h4><p data-en="Everyday Q&amp;A" data-zh="日常问答">Everyday Q&amp;A</p></div>
+    </div>
+    <div class="wizard-nav" style="justify-content:flex-end">
+      <button class="btn primary" id="n0" data-en="Next: check my computer →" data-zh="下一步:检测电脑 →">Next: check my computer →</button>
+    </div>
+  </div>
+
+  <!-- STEP 1 : DEVICE -->
+  <div class="panel hidden" id="step1">
+    <h2 data-en="Tell us about your computer" data-zh="说说你的电脑">Tell us about your computer</h2>
+    <p class="lead" data-en="The installed app detects this automatically. Here, confirm your setup so we pick the right model." data-zh="安装后的应用会自动检测。这里请确认一下配置,好让我们挑对模型。">The installed app detects this automatically. Here, confirm your setup so we pick the right model.</p>
+    <div class="fields">
+      <div class="field"><label data-en="Operating system" data-zh="操作系统">Operating system</label>
+        <select id="f_os"><option value="win11">Windows 11</option><option value="win10">Windows 10</option></select></div>
+      <div class="field"><label data-en="Graphics card" data-zh="显卡">Graphics card</label>
+        <select id="f_gpu"><option value="nvidia">NVIDIA (GeForce / RTX)</option><option value="none" data-en="No dedicated GPU" data-zh="无独立显卡">No dedicated GPU</option></select></div>
+      <div class="field"><label data-en="Graphics memory (VRAM)" data-zh="显卡内存(显存)">Graphics memory (VRAM)</label>
+        <select id="f_vram"><option value="8">8 GB</option><option value="12" selected>12 GB</option><option value="16">16 GB</option><option value="24">24 GB+</option></select></div>
+      <div class="field"><label data-en="System memory (RAM)" data-zh="系统内存">System memory (RAM)</label>
+        <select id="f_ram"><option value="16">16 GB</option><option value="32" selected>32 GB</option><option value="64">64 GB+</option></select></div>
+    </div>
+    <p class="note" data-en="No dedicated GPU? You can still run in the cloud — we'll show that option next." data-zh="没有独立显卡?你仍可以用云端——下一步会给你这个选项。">No dedicated GPU? You can still run in the cloud — we'll show that option next.</p>
+    <div class="wizard-nav">
+      <button class="btn ghost" id="b1" data-en="← Back" data-zh="← 返回">← Back</button>
+      <button class="btn primary" id="n1" data-en="See my recommendation →" data-zh="查看推荐方案 →">See my recommendation →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 : PLAN + MODE -->
+  <div class="panel hidden" id="step2">
+    <h2 data-en="Your recommended setup" data-zh="为你推荐的方案">Your recommended setup</h2>
+    <p class="lead" data-en="Based on your need and your computer. Then choose where it runs." data-zh="基于你的需求和电脑挑选。然后选择在哪运行。">Based on your need and your computer. Then choose where it runs.</p>
+    <div class="plan" id="planBox"></div>
+
+    <h3 style="font-size:16px;font-weight:600;margin:26px 0 12px" data-en="Where should it run?" data-zh="在哪里运行?">Where should it run?</h3>
+    <div class="choose">
+      <div class="opt rec sel" data-mode="local">
+        <div class="pick" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
+        <h3><span>💻</span> <span data-en="On this computer" data-zh="在这台电脑">On this computer</span></h3>
+        <div class="tag" data-en="Private · free after setup · works offline" data-zh="私密 · 装好后免费 · 离线可用">Private · free after setup · works offline</div>
+        <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A one-click installer" data-zh="一键安装包">A one-click installer</b></div>
+      </div>
+      <div class="opt" data-mode="cloud">
+        <h3><span>☁️</span> <span data-en="In the cloud" data-zh="在云端">In the cloud</span></h3>
+        <div class="tag" data-en="No local GPU needed · pay per use" data-zh="无需本地显卡 · 按用量付费">No local GPU needed · pay per use</div>
+        <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A deployment guide" data-zh="部署手册">A deployment guide</b></div>
+      </div>
+    </div>
+    <div class="privacy"><span>🔒</span><span data-en="For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center." data-zh="对于私密的公司资料我们推荐本地——文件留在这台电脑。云端会把你的文档发送到美国数据中心。">For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center.</span></div>
+
+    <div class="wizard-nav" style="margin-top:22px">
+      <button class="btn ghost" id="b2" data-en="← Back" data-zh="← 返回">← Back</button>
+      <button class="btn primary" id="gen" data-en="Generate my files →" data-zh="生成我的文件 →">Generate my files →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 : OUTPUT -->
+  <div class="panel hidden" id="step3">
+    <div class="eyebrow" style="margin-bottom:14px" data-en="DONE" data-zh="完成">DONE</div>
+    <h2 id="outTitle">Your local installer is ready</h2>
+    <p class="lead" id="outLead"></p>
+    <div class="summary" id="outSummary"></div>
+    <div class="dl" id="outDownloads"></div>
+    <div class="filemeta" id="outFileMeta"></div>
+    <pre class="codeblock" id="outPreview"></pre>
+    <div class="wizard-nav" style="margin-top:22px">
+      <button class="btn ghost" id="b3" data-en="← Back" data-zh="← 返回">← Back</button>
+      <button class="btn ghost" id="restart" data-en="↺ Start over" data-zh="↺ 重新开始">↺ Start over</button>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap"><div class="row">
+  <div><a class="brand" href="index.html"><span class="logo">◆</span> Build My AI</a></div>
+  <div class="links"><span class="mono" data-en="Demo · files are generated in your browser" data-zh="演示 · 文件在你的浏览器本地生成">Demo · files are generated in your browser</span></div>
+</div></div></footer>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/build.js"></script>
+</body>
+</html>
