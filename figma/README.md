@@ -6,8 +6,22 @@
 
 | 文件 | 说明 |
 |------|------|
-| [prototype.html](prototype.html) | **7 个核心界面的高保真原型**,浏览器直接打开,可点击导航 |
-| [design-system.md](design-system.md) | 设计规范:配色、字体、组件、交互原则 |
+| [prototype.html](prototype.html) | **营销 Hero + 7 个核心界面的高保真原型**,双语,浏览器直接打开 |
+| [design-system.md](design-system.md) | 设计规范 v2(LangChain 风格):配色、字体、组件、交互原则 |
+
+## 视觉风格
+
+参考 [LangChain / LangSmith](https://info.langchain.com/ai-infrastructure) 的视觉语言重做:
+
+- **暖米白背景 + 深青绿(teal)单一强调色**,不堆砌颜色
+- **等宽字体做小标签(eyebrow / 状态 / 技术信息)**,营造技术编辑感
+- **大量留白**,产品窗口带柔和光晕
+- 顶部加了一个 LangChain 风格的**营销 Hero**,让营销面与产品面视觉统一
+
+## 双语
+
+- 页面中英文双语,**默认英文**。
+- 右上角 `EN / 中` 切换,所有文案、输入框、标签实时切换。
 
 ## 怎么看
 
