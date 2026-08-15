@@ -10,6 +10,7 @@
 | `build.html` | **引导流程**:需求 → 设备 → 推荐方案 → 本地/云端 → 自动生成安装包/云端手册 |
 | `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI) |
 | `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库) |
+| `signup.html` | **注册页(Beta)**:Pro/Business 创建免费账号解锁全部功能;`?plan=business` 时多一个公司名字段 |
 
 ## 代码分割(CSS / JS 各司其职)
 

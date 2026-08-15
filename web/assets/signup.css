@@ -1,0 +1,23 @@
+/* Build My AI — account signup (signup.html). Requires base.css. */
+.signup-wrap{max-width:520px;margin:0 auto;padding:48px 24px 80px}
+.signup-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:32px;box-shadow:var(--shadow)}
+.signup-card .eyebrow{margin-bottom:14px}
+.signup-card h1{font-size:24px;font-weight:600;margin-bottom:6px}
+.signup-card .lead{color:var(--ink-2);font-size:14px;margin-bottom:8px}
+.plan-pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;background:var(--accent-soft);color:var(--accent-2);padding:5px 11px;border-radius:999px;margin-bottom:20px}
+.beta-note{background:var(--accent-soft);border:1px solid #C4E0DA;border-radius:11px;padding:12px 15px;font-size:13px;color:var(--accent-2);margin-bottom:22px}
+.form-field{margin-bottom:16px}
+.form-field label{display:block;font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2);margin-bottom:6px}
+.form-field .req{color:var(--clay)}
+.form-field input{width:100%;padding:12px 14px;border:1px solid var(--line-2);border-radius:9px;font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none}
+.form-field input:focus{border-color:var(--accent)}
+.form-err{color:var(--clay);font-size:12px;margin-top:5px;min-height:14px}
+.privacy-line{font-size:12px;color:var(--ink-2);margin:6px 0 18px}
+.signup-card .btn.primary{width:100%;justify-content:center}
+.alt-link{text-align:center;font-size:13px;color:var(--ink-2);margin-top:16px}
+.alt-link a{color:var(--accent);font-weight:500}
+/* success */
+.success{text-align:center;padding:12px 0}
+.success .ic{width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:26px;margin:0 auto 16px}
+.success h1{font-size:22px;font-weight:600;margin-bottom:8px}
+.success p{color:var(--ink-2);font-size:14px;margin-bottom:20px}
