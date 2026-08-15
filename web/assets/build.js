@@ -3,6 +3,9 @@
   var STATE = { need: 'company', needText: '', os: 'win11', gpu: 'nvidia', vram: '12', ram: '32', mode: 'local' };
   var STEP = 0;
   var TOTAL = 4;
+  var userPickedMode = false;   // true once the user clicks a Local/Cloud card herself
+  var activeTemplate = null;    // template prefill currently shown in #needText
+  var needEdited = false;       // true once the user types in #needText
 
   // ---- Advisor rule table (scenario is used for RAG default; model tier from VRAM) ----
   function pickModel(vram) {
@@ -18,14 +21,18 @@
   }
 
   function buildPlan() {
-    var m = pickModel(STATE.mode === 'cloud' ? '24' : STATE.vram); // cloud gets a bigger tier
+    // no dedicated GPU: the VRAM dropdown must not drive the pick — local falls back
+    // to the smallest sensible config (cloud is the recommended path in that case)
+    var vram = STATE.gpu === 'none' ? '8' : STATE.vram;
+    var m = pickModel(STATE.mode === 'cloud' ? '24' : vram); // cloud gets a bigger tier
     var rag = ragDefault(STATE.need);
+    var gb = parseFloat((m.size.match(/[\d.]+/) || ['0'])[0]); // keep decimals: '~4.9 GB' → 4.9
     return {
       title: t('Private Knowledge Assistant · Balanced', '私有知识助手 · 均衡版'),
       model: m, rag: rag,
       space: m.size,
       quality: m.quality, speed: m.speed,
-      spacePct: STATE.mode === 'cloud' ? 30 : Math.min(70, Math.round((parseInt(m.size.replace(/[^0-9]/g, ''), 10) / 24) * 100))
+      spacePct: STATE.mode === 'cloud' ? 30 : Math.min(70, Math.round((gb / 24) * 100))
     };
   }
 
@@ -37,12 +44,17 @@
       d.className = 'dot' + (i < STEP ? ' done' : i === STEP ? ' on' : '');
     });
     var labels = [t('Need', '需求'), t('Computer', '电脑'), t('Plan', '方案'), t('Get files', '拿到文件')];
-    $('steplabel').textContent = t('Step', '第') + ' ' + (STEP + 1) + '/' + TOTAL + ' · ' + labels[STEP];
+    var num = (STEP + 1) + '/' + TOTAL;
+    $('steplabel').textContent = t('Step ' + num + ' · ' + labels[STEP], '第 ' + num + ' 步 · ' + labels[STEP]);
   }
   function showStep(n) {
     STEP = n;
     for (var i = 0; i < TOTAL; i++) $('step' + i).classList.toggle('hidden', i !== n);
-    if (n === 2) renderPlan();
+    if (n === 2) {
+      // default the run mode from the GPU answer until the user picks one explicitly
+      if (!userPickedMode) STATE.mode = (STATE.gpu === 'none') ? 'cloud' : 'local';
+      renderPlan();
+    }
     if (n === 3) renderOutput();
     renderProgress();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -50,6 +62,7 @@
 
   function renderPlan() {
     var p = buildPlan();
+    var localNoGpu = STATE.gpu === 'none' && STATE.mode === 'local';
     $('planBox').innerHTML =
       '<span class="pick">✦ ' + t('BEST MATCH', '最佳匹配') + '</span>' +
       '<h3>' + p.title + '</h3>' +
@@ -58,16 +71,32 @@
       meter(t('Answer quality', '回答质量'), t('Very good', '很好'), p.quality, 'var(--accent)') +
       meter(t('Response speed', '响应速度'), t('Fast', '快'), p.speed, 'var(--info)') +
       meter(t('Space used', '占用空间'), p.space, p.spacePct, 'var(--clay)') +
+      (localNoGpu ?
+        '<div style="margin-top:12px;font-size:13px;color:var(--clay)">⚠ ' +
+        t('You chose local, but local needs an NVIDIA graphics card and this computer doesn\'t have one. We recommend the cloud option below.',
+          '你选择了本地运行,但本地需要 NVIDIA 显卡,而这台电脑没有。我们推荐下方的云端方案。') + '</div>' : '') +
       '<details class="adv"><summary>' + t('Advanced (for the technical)', '高级模式(给懂技术的人看)') + '</summary><table>' +
         row(t('Recommended model', '推荐模型'), p.model.name + ' (' + p.model.quant + ')') +
         row(t('Runtime', '推理运行时'), 'llama.cpp server (CUDA)') +
         row(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('On · bge-base-en + local vector store', '开启 · bge-base-en + 本地向量库') : t('Off', '关闭')) +
         row(t('Source', '下载来源'), 'huggingface.co / ' + p.model.repo) +
       '</table></details>';
-    // mode cards reflect selection
+    syncModeCards();
+  }
+  // mode cards reflect STATE: selection, ✦ RECOMMENDED badge and the no-GPU warning
+  function syncModeCards() {
+    var noGpu = STATE.gpu === 'none';
     document.querySelectorAll('#step2 .opt').forEach(function (o) {
-      o.classList.toggle('sel', o.getAttribute('data-mode') === STATE.mode);
+      var isSel = o.getAttribute('data-mode') === STATE.mode;
+      o.classList.toggle('sel', isSel);
+      o.setAttribute('aria-checked', isSel ? 'true' : 'false');
+      o.classList.toggle('rec', noGpu ? o.getAttribute('data-mode') === 'cloud'
+                                      : o.getAttribute('data-mode') === 'local');
     });
+    var recLocal = $('recLocal'), recCloud = $('recCloud'), warn = $('localGpuWarn');
+    if (recLocal) recLocal.classList.toggle('hidden', noGpu);
+    if (recCloud) recCloud.classList.toggle('hidden', !noGpu);
+    if (warn) warn.classList.toggle('hidden', !noGpu);
   }
   function meter(label, val, pct, color) {
     return '<div class="meter"><div class="top"><span>' + label + '</span><b>' + val + '</b></div>' +
@@ -80,7 +109,8 @@
     var rag = p.rag;
     return '# Build My AI — one-click local installer (generated)\n' +
       '# Target: Windows + NVIDIA · Model: ' + p.model.name + '\n' +
-      '# Run in PowerShell (Admin):  powershell -ExecutionPolicy Bypass -File build-my-ai-setup.ps1\n\n' +
+      '# This PowerShell payload runs automatically when you double-click build-my-ai-setup.bat.\n' +
+      '# Windows may show a UAC or SmartScreen prompt — choose "Run" / "Yes" to continue.\n\n' +
       '$ErrorActionPreference = "Stop"\n' +
       '$Root  = "$env:LOCALAPPDATA\\BuildMyAI"\n' +
       '$Model = "' + p.model.file + '"\n' +
@@ -106,10 +136,28 @@
       'Write-Host "Done. Your AI is running locally. Open the Control Center from the tray icon."\n';
   }
 
+  // PowerShell -EncodedCommand expects base64 of UTF-16LE text
+  function toUtf16leBase64(s) {
+    var bytes = '';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      bytes += String.fromCharCode(c & 0xff, (c >> 8) & 0xff);
+    }
+    return btoa(bytes);
+  }
+  // double-clickable wrapper: a .bat that runs the PowerShell payload itself
+  function batInstaller(script) {
+    return '@echo off\r\n' +
+      'title Build My AI - Installer\r\n' +
+      'echo Installing your AI. Progress will appear below - keep this window open.\r\n' +
+      'powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + toUtf16leBase64(script) + '\r\n' +
+      'pause\r\n';
+  }
+
   function installManifest(p) {
     return JSON.stringify({
       product: 'Build My AI', generated: 'client-demo',
-      need: STATE.need, target: { os: STATE.os, gpu: STATE.gpu, vram_gb: Number(STATE.vram), ram_gb: Number(STATE.ram) },
+      need: STATE.need, target: { os: STATE.os, gpu: STATE.gpu, vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram) },
       plan: {
         model: p.model.name, quant: p.model.quant, model_file: p.model.file,
         source: 'huggingface.co/' + p.model.repo, approx_size: p.model.size,
@@ -126,7 +174,7 @@
       '> Use this when your own computer can\'t run the model, or you want it accessible from anywhere.\n' +
       '> All providers below are US-based. Your documents will leave your computer when you use cloud inference.\n\n' +
       '## 1. Rent a GPU server (US region)\n' +
-      'Pick one and launch an instance with a GPU that has at least ' + (m.name.indexOf('32B') >= 0 ? '24 GB' : m.name.indexOf('14B') >= 0 ? '16 GB' : '12 GB') + ' of VRAM:\n' +
+      'Pick one and launch an instance with a GPU that has at least ' + (m.name.indexOf('32B') >= 0 ? '24 GB' : m.name.indexOf('14B') >= 0 ? '16 GB' : '12 GB') + ' of graphics card memory:\n' +
       '- RunPod — https://www.runpod.io (per-hour, US data centers)\n' +
       '- Lambda — https://lambda.ai\n' +
       '- AWS EC2 (g6 family, us-east-1) — https://aws.amazon.com/ec2/instance-types/g6/\n\n' +
@@ -180,8 +228,12 @@
     $('outTitle').textContent = isLocal ? t('Your local installer is ready', '你的本地安装包已生成')
                                         : t('Your cloud deployment guide is ready', '你的云端部署手册已生成');
     $('outLead').textContent = isLocal
-      ? t('Download it and run it on your Windows machine. It installs everything — no command line needed.', '下载后在你的 Windows 电脑上运行,自动装好一切,无需命令行。')
+      ? t('Download it and double-click it on your Windows machine. It installs everything — no command line needed.', '下载后在你的 Windows 电脑上双击运行,自动装好一切,无需命令行。')
       : t('A step-by-step guide customized to your model, for a US GPU server.', '为你的模型定制的分步手册,面向美国 GPU 服务器。');
+    if (isLocal && STATE.gpu === 'none') {
+      $('outLead').textContent += ' ' + t('Note: local needs an NVIDIA graphics card and you told us this computer doesn\'t have one — the installer will stop at the graphics card check. We recommend the cloud option instead.',
+                                          '注意:本地运行需要 NVIDIA 显卡,而你填写的电脑没有——安装程序会在显卡检查处停止。我们推荐改用云端方案。');
+    }
     // summary
     $('outSummary').innerHTML =
       kv(t('Purpose', '用途'), needLabel(STATE.need)) +
@@ -192,10 +244,11 @@
     var dl = $('outDownloads'), pv = $('outPreview'), fm = $('outFileMeta');
     if (isLocal) {
       var script = localInstaller(p), manifest = installManifest(p);
+      var bat = batInstaller(script);
       dl.innerHTML = '';
-      addBtn(dl, t('⬇ Download installer (.ps1)', '⬇ 下载安装脚本 (.ps1)'), 'primary', function () { download('build-my-ai-setup.ps1', script, 'text/plain'); });
+      addBtn(dl, t('⬇ Download installer (.bat) — double-click to install', '⬇ 下载安装包 (.bat)——双击即可安装'), 'primary', function () { download('build-my-ai-setup.bat', bat, 'text/plain'); });
       addBtn(dl, t('⬇ Download plan (.json)', '⬇ 下载方案清单 (.json)'), 'ghost', function () { download('install-plan.json', manifest, 'application/json'); });
-      fm.textContent = 'build-my-ai-setup.ps1 · ' + t('preview', '预览');
+      fm.textContent = 'build-my-ai-setup.bat · ' + t('preview of the install steps it runs', '内含安装步骤预览');
       pv.textContent = script;
     } else {
       var manual = cloudManual(p);
@@ -222,39 +275,83 @@
   };
   function applyTemplate() {
     var slug = (location.search.match(/[?&]template=([a-z]+)/) || [])[1];
+    if (!slug || !Object.prototype.hasOwnProperty.call(TEMPLATES, slug)) return; // own keys only — never the prototype chain
     var tpl = TEMPLATES[slug];
-    if (!tpl) return;
     STATE.need = tpl.need;
+    activeTemplate = tpl;
     document.querySelectorAll('#step0 .tmpl').forEach(function (el) {
-      el.classList.toggle('sel', el.getAttribute('data-need') === tpl.need);
+      var isSel = el.getAttribute('data-need') === tpl.need;
+      el.classList.toggle('sel', isSel);
+      el.setAttribute('aria-checked', isSel ? 'true' : 'false');
     });
-    var box = document.getElementById('needText');
-    if (box) box.value = (window.__lang === 'zh' ? tpl.zh : tpl.en);
+    writeTemplatePrefill();
+  }
+  // (write-only: we never read the box's value back)
+  function writeTemplatePrefill() {
+    var box = $('needText');
+    if (box && activeTemplate && !needEdited) box.value = (window.__lang === 'zh' ? activeTemplate.zh : activeTemplate.en);
+  }
+  // bilingual accessible names that can't live in static attributes
+  function applyA11yLabels() {
+    var box = $('needText');
+    if (box) box.setAttribute('aria-label', t('Describe what you want your AI to do', '描述你想让 AI 帮你做什么'));
+    var tg = $('tmplGroup');
+    if (tg) tg.setAttribute('aria-label', t('Choose an AI type', '选择 AI 类型'));
+    var mg = $('modeGroup');
+    if (mg) mg.setAttribute('aria-label', t('Choose where your AI runs', '选择 AI 的运行位置'));
+  }
+  // Enter/Space on a focused card behaves like a click
+  function keyActivates(el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); el.click(); }
+    });
   }
 
   // ---- wire up ----
   document.addEventListener('DOMContentLoaded', function () {
-    // template selection
+    // template selection (click or Enter/Space)
     document.querySelectorAll('#step0 .tmpl').forEach(function (el) {
       el.addEventListener('click', function () {
-        document.querySelectorAll('#step0 .tmpl').forEach(function (t) { t.classList.remove('sel'); });
-        el.classList.add('sel'); STATE.need = el.getAttribute('data-need');
+        document.querySelectorAll('#step0 .tmpl').forEach(function (x) {
+          x.classList.remove('sel'); x.setAttribute('aria-checked', 'false');
+        });
+        el.classList.add('sel'); el.setAttribute('aria-checked', 'true');
+        STATE.need = el.getAttribute('data-need');
+        // a manual pick of a different need retires the URL-template prefill
+        // (and clears the untouched prefill text, so a stale sentence in the
+        //  old language doesn't linger; write-only — we never read the box)
+        if (activeTemplate && activeTemplate.need !== STATE.need) {
+          activeTemplate = null;
+          var box = $('needText');
+          if (box && !needEdited) box.value = '';
+        }
       });
+      keyActivates(el);
     });
     applyTemplate();
+    applyA11yLabels();
+    var needBox = $('needText');
+    if (needBox) needBox.addEventListener('input', function () { needEdited = true; });
     // device form
     ['os', 'gpu', 'vram', 'ram'].forEach(function (k) {
       var sel = $('f_' + k);
-      if (sel) sel.addEventListener('change', function () { STATE[k] = sel.value; });
+      if (sel) sel.addEventListener('change', function () {
+        STATE[k] = sel.value;
+        if (k === 'gpu') {
+          var vramSel = $('f_vram');
+          if (vramSel) vramSel.disabled = (STATE.gpu === 'none'); // no GPU → no graphics memory to pick
+          userPickedMode = false; // re-derive the recommended mode on the next step
+        }
+      });
     });
-    // mode selection
+    // mode selection (click or Enter/Space)
     document.querySelectorAll('#step2 .opt').forEach(function (o) {
       o.addEventListener('click', function () {
         STATE.mode = o.getAttribute('data-mode');
-        document.querySelectorAll('#step2 .opt').forEach(function (x) { x.classList.remove('sel'); });
-        o.classList.add('sel');
+        userPickedMode = true;
         renderPlan();
       });
+      keyActivates(o);
     });
     // nav buttons
     $('n0').onclick = function () { showStep(1); };
@@ -271,5 +368,7 @@
     if (STEP === 2) renderPlan();
     if (STEP === 3) renderOutput();
     renderProgress();
+    applyA11yLabels();
+    writeTemplatePrefill(); // untouched template prefill follows the language
   });
 })();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Build My AI — Set up your AI</title>
+<title data-en="Build My AI — Set up your AI" data-zh="Build My AI — 搭建你的 AI">Build My AI — Set up your AI</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/build.css">
 </head>
@@ -36,11 +36,11 @@
     <div class="needbox">
       <input id="needText" data-en-ph="e.g. a private AI that reads my company PDFs and Excel files" data-zh-ph="例如:一个能读公司 PDF 和 Excel 的私有 AI" placeholder="e.g. a private AI that reads my company PDFs and Excel files">
     </div>
-    <div class="tmpls">
-      <div class="tmpl sel" data-need="company"><div class="ic">🏢</div><h4 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h4><p data-en="Reads your internal docs" data-zh="读你的内部资料">Reads your internal docs</p></div>
-      <div class="tmpl" data-need="writing"><div class="ic">✍️</div><h4 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h4><p data-en="Draft, polish, rewrite" data-zh="起草、润色、改写">Draft, polish, rewrite</p></div>
-      <div class="tmpl" data-need="research"><div class="ic">🔬</div><h4 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h4><p data-en="Read papers, summarize" data-zh="读论文,归纳总结">Read papers, summarize</p></div>
-      <div class="tmpl" data-need="general"><div class="ic">💬</div><h4 data-en="General Assistant" data-zh="通用助手">General Assistant</h4><p data-en="Everyday Q&amp;A" data-zh="日常问答">Everyday Q&amp;A</p></div>
+    <div class="tmpls" id="tmplGroup" role="radiogroup">
+      <div class="tmpl sel" data-need="company" role="radio" tabindex="0" aria-checked="true"><div class="ic">🏢</div><h4 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h4><p data-en="Reads your internal docs" data-zh="读你的内部资料">Reads your internal docs</p></div>
+      <div class="tmpl" data-need="writing" role="radio" tabindex="0" aria-checked="false"><div class="ic">✍️</div><h4 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h4><p data-en="Draft, polish, rewrite" data-zh="起草、润色、改写">Draft, polish, rewrite</p></div>
+      <div class="tmpl" data-need="research" role="radio" tabindex="0" aria-checked="false"><div class="ic">🔬</div><h4 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h4><p data-en="Read papers, summarize" data-zh="读论文,归纳总结">Read papers, summarize</p></div>
+      <div class="tmpl" data-need="general" role="radio" tabindex="0" aria-checked="false"><div class="ic">💬</div><h4 data-en="General Assistant" data-zh="通用助手">General Assistant</h4><p data-en="Everyday Q&amp;A" data-zh="日常问答">Everyday Q&amp;A</p></div>
     </div>
     <div class="wizard-nav" style="justify-content:flex-end">
       <button class="btn primary" id="n0" data-en="Next: check my computer →" data-zh="下一步:检测电脑 →">Next: check my computer →</button>
@@ -52,13 +52,13 @@
     <h2 data-en="Tell us about your computer" data-zh="说说你的电脑">Tell us about your computer</h2>
     <p class="lead" data-en="The installed app detects this automatically. Here, confirm your setup so we pick the right model." data-zh="安装后的应用会自动检测。这里请确认一下配置,好让我们挑对模型。">The installed app detects this automatically. Here, confirm your setup so we pick the right model.</p>
     <div class="fields">
-      <div class="field"><label data-en="Operating system" data-zh="操作系统">Operating system</label>
+      <div class="field"><label for="f_os" data-en="Operating system" data-zh="操作系统">Operating system</label>
         <select id="f_os"><option value="win11">Windows 11</option><option value="win10">Windows 10</option></select></div>
-      <div class="field"><label data-en="Graphics card" data-zh="显卡">Graphics card</label>
+      <div class="field"><label for="f_gpu" data-en="Graphics card" data-zh="显卡">Graphics card</label>
         <select id="f_gpu"><option value="nvidia">NVIDIA (GeForce / RTX)</option><option value="none" data-en="No dedicated GPU" data-zh="无独立显卡">No dedicated GPU</option></select></div>
-      <div class="field"><label data-en="Graphics memory (VRAM)" data-zh="显卡内存(显存)">Graphics memory (VRAM)</label>
+      <div class="field"><label for="f_vram" data-en="Graphics card memory" data-zh="显卡内存">Graphics card memory</label>
         <select id="f_vram"><option value="8">8 GB</option><option value="12" selected>12 GB</option><option value="16">16 GB</option><option value="24">24 GB+</option></select></div>
-      <div class="field"><label data-en="System memory (RAM)" data-zh="系统内存">System memory (RAM)</label>
+      <div class="field"><label for="f_ram" data-en="System memory (RAM)" data-zh="系统内存">System memory (RAM)</label>
         <select id="f_ram"><option value="16">16 GB</option><option value="32" selected>32 GB</option><option value="64">64 GB+</option></select></div>
     </div>
     <p class="note" data-en="No dedicated GPU? You can still run in the cloud — we'll show that option next." data-zh="没有独立显卡?你仍可以用云端——下一步会给你这个选项。">No dedicated GPU? You can still run in the cloud — we'll show that option next.</p>
@@ -75,14 +75,16 @@
     <div class="plan" id="planBox"></div>
 
     <h3 style="font-size:16px;font-weight:600;margin:26px 0 12px" data-en="Where should it run?" data-zh="在哪里运行?">Where should it run?</h3>
-    <div class="choose">
-      <div class="opt rec sel" data-mode="local">
-        <div class="pick" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
+    <div class="choose" id="modeGroup" role="radiogroup">
+      <div class="opt rec sel" data-mode="local" role="radio" tabindex="0" aria-checked="true">
+        <div class="pick" id="recLocal" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
         <h3><span>💻</span> <span data-en="On this computer" data-zh="在这台电脑">On this computer</span></h3>
         <div class="tag" data-en="Private · free after setup · works offline" data-zh="私密 · 装好后免费 · 离线可用">Private · free after setup · works offline</div>
         <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A one-click installer" data-zh="一键安装包">A one-click installer</b></div>
+        <div class="hidden" id="localGpuWarn" style="margin-top:10px;font-size:13px;color:var(--clay)" data-en="⚠ Local needs an NVIDIA graphics card — this computer doesn't have one." data-zh="⚠ 本地运行需要 NVIDIA 显卡——这台电脑没有。">⚠ Local needs an NVIDIA graphics card — this computer doesn't have one.</div>
       </div>
-      <div class="opt" data-mode="cloud">
+      <div class="opt" data-mode="cloud" role="radio" tabindex="0" aria-checked="false">
+        <div class="pick hidden" id="recCloud" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
         <h3><span>☁️</span> <span data-en="In the cloud" data-zh="在云端">In the cloud</span></h3>
         <div class="tag" data-en="No local GPU needed · pay per use" data-zh="无需本地显卡 · 按用量付费">No local GPU needed · pay per use</div>
         <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A deployment guide" data-zh="部署手册">A deployment guide</b></div>

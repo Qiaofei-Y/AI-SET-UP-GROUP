@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Build My AI — Create your beta account</title>
+<title data-en="Build My AI — Create your beta account" data-zh="Build My AI — 创建 Beta 账号">Build My AI — Create your beta account</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/signup.css">
 </head>
@@ -16,7 +16,7 @@
       <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
       <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
     </div>
-    <a class="btn ghost" href="index.html#pricing" data-en="← Back to pricing" data-zh="← 返回价格">← Back to pricing</a>
+    <a class="btn ghost" href="pricing.html" data-en="← Back to pricing" data-zh="← 返回价格">← Back to pricing</a>
   </div>
 </div></div></header>
 
@@ -26,28 +26,28 @@
     <div id="formView">
       <div class="eyebrow" data-en="CREATE ACCOUNT" data-zh="创建账号">CREATE ACCOUNT</div>
       <h1 data-en="Unlock all features" data-zh="解锁全部功能">Unlock all features</h1>
-      <div class="lead" data-en="A free account unlocks the full product during beta." data-zh="创建免费账号即可在 Beta 期间解锁完整产品。">A free account unlocks the full product during beta.</div>
+      <div class="lead" data-en="A free account unlocks everything that's live during beta." data-zh="创建免费账号即可解锁 Beta 期间已上线的全部功能。">A free account unlocks everything that's live during beta.</div>
       <div class="plan-pill" id="planPill">Pro plan</div>
 
-      <div class="beta-note" data-en="It's free during beta — no card, no charge. We'll email you as features roll out." data-zh="Beta 期间免费——无需信用卡、不收费。功能上线时会邮件通知你。">It's free during beta — no card, no charge. We'll email you as features roll out.</div>
+      <div class="beta-note" data-en="It's free during beta — no card, no charge. New features unlock for you as they roll out." data-zh="Beta 期间免费——无需信用卡、不收费。新功能上线后会自动为你解锁。">It's free during beta — no card, no charge. New features unlock for you as they roll out.</div>
 
       <form id="signupForm" novalidate>
         <div class="form-field">
-          <label data-en="Name" data-zh="姓名">Name <span class="req">*</span></label>
-          <input id="fName" autocomplete="name" data-en-ph="Your name" data-zh-ph="你的姓名" placeholder="Your name">
-          <div class="form-err" id="errName"></div>
+          <label for="fName" data-en="Name " data-zh="姓名 ">Name <span class="req">*</span></label>
+          <input id="fName" autocomplete="name" aria-describedby="errName" data-en-ph="Your name" data-zh-ph="你的姓名" placeholder="Your name">
+          <div class="form-err" id="errName" role="alert"></div>
         </div>
         <div class="form-field">
-          <label data-en="Email" data-zh="邮箱">Email <span class="req">*</span></label>
-          <input id="fEmail" type="email" autocomplete="email" data-en-ph="you@example.com" data-zh-ph="you@example.com" placeholder="you@example.com">
-          <div class="form-err" id="errEmail"></div>
+          <label for="fEmail" data-en="Email " data-zh="邮箱 ">Email <span class="req">*</span></label>
+          <input id="fEmail" type="email" autocomplete="email" aria-describedby="errEmail" data-en-ph="you@example.com" data-zh-ph="you@example.com" placeholder="you@example.com">
+          <div class="form-err" id="errEmail" role="alert"></div>
         </div>
         <div class="form-field" id="companyField">
-          <label data-en="Company name" data-zh="公司名称">Company name <span class="req">*</span></label>
-          <input id="fCompany" autocomplete="organization" data-en-ph="Your company" data-zh-ph="你的公司" placeholder="Your company">
-          <div class="form-err" id="errCompany"></div>
+          <label for="fCompany" data-en="Company name " data-zh="公司名称 ">Company name <span class="req">*</span></label>
+          <input id="fCompany" autocomplete="organization" aria-describedby="errCompany" data-en-ph="Your company" data-zh-ph="你的公司" placeholder="Your company">
+          <div class="form-err" id="errCompany" role="alert"></div>
         </div>
-        <div class="privacy-line" data-en="We use this only to set up your account and contact you about the beta." data-zh="这些信息仅用于创建账号和 Beta 相关联系。">We use this only to set up your account and contact you about the beta.</div>
+        <div class="privacy-line" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
         <button class="btn primary lg" type="submit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
       </form>
 
@@ -59,10 +59,13 @@
       <div class="success">
         <div class="ic">✓</div>
         <h1 id="successGreet" data-en="You're on the beta list!" data-zh="你已加入 Beta 名单!">You're on the beta list!</h1>
-        <p data-en="Everything is unlocked and free during beta. We'll be in touch by email — and reach out anytime with what you need." data-zh="Beta 期间全部功能已解锁且免费。我们会邮件联系你——有任何需求也可随时沟通。">Everything is unlocked and free during beta. We'll be in touch by email — and reach out anytime with what you need.</p>
+        <p data-en="Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime." data-zh="Beta 期间已上线的功能全部解锁且免费。新功能上线后会陆续开放——欢迎随时回来体验。">Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime.</p>
         <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
       </div>
     </div>
+
+    <!-- demo notice (shared by form + success views) -->
+    <div class="alt-link"><span class="mono" data-en="Demo · this form runs entirely in your browser — nothing is sent or stored." data-zh="演示 · 此表单完全在你的浏览器本地运行——不会发送或存储任何数据。">Demo · this form runs entirely in your browser — nothing is sent or stored.</span></div>
   </div>
 </div>
 

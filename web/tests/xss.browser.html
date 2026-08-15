@@ -17,6 +17,25 @@
 </main></div>
 <pre id="out">running…</pre>
 
+<!-- hidden stubs mirroring chat.html ids so chat.js's full DOMContentLoaded
+     wiring runs without throwing (no reliance on listener-registration order) -->
+<div style="display:none" aria-hidden="true">
+  <div class="chat-side">
+    <div id="newChat"></div>
+    <div class="c" data-conv="proc"></div>
+    <div id="kbLink"></div>
+  </div>
+  <button id="kbBtn" type="button">kb</button>
+  <div id="kmask"></div>
+  <aside id="kpanel" aria-hidden="true">
+    <button id="kClose" type="button">x</button>
+    <div id="kDrop"></div>
+    <div id="kList"></div>
+  </aside>
+  <span id="fileCount">0</span>
+  <div id="toast"></div>
+</div>
+
 <script>
   // trip flags if anything tries to execute
   window.__xss = false;

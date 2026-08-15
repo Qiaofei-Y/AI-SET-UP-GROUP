@@ -595,9 +595,9 @@ jobs:
 
 - [04 · MVP 范围](04-mvp.md) —— 成功标准(30min / ≥90% 安装成功)的源头
 - [06 · 护城河:AI Deployment Intelligence](06-moat.md) —— 埋点最终喂养的对象
+- [08 · 资源与链接](08-resources.md) —— 「合规与 License」一节:埋点匿名化与美国隐私合规(CCPA/CPRA)要点
 - [09 · MVP 工程任务清单](09-mvp-engineering-tasks.md) —— 测试与埋点对应的工程落点
-- [14 · (增长 / GTM,待建)](14-growth-and-gtm.md) —— A/B 与渠道实验的下游
-- [15 · (数据与隐私,待建)](15-data-and-privacy.md) —— 埋点匿名化与合规细则
+- [15 · Marketing Playbook](15-marketing-playbook.md) —— A/B 与渠道实验的下游(增长 / GTM)
 - [`web/tests/`](../web/tests/) —— 现有本地安全测试(`bash web/tests/run.sh`)
 
 ---

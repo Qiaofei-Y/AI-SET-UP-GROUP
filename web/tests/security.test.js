@@ -81,7 +81,9 @@ if (escSrc) {
   for (const p of payloads) {
     const e = esc(p);
     ok('esc neutralizes "<" in: ' + JSON.stringify(p), !e.includes('<'));
+    ok('esc neutralizes ">" in: ' + JSON.stringify(p), !e.includes('>'));
     ok('esc neutralizes double-quote in: ' + JSON.stringify(p), !e.includes('"'));
+    ok('esc neutralizes single-quote in: ' + JSON.stringify(p), !e.includes("'"));
   }
   // & must be entity-encoded (no bare & that could start an unintended entity/attr)
   ok('esc encodes & (no bare ampersand)', !/&(?!(amp|lt|quot|gt|#));?/.test(esc('a & b <c> "d"')) || esc('&') === '&amp;');

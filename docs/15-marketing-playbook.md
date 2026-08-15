@@ -9,7 +9,7 @@
 > - 🇨🇳 **中文说明区**:告诉你怎么用、为什么这么写、注意什么。
 > - 所有数字(CAC、转化率、预算)均为**假设值**,标注 `(假设)`,上线后用真实数据替换。
 >
-> 交叉引用:商业计划见 [`docs/12-business-plan.md`](./12-business-plan.md)、[`docs/13`](./13-go-to-market.md)、[`docs/14`](./14-pricing-and-packaging.md);落地页与演示见 [`web/`](../web/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`)。
+> 交叉引用:商业计划与 GTM 见 [`docs/12-business-plan.md`](./12-business-plan.md)、定价与套餐见 [`docs/05-business-model.md`](./05-business-model.md);落地页与演示见 [`web/`](../web/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`)。
 
 ---
 
@@ -624,7 +624,7 @@
 >
 > P.S. Running a team or business? Business plans start at $299/mo with multi-user setup — just reply and I'll walk you through it.
 
-🇨🇳 **说明**:Email 3 明确点出 Beta 免费(诚实),不制造虚假紧迫感。Pro 的卖点措辞需与 [`docs/14`](./14-pricing-and-packaging.md) 保持一致——上线前对齐功能清单。
+🇨🇳 **说明**:Email 3 明确点出 Beta 免费(诚实),不制造虚假紧迫感。Pro 的卖点措辞需与 [`docs/05`](./05-business-model.md) 保持一致——上线前对齐功能清单。
 
 ---
 
@@ -744,7 +744,7 @@
 
 🇨🇳
 - **有机渠道(Reddit/SEO/YouTube 自然)**:目标 CAC 主要是时间成本,趋近于 $0 现金 `(假设)`。
-- **付费渠道(Google Ads)**:目标 **付费 CAC ≤ $60** `(假设)`,对照 Pro 年 LTV(见 [`docs/12`](./12-business-plan.md) / [`docs/14`](./14-pricing-and-packaging.md))判断可承受上限。Pro $29/mo 若留存 12 个月 → LTV ≈ $348 `(假设)`,则 CAC/LTV 应 < 1/3,即 CAC 天花板约 $115 `(假设)`。
+- **付费渠道(Google Ads)**:目标 **付费 CAC ≤ $60** `(假设)`,对照 Pro 年 LTV(见 [`docs/12`](./12-business-plan.md) / [`docs/05`](./05-business-model.md))判断可承受上限。Pro $29/mo 若留存 12 个月 → LTV ≈ $348 `(假设)`,则 CAC/LTV 应 < 1/3,即 CAC 天花板约 $115 `(假设)`。
 - 优先扩量的是**有机 + 高质量社区**,付费只买高意图搜索词,不买泛展示。
 
 ### 7.3 UTM / 归因规范
@@ -808,9 +808,8 @@ utm_content  = 具体素材,如 short-privacy-01 / rebuttal-comment / ad-group-p
 
 ## 交叉引用(Cross-links)
 
-- 商业模式与单元经济:[`docs/12-business-plan.md`](./12-business-plan.md)
-- Go-to-Market 策略:[`docs/13`](./13-go-to-market.md)
-- 定价与打包(Pro/Business 功能清单,邮件/广告需对齐):[`docs/14`](./14-pricing-and-packaging.md)
+- 商业模式、单元经济与 Go-to-Market 策略(§7):[`docs/12-business-plan.md`](./12-business-plan.md)
+- 定价与套餐(Pro/Business 功能清单,邮件/广告需对齐):[`docs/05-business-model.md`](./05-business-model.md)
 - AI 架构与模型路由(License 核对、推荐模型依据):[`docs/11-ai-architecture-and-model-routing.md`](./11-ai-architecture-and-model-routing.md)
 - 落地页与演示(投放去向):[`web/index.html`](../web/index.html)、[`web/build.html`](../web/build.html)、[`web/chat.html`](../web/chat.html)、[`web/dashboard.html`](../web/dashboard.html)、[`web/signup.html`](../web/signup.html)
 

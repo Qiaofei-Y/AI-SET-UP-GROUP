@@ -488,7 +488,7 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 
 ## 10 · 引导相关的埋点(与 docs/13 对齐)
 
-所有事件**匿名**采集(Free 亦然,仅匿名使用数据),口径与 [docs/13](13-metrics-and-analytics.md) 统一。以下为**激活漏斗每一步**应上报的事件。
+所有事件**匿名**采集(Free 亦然,仅匿名使用数据),口径与 [docs/13 §6 埋点方案](13-validation-testing-and-experiments.md) 统一。以下为**激活漏斗每一步**应上报的事件。
 
 ### 10.1 激活漏斗事件表
 
@@ -553,8 +553,8 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 
 - [docs/02 · 产品概览](02-product-overview.md) —— 目标用户与完整用户旅程
 - [docs/03 · 核心模块](03-core-modules.md) —— Advisor / Auto-Deploy / Control Center / RAG / Teach My AI / Registry
-- [docs/13 · 指标与埋点](13-metrics-and-analytics.md) —— 事件字典与匿名口径(本文件的埋点以其为准)
-- [docs/15 · 定价与套餐](15-pricing-and-plans.md) —— Free / Pro / Business 与 Beta 免费策略
+- [docs/13 · 测试、实验与假设验证](13-validation-testing-and-experiments.md) —— §6 埋点方案:事件字典与匿名口径(本文件的埋点以其为准)
+- [docs/05 · 商业模式](05-business-model.md) —— Free / Pro / Business 定价与 Beta 免费策略
 - 网站页面:
   - [web/index.html](../web/index.html) —— 营销首页 / 落地
   - [web/build.html](../web/build.html) —— 引导向导(需求→设备→推荐→本地/云端→生成)

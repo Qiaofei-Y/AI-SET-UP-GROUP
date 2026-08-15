@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Build My AI — Control Center</title>
+<title data-en="Build My AI — Control Center" data-zh="Build My AI — 控制中心">Build My AI — Control Center</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/dashboard.css">
 </head>
@@ -24,13 +24,13 @@
   <!-- left nav rail -->
   <nav class="rail">
     <div class="grp" data-en="AFTER INSTALL" data-zh="安装之后">AFTER INSTALL</div>
-    <a class="on" href="#"><span>🎛️</span><span data-en="Overview" data-zh="总览">Overview</span></a>
+    <a class="on" href="dashboard.html"><span>🎛️</span><span data-en="Overview" data-zh="总览">Overview</span></a>
     <a href="chat.html"><span>💬</span><span data-en="Chat" data-zh="对话">Chat</span></a>
-    <a href="#"><span>🧩</span><span data-en="Model" data-zh="模型">Model</span></a>
-    <a href="#"><span>📚</span><span data-en="Knowledge" data-zh="知识库">Knowledge</span></a>
-    <a href="#"><span>🔌</span><span data-en="API" data-zh="API">API</span></a>
-    <a href="#"><span>🎓</span><span data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</span></a>
-    <a href="#"><span>⚙️</span><span data-en="Settings" data-zh="设置">Settings</span></a>
+    <a aria-disabled="true"><span>🧩</span><span data-en="Model" data-zh="模型">Model</span><span class="demo-tag" data-en="demo" data-zh="演示">demo</span></a>
+    <a aria-disabled="true"><span>📚</span><span data-en="Knowledge" data-zh="知识库">Knowledge</span><span class="demo-tag" data-en="demo" data-zh="演示">demo</span></a>
+    <a aria-disabled="true"><span>🔌</span><span data-en="API" data-zh="API">API</span><span class="demo-tag" data-en="demo" data-zh="演示">demo</span></a>
+    <a aria-disabled="true"><span>🎓</span><span data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</span><span class="demo-tag" data-en="demo" data-zh="演示">demo</span></a>
+    <a aria-disabled="true"><span>⚙️</span><span data-en="Settings" data-zh="设置">Settings</span><span class="demo-tag" data-en="demo" data-zh="演示">demo</span></a>
   </nav>
 
   <!-- main -->
@@ -48,7 +48,7 @@
         <div class="ch"><h3>🧩 <span data-en="Current model" data-zh="当前模型">Current model</span></h3><span class="badge teal" data-en="Balanced 14B" data-zh="均衡版 14B">Balanced 14B</span></div>
         <div class="drow"><span data-en="Answer quality" data-zh="回答质量">Answer quality</span><b data-en="Very good" data-zh="很好">Very good</b></div>
         <div class="drow"><span data-en="Response speed" data-zh="响应速度">Response speed</span><b data-en="Fast" data-zh="快">Fast</b></div>
-        <div class="drow"><span data-en="Update available" data-zh="有可用更新">Update available</span><b class="link" data-en="Upgrade →" data-zh="升级到新版 →">Upgrade →</b></div>
+        <div class="drow"><span data-en="Update available" data-zh="有可用更新">Update available</span><a class="link" href="pricing.html" data-en="Upgrade →" data-zh="升级到新版 →">Upgrade →</a></div>
       </div>
 
       <!-- run status -->
@@ -65,14 +65,14 @@
         <div class="frow"><span class="fi xls">XLS</span><div class="meta"><h4 data-en="Q2_Inventory.xlsx" data-zh="Q2库存报表.xlsx">Q2_Inventory.xlsx</h4><p data-en="860 KB · 6 sheets" data-zh="860 KB · 6 个工作表">860 KB · 6 sheets</p></div><span class="badge teal" data-en="✓ Indexed" data-zh="✓ 已索引">✓ Indexed</span></div>
         <div class="frow"><span class="fi doc">DOC</span><div class="meta"><h4 data-en="Supplier_Policy.docx · processing…" data-zh="供应商管理制度.docx · 正在处理…">Supplier_Policy.docx · processing…</h4></div><span class="badge blue" data-en="Processing" data-zh="处理中">Processing</span></div>
         <div class="frow"><span class="fi eml">EML</span><div class="meta"><h4 data-en="Quote emails (37)" data-zh="报价往来邮件(37 封)">Quote emails (37)</h4><p data-en="In queue" data-zh="排队中">In queue</p></div><span class="badge gray" data-en="Queued" data-zh="排队">Queued</span></div>
-        <div class="drow" style="margin-top:6px"><span data-en="Auto-update index when files change" data-zh="文件变更时自动更新索引">Auto-update index when files change</span><div class="switch"></div></div>
+        <div class="drow" style="margin-top:6px"><span id="autoIdxLbl" data-en="Auto-update index when files change" data-zh="文件变更时自动更新索引">Auto-update index when files change</span><div class="switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="autoIdxLbl"></div></div>
       </div>
 
       <!-- API -->
       <div class="dcard">
-        <div class="ch"><h3>🔌 <span data-en="API access" data-zh="API 接入">API access</span></h3><div class="switch"></div></div>
+        <div class="ch"><h3>🔌 <span id="apiAccessLbl" data-en="API access" data-zh="API 接入">API access</span></h3><div class="switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="apiAccessLbl"></div></div>
         <div class="drow"><span data-en="Local address" data-zh="本地地址">Local address</span><b>localhost:11434</b></div>
-        <div class="keyrow">🔑 sk-local-••••••••3a9f <span class="drow" style="margin-left:auto;border:none;padding:0"><b class="link" data-en="Copy" data-zh="复制">Copy</b></span></div>
+        <div class="keyrow">🔑 <span id="apiKey">sk-local-••••••••3a9f</span><button type="button" class="copybtn" id="copyKey" data-en="Copy" data-zh="复制">Copy</button></div>
         <div class="drow" style="margin-top:8px"><span data-en="Compatible with" data-zh="兼容格式">Compatible with</span><b>OpenAI</b></div>
       </div>
 
@@ -88,5 +88,64 @@
 </div></div>
 
 <script src="assets/i18n.js"></script>
+<script>
+// Dashboard demo interactions: visual switches + API-key copy. No network, no timers-as-strings.
+(function () {
+  // Demo toggles — purely visual, but focusable and keyboard-operable.
+  document.querySelectorAll('.switch[role="switch"]').forEach(function (sw) {
+    function flip() {
+      sw.classList.toggle('off');
+      sw.setAttribute('aria-checked', sw.classList.contains('off') ? 'false' : 'true');
+    }
+    sw.addEventListener('click', flip);
+    sw.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); flip(); }
+    });
+  });
+
+  // Copy the (masked demo) API key with a brief bilingual confirmation.
+  var btn = document.getElementById('copyKey');
+  var key = document.getElementById('apiKey');
+  if (btn && key) {
+    var revertT = null;
+    function setLabel(en, zh) {
+      btn.setAttribute('data-en', en);
+      btn.setAttribute('data-zh', zh);
+      btn.textContent = (typeof window.t === 'function') ? window.t(en, zh) : en;
+    }
+    function copyViaTextarea(txt) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    btn.addEventListener('click', function () {
+      var txt = key.textContent;
+      var viaApi = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          // If the async write is refused, fall back to the textarea trick.
+          navigator.clipboard.writeText(txt).then(null, function () { copyViaTextarea(txt); });
+          viaApi = true;
+        }
+      } catch (e) {}
+      if (!viaApi) copyViaTextarea(txt);
+      setLabel('Copied ✓', '已复制 ✓');
+      if (revertT) clearTimeout(revertT);
+      revertT = setTimeout(function () {
+        setLabel('Copy', '复制');
+        revertT = null;
+      }, 1400);
+    });
+  }
+})();
+</script>
 </body>
 </html>

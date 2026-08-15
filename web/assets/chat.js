@@ -48,17 +48,28 @@
     { t: 'pdf', en: 'Delivery_Terms.pdf', zh: '交付条款.pdf', me: '540 KB · 6 pages', mz: '540 KB · 6 页', st: 'ok' }
   ];
   var NEWNAMES = [ { en: 'NDA_2025.pdf', zh: '保密协议_2025.pdf' }, { en: 'Vendor_List.xlsx', zh: '供应商清单.xlsx' }, { en: 'Board_Minutes.docx', zh: '董事会纪要.docx' } ];
-  var newIdx = 0, fileCount = 12, teachCount = 317, activeIv = null, toastT = null;
+  var newIdx = 0, fileCount = 12, teachCount = 317, activeStream = null, toastT = null;
 
   function lang() { return window.__lang === 'zh' ? 'zh' : 'en'; }
-  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;'); }
   var inner, scroll;
   function toBottom() { if (scroll) scroll.scrollTop = scroll.scrollHeight; }
   function toast(msg) {
-    var el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show');
+    var el = document.getElementById('toast'); if (!el) return;
+    el.textContent = msg; el.classList.add('show');
     if (toastT) clearTimeout(toastT); toastT = setTimeout(function () { el.classList.remove('show'); }, 2600);
   }
   function labelSpan(en, zh) { var s = document.createElement('span'); s.setAttribute('data-en', en); s.setAttribute('data-zh', zh); s.textContent = lang() === 'zh' ? zh : en; return s; }
+
+  // fast-complete any in-flight streamed answer: cancel its timers, write the
+  // full text and run its finish() so it never freezes mid-sentence.
+  function fastComplete() {
+    if (!activeStream) return;
+    var s = activeStream; activeStream = null;
+    if (s.delay) clearTimeout(s.delay);
+    if (s.iv) clearInterval(s.iv);
+    s.done();
+  }
 
   function match(q) {
     var s = q.toLowerCase();
@@ -89,11 +100,35 @@
     var wrap = document.createElement('div'); wrap.className = 'msg-actions';
     var copy = document.createElement('button'); copy.type = 'button'; copy.className = 'iconbtn';
     copy.appendChild(document.createTextNode('⧉ ')); copy.appendChild(labelSpan('Copy', '复制'));
-    copy.onclick = function () { try { navigator.clipboard && navigator.clipboard.writeText(bub.textContent); } catch (e) {} toast(t('Copied to clipboard', '已复制')); };
+    copy.onclick = function () {
+      var txt = bub.textContent;
+      function good() { toast(t('Copied to clipboard', '已复制')); }
+      function legacy() {
+        var ta = document.createElement('textarea');
+        ta.value = txt; ta.setAttribute('readonly', 'readonly');
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        var done = false;
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        ta.remove();
+        if (done) good(); else toast(t('Copy failed — please copy manually.', '复制失败——请手动复制。'));
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(good, legacy);
+      } else { legacy(); }
+    };
     var up = document.createElement('button'); up.type = 'button'; up.className = 'iconbtn'; up.textContent = '👍';
-    up.onclick = function () { up.classList.add('on'); toast(t('Thanks — logged as a good answer.', '已记录为满意回答。')); };
     var down = document.createElement('button'); down.type = 'button'; down.className = 'iconbtn'; down.textContent = '👎';
-    down.onclick = function () { down.classList.add('on'); openTeach(wrap.parentElement); };
+    up.onclick = function () {
+      if (up.classList.contains('on')) { up.classList.remove('on'); return; }
+      up.classList.add('on'); down.classList.remove('on');
+      toast(t('Thanks — logged as a good answer.', '已记录为满意回答。'));
+    };
+    down.onclick = function () {
+      if (down.classList.contains('on')) { down.classList.remove('on'); return; }
+      down.classList.add('on'); up.classList.remove('on');
+      openTeach(wrap.parentElement);
+    };
     wrap.appendChild(copy); wrap.appendChild(up); wrap.appendChild(down);
     return wrap;
   }
@@ -133,26 +168,40 @@
     if (actions) { actions.style.display = 'none'; col.appendChild(actions); }
     row.appendChild(av); row.appendChild(col); inner.appendChild(row); toBottom();
 
-    function finish() { bub.classList.remove('typing-caret'); if (cite) { cite.style.display = ''; cite.classList.add('reveal'); } if (actions) actions.style.display = ''; }
-    if (opts.instant) { typing.remove(); bub.textContent = lang() === 'zh' ? zh : en; finish(); return; }
-    setTimeout(function () {
+    // finish() re-renders the full text per the CURRENT language, so an answer
+    // that streamed across a language toggle ends up in the right language.
+    function finish() {
+      bub.classList.remove('typing-caret');
+      bub.textContent = bub.getAttribute('data-' + lang() + '-msg');
+      if (cite) { cite.style.display = ''; cite.classList.add('reveal'); }
+      if (actions) actions.style.display = '';
+    }
+    if (opts.instant) { typing.remove(); finish(); return; }
+    fastComplete();
+    var stream = { delay: null, iv: null, done: function () { if (typing.parentNode) typing.remove(); finish(); toBottom(); } };
+    activeStream = stream;
+    stream.delay = setTimeout(function () {
       typing.remove(); bub.classList.add('typing-caret');
       var text = lang() === 'zh' ? zh : en, i = 0;
-      if (activeIv) clearInterval(activeIv);
-      activeIv = setInterval(function () {
+      stream.iv = setInterval(function () {
         i++; bub.textContent = text.slice(0, i); toBottom();
-        if (i >= text.length) { clearInterval(activeIv); activeIv = null; finish(); }
+        if (i >= text.length) {
+          clearInterval(stream.iv);
+          if (activeStream === stream) activeStream = null;
+          finish();
+        }
       }, 12);
     }, 600);
   }
 
-  function ask(en, zh) { addUser(en, zh || en); var entry = match(en) || (zh ? match(zh) : null); addAI(entry); }
+  function ask(en, zh) { fastComplete(); addUser(en, zh || en); var entry = match(en) || (zh ? match(zh) : null); addAI(entry); }
 
   // ---- conversations ----
-  function renderGreeting() { inner.innerHTML = ''; addAI({ en: GREET.en, zh: GREET.zh }, { instant: true, plain: true }); }
+  function renderGreeting() { if (!inner) return; fastComplete(); inner.innerHTML = ''; addAI({ en: GREET.en, zh: GREET.zh }, { instant: true, plain: true }); }
   function loadConversation(id) {
+    if (!inner) return;
     var seed = CONVERSATIONS[id]; if (!seed) { renderGreeting(); return; }
-    inner.innerHTML = '';
+    fastComplete(); inner.innerHTML = '';
     seed.forEach(function (m) {
       if (m.r === 'u') addUser(m.en, m.zh);
       else addAI(m.key ? KBBYID[m.key] : { en: m.en, zh: m.zh, cite: m.cite }, { instant: true });
@@ -182,23 +231,46 @@
     var ext = n.en.split('.').pop(); var type = ext === 'xlsx' ? 'xls' : ext === 'docx' ? 'doc' : 'pdf';
     var f = { t: type, en: n.en, zh: n.zh, me: 'just added', mz: '刚添加', st: 'indexing' };
     FILES.unshift(f); renderFiles();
-    toast(t('Reading & indexing ' + n.en + '…', '正在读取并索引 ' + n.en + '…'));
+    toast(t('Reading & indexing ' + n.en + '…', '正在读取并索引 ' + n.zh + '…'));
     setTimeout(function () {
       f.st = 'ok'; f.me = 'indexed just now'; f.mz = '刚刚索引完成'; fileCount++; renderFiles(); setCount();
-      toast(t('Indexed — your AI can now use ' + n.en + '.', '已索引 — 你的 AI 现在能用 ' + n.en + ' 了。'));
+      toast(t('Indexed — your AI can now use ' + n.en + '.', '已索引 — 你的 AI 现在能用 ' + n.zh + ' 了。'));
     }, 1300);
   }
-  function openK() { document.getElementById('kpanel').classList.add('open'); document.getElementById('kmask').classList.add('open'); }
-  function closeK() { document.getElementById('kpanel').classList.remove('open'); document.getElementById('kmask').classList.remove('open'); }
+  function openK() {
+    var p = document.getElementById('kpanel'), m = document.getElementById('kmask');
+    if (!p) return;
+    p.classList.add('open'); p.setAttribute('aria-hidden', 'false');
+    if (m) m.classList.add('open');
+    var c = document.getElementById('kClose'); if (c) c.focus();
+  }
+  function closeK() {
+    var p = document.getElementById('kpanel'), m = document.getElementById('kmask');
+    if (!p || !p.classList.contains('open')) return;
+    p.classList.remove('open'); p.setAttribute('aria-hidden', 'true');
+    if (m) m.classList.remove('open');
+    var b = document.getElementById('kbBtn'); if (b) b.focus();
+  }
 
   // ---- wire up ----
+  // Null-safe wiring helpers: pages/harnesses that lack an element simply skip it.
+  function on(id, ev, fn) { var el = document.getElementById(id); if (el) el.addEventListener(ev, fn); return el; }
+  // click + keyboard (Enter/Space) activation for role="button" elements
+  function pressable(el, fn) {
+    if (!el) return;
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); fn(e); }
+    });
+  }
   document.addEventListener('DOMContentLoaded', function () {
     scroll = document.getElementById('chatScroll');
     inner = document.getElementById('chatInner');
 
-    document.getElementById('chatForm').addEventListener('submit', function (e) {
+    on('chatForm', 'submit', function (e) {
       e.preventDefault();
       var input = document.getElementById('chatInput');
+      if (!input) return;
       var v = input.value.trim(); if (!v) return; input.value = '';
       ask(v, v);
     });
@@ -206,20 +278,33 @@
       chip.addEventListener('click', function () { ask(chip.getAttribute('data-en'), chip.getAttribute('data-zh')); });
     });
     document.querySelectorAll('.chat-side .c').forEach(function (c) {
-      c.addEventListener('click', function () {
+      pressable(c, function () {
         document.querySelectorAll('.chat-side .c').forEach(function (x) { x.classList.remove('on'); });
         c.classList.add('on'); loadConversation(c.getAttribute('data-conv'));
       });
     });
-    document.getElementById('newChat').addEventListener('click', function () {
+    pressable(document.getElementById('newChat'), function () {
       document.querySelectorAll('.chat-side .c').forEach(function (x) { x.classList.remove('on'); });
       renderGreeting();
     });
-    document.getElementById('kbBtn').addEventListener('click', openK);
-    document.getElementById('kbLink').addEventListener('click', openK);
-    document.getElementById('kClose').addEventListener('click', closeK);
-    document.getElementById('kmask').addEventListener('click', closeK);
-    document.getElementById('kDrop').addEventListener('click', addFile);
+    on('kbBtn', 'click', openK);
+    pressable(document.getElementById('kbLink'), openK);
+    on('kClose', 'click', closeK);
+    on('kmask', 'click', closeK);
+    var drop = document.getElementById('kDrop');
+    pressable(drop, addFile);
+    if (drop) {
+      ['dragover', 'dragenter'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('drag'); });
+      });
+      drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
+      drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); addFile(); });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var p = document.getElementById('kpanel');
+      if (p && p.classList.contains('open')) closeK();
+    });
 
     document.querySelectorAll('.chat-side .c').forEach(function (x) { x.classList.remove('on'); });
     setCount(); renderFiles(); renderGreeting();

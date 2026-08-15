@@ -1,10 +1,24 @@
 // Shared bilingual toggle. Default English; choice persists across pages.
 (function () {
   function apply(lang) {
+    lang = (lang === 'zh') ? 'zh' : 'en'; // normalize (localStorage may hold junk)
     document.documentElement.setAttribute('data-lang', lang);
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh-CN' : 'en');
     document.querySelectorAll('[data-' + lang + ']').forEach(function (el) {
-      el.textContent = el.getAttribute('data-' + lang);
+      var txt = el.getAttribute('data-' + lang);
+      if (el.children.length > 0) {
+        // Element has child elements (links, markers): swap only the first
+        // non-empty text node so children survive the language toggle.
+        for (var i = 0; i < el.childNodes.length; i++) {
+          var node = el.childNodes[i];
+          if (node.nodeType === 3 && /\S/.test(node.nodeValue)) {
+            node.nodeValue = txt;
+            break;
+          }
+        }
+      } else {
+        el.textContent = txt;
+      }
     });
     document.querySelectorAll('[data-' + lang + '-ph]').forEach(function (el) {
       el.setAttribute('placeholder', el.getAttribute('data-' + lang + '-ph'));
