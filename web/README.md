@@ -6,8 +6,9 @@
 
 | 文件 | 作用 |
 |------|------|
-| `index.html` | **营销首页(宣传)**:Hero、怎么运作、六大功能、本地/云端、价格、CTA |
+| `index.html` | **营销首页(宣传)**:Hero(带流式产品截图)、怎么运作、六大功能、本地/云端、价格、CTA |
 | `build.html` | **功能子页(引导流程)**:需求 → 设备 → 推荐方案 → 本地/云端 → 生成文件 |
+| `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI) |
 | `assets/styles.css` | 共享设计系统(LangChain 风格,与 `figma/` 一致) |
 | `assets/i18n.js` | 中英文切换(默认英文,选择跨页面记忆) |
 | `assets/build.js` | 向导逻辑 + **安装包/云端手册生成器** |
