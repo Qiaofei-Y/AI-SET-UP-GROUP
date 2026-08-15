@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build My AI — Chat</title>
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/chat.css">
+</head>
+<body>
+
+<header class="topbar"><div class="wrap"><div class="row">
+  <a class="brand" href="index.html"><span class="logo">◆</span> Build My AI</a>
+  <div class="rt">
+    <div class="langsw">
+      <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
+    </div>
+    <a class="btn ghost" href="dashboard.html" data-en="Control Center" data-zh="控制中心">Control Center</a>
+  </div>
+</div></div></header>
+
+<div class="chatpage">
+  <aside class="chat-side">
+    <div class="newc" data-en="+ New chat" data-zh="+ 新对话">+ New chat</div>
+    <div class="sec" data-en="RECENT" data-zh="最近">RECENT</div>
+    <div class="c on" data-en="2024 procurement terms" data-zh="2024 采购合同条款">2024 procurement terms</div>
+    <div class="c" data-en="Supplier payment cycles" data-zh="供应商付款周期">Supplier payment cycles</div>
+    <div class="c" data-en="Q2 inventory summary" data-zh="Q2 库存摘要">Q2 inventory summary</div>
+    <div class="kb">📚 <span data-en="Knowledge · 12 files" data-zh="知识库 · 12 份文件">Knowledge · 12 files</span></div>
+  </aside>
+
+  <main class="chat-main">
+    <div class="chat-top"><span class="live"></span><span data-en="My Company Knowledge AI · running locally · fast" data-zh="我的公司知识 AI · 本地运行 · 响应快">My Company Knowledge AI · running locally · fast</span></div>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-inner" id="chatInner">
+        <div class="chat-msg a"><div class="av">◆</div><div>
+          <div class="chat-bub" data-en-msg="Hi! I've read your 12 documents. Ask me anything about your contracts, reports or policies — I'll answer with the source." data-zh-msg="你好!我已经读完你的 12 份文件。关于合同、报表或制度尽管问——我会带来源回答。">Hi! I've read your 12 documents. Ask me anything about your contracts, reports or policies — I'll answer with the source.</div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <button class="chip" data-en="What's the payment cycle with Supplier A?" data-zh="A 供应商的付款周期是多少?">What's the payment cycle with Supplier A?</button>
+      <button class="chip" data-en="Summarize the Q2 inventory report" data-zh="总结一下 Q2 库存报表">Summarize the Q2 inventory report</button>
+      <button class="chip" data-en="What's the late-delivery penalty?" data-zh="延迟交付的违约金是多少?">What's the late-delivery penalty?</button>
+      <button class="chip" data-en="Who approves a $20,000 purchase?" data-zh="2 万美元的采购谁审批?">Who approves a $20,000 purchase?</button>
+    </div>
+
+    <div class="chat-inputbar">
+      <form class="chat-form" id="chatForm">
+        <input id="chatInput" autocomplete="off" data-en-ph="Ask something about your files…" data-zh-ph="问点关于你资料的问题…" placeholder="Ask something about your files…">
+        <button class="snd" type="submit" aria-label="Send">➤</button>
+      </form>
+      <div class="chat-hint" data-en="Demo · answers come from a small sample knowledge base, generated in your browser." data-zh="演示 · 回答来自一个小样本知识库,在你的浏览器本地生成。">Demo · answers come from a small sample knowledge base, generated in your browser.</div>
+    </div>
+  </main>
+</div>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+/* Build My AI — interactive chat demo (chat.html). Requires base.css. */
+.chatpage{display:flex;height:calc(100vh - 63px)}
+/* sidebar */
+.chat-side{width:248px;flex:none;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px}
+.chat-side .newc{background:var(--accent);color:#fff;font-size:13px;text-align:center;padding:10px;border-radius:9px;cursor:pointer}
+.chat-side .sec{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink-2);margin:18px 0 6px 2px}
+.chat-side .c{font-size:13px;color:#413c34;padding:8px 9px;border-radius:8px;margin-bottom:2px;cursor:pointer}
+.chat-side .c:hover{background:var(--soft)}
+.chat-side .c.on{background:var(--accent-soft);color:var(--accent-2);font-weight:500}
+.chat-side .kb{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:#413c34;display:flex;gap:8px;align-items:center}
+/* main */
+.chat-main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--surface)}
+.chat-top{height:48px;flex:none;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;padding:0 20px;font-family:var(--mono);font-size:12.5px;color:var(--ink-2)}
+.chat-top .live{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);animation:livePulse 1.8s ease-in-out infinite}
+.chat-scroll{flex:1;overflow-y:auto;padding:24px 20px}
+.chat-inner{max-width:760px;margin:0 auto}
+.chat-msg{display:flex;gap:11px;margin-bottom:20px;max-width:92%}
+.chat-msg .av{width:30px;height:30px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:13px;color:#fff}
+.chat-msg.u{margin-left:auto;flex-direction:row-reverse}
+.chat-msg.u .av{background:var(--ink)}
+.chat-msg.a .av{background:var(--accent)}
+.chat-bub{font-size:14px;line-height:1.65;padding:12px 15px;border-radius:13px}
+.chat-msg.u .chat-bub{background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.a .chat-bub{background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:4px}
+.chat-cite{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:12px;display:inline-flex;align-items:center;gap:9px;cursor:pointer}
+.chat-cite:hover{border-color:var(--accent)}
+.chat-cite .fi{width:26px;height:26px;border-radius:7px;background:var(--clay-soft);color:var(--clay);display:grid;place-items:center;font-family:var(--mono);font-size:9px;font-weight:700;flex:none}
+.chat-cite b{color:var(--ink);font-weight:600}.chat-cite span{color:var(--ink-2)}
+.chat-cite.reveal{animation:citeIn .4s ease both}
+@keyframes citeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.chat-typing{display:inline-flex;gap:5px;padding:14px 16px;background:var(--paper);border:1px solid var(--line);border-bottom-left-radius:4px;border-radius:13px}
+.chat-typing span{width:7px;height:7px;border-radius:50%;background:var(--ink-2);opacity:.4;animation:typBounce 1.2s infinite}
+.chat-typing span:nth-child(2){animation-delay:.18s}.chat-typing span:nth-child(3){animation-delay:.36s}
+.typing-caret::after{content:"▍";color:var(--accent);margin-left:1px;animation:caret .9s step-end infinite}
+/* suggestions */
+.chips{max-width:760px;margin:0 auto 12px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line-2);background:var(--surface);color:#413c34;font-size:12.5px;padding:8px 13px;border-radius:999px;cursor:pointer;transition:.15s}
+.chip:hover{border-color:var(--accent);color:var(--accent-2);background:var(--accent-soft)}
+/* input */
+.chat-inputbar{flex:none;border-top:1px solid var(--line);padding:14px 20px 18px;background:var(--surface)}
+.chat-form{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.chat-form input{flex:1;border:1px solid var(--line-2);border-radius:11px;padding:12px 15px;font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none}
+.chat-form input:focus{border-color:var(--accent)}
+.chat-form .snd{width:42px;height:42px;border-radius:11px;background:var(--accent);color:#fff;border:none;display:grid;place-items:center;flex:none;cursor:pointer;font-size:15px}
+.chat-form .snd:hover{background:var(--accent-2)}
+.chat-hint{max-width:760px;margin:8px auto 0;font-size:11.5px;color:var(--ink-2);text-align:center}
+@media (max-width:720px){ .chat-side{display:none} }
