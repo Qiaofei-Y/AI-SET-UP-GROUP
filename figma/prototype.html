@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build My AI · 产品界面原型</title>
+<style>
+  :root{
+    --primary:#4C6FFF; --primary-dark:#3B5BDB; --green:#00B37E; --purple:#8B5CF6;
+    --orange:#F97316; --text:#1A1D29; --muted:#6B7280; --border:#E5E7EB;
+    --canvas:#F0F1F3; --frame:#FFFFFF; --soft:#F6F7F9;
+    --shadow:0 1px 3px rgba(16,24,40,.08),0 12px 32px rgba(16,24,40,.10);
+    --radius:12px;
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--canvas);color:var(--text);-webkit-font-smoothing:antialiased}
+
+  /* ---------- top toolbar ---------- */
+  .toolbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:16px;padding:12px 24px;flex-wrap:wrap}
+  .toolbar .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+  .toolbar .brand .logo{width:26px;height:26px;border-radius:7px;
+    background:linear-gradient(135deg,var(--primary),var(--purple));
+    display:grid;place-items:center;color:#fff;font-size:14px}
+  .nav{display:flex;gap:6px;flex-wrap:wrap}
+  .nav a{font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 11px;
+    border-radius:999px;border:1px solid transparent;transition:.15s;white-space:nowrap}
+  .nav a:hover{color:var(--text);background:var(--soft);border-color:var(--border)}
+  .toolbar .tag{margin-left:auto;font-size:12px;color:var(--muted);
+    background:var(--soft);border:1px solid var(--border);padding:5px 10px;border-radius:999px}
+
+  /* ---------- canvas ---------- */
+  .canvas{max-width:1120px;margin:0 auto;padding:40px 24px 120px}
+  .frame-wrap{margin:0 0 56px}
+  .frame-label{display:flex;align-items:center;gap:10px;margin:0 0 10px 2px}
+  .frame-label .num{width:22px;height:22px;border-radius:6px;background:var(--primary);
+    color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center}
+  .frame-label h2{font-size:14px;font-weight:600}
+  .frame-label span{font-size:12.5px;color:var(--muted)}
+
+  /* app window chrome */
+  .win{background:var(--frame);border-radius:var(--radius);box-shadow:var(--shadow);
+    overflow:hidden;border:1px solid var(--border)}
+  .titlebar{height:38px;background:var(--soft);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;padding:0 14px}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#FF5F57}.dot.y{background:#FEBC2E}.dot.g{background:#28C840}
+  .titlebar .t{margin-left:8px;font-size:12px;color:var(--muted);font-weight:500}
+  .titlebar .win-tag{margin-left:auto;font-size:11px;color:var(--muted);
+    display:flex;align-items:center;gap:5px}
+  .shield{color:var(--green);font-weight:600}
+
+  .screen{padding:38px 44px}
+
+  /* ---------- shared components ---------- */
+  .btn{display:inline-flex;align-items:center;gap:8px;border:none;cursor:pointer;
+    font-size:14px;font-weight:600;padding:12px 22px;border-radius:9px;
+    font-family:inherit;transition:.15s}
+  .btn.primary{background:var(--primary);color:#fff}
+  .btn.primary:hover{background:var(--primary-dark)}
+  .btn.ghost{background:#fff;color:var(--text);border:1px solid var(--border)}
+  .btn.ghost:hover{background:var(--soft)}
+  .btn.lg{padding:14px 28px;font-size:15px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+    padding:4px 10px;border-radius:999px}
+  .badge.green{background:#E6F7F1;color:#008a63}
+  .badge.blue{background:#EAEEFF;color:var(--primary-dark)}
+  .badge.gray{background:#F1F2F4;color:var(--muted)}
+  .badge.orange{background:#FEF0E6;color:#c2560a}
+  .badge.purple{background:#F1EBFF;color:#6d3fd4}
+  .muted{color:var(--muted)}
+  .card{border:1px solid var(--border);border-radius:12px;padding:18px}
+
+  /* meters */
+  .meter{margin:14px 0}
+  .meter .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .meter .track{height:8px;background:var(--soft);border-radius:999px;overflow:hidden}
+  .meter .fill{height:100%;border-radius:999px}
+
+  /* ============ SCREEN 1 : 需求选择 ============ */
+  .s1{text-align:center;padding:64px 44px}
+  .s1 .kicker{font-size:13px;color:var(--primary);font-weight:600;letter-spacing:.04em}
+  .s1 h1{font-size:34px;font-weight:700;margin:14px 0 8px;letter-spacing:-.01em}
+  .s1 .sub{color:var(--muted);font-size:15px;margin-bottom:30px}
+  .s1 .inputbox{max-width:620px;margin:0 auto;display:flex;gap:10px;
+    background:#fff;border:2px solid var(--primary);border-radius:14px;padding:8px 8px 8px 18px;
+    box-shadow:0 8px 24px rgba(76,111,255,.12)}
+  .s1 .inputbox input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;background:transparent}
+  .s1 .templates{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:760px;margin:34px auto 0}
+  .tmpl{border:1px solid var(--border);border-radius:12px;padding:18px 14px;text-align:left;cursor:pointer;transition:.15s;background:#fff}
+  .tmpl:hover{border-color:var(--primary);box-shadow:0 6px 18px rgba(76,111,255,.10);transform:translateY(-2px)}
+  .tmpl.sel{border-color:var(--primary);background:#F7F9FF}
+  .tmpl .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;margin-bottom:12px}
+  .tmpl h3{font-size:14px;margin-bottom:4px}
+  .tmpl p{font-size:12px;color:var(--muted);line-height:1.5}
+
+  /* ============ SCREEN 2 : 设备检测 ============ */
+  .s2 h1{font-size:22px;margin-bottom:6px}
+  .s2 .lead{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .spec{border:1px solid var(--border);border-radius:12px;padding:16px}
+  .spec .lbl{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .spec .val{font-size:16px;font-weight:600}
+  .spec .sub{font-size:12px;margin-top:6px}
+  .verdict{margin-top:22px;background:#E6F7F1;border:1px solid #B8ECDA;border-radius:12px;
+    padding:18px 20px;display:flex;align-items:center;gap:14px}
+  .verdict .ic{width:40px;height:40px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:20px;flex:none}
+  .verdict h3{font-size:15px;margin-bottom:3px}
+  .verdict p{font-size:13px;color:#0a6b4d}
+  .s2 .actions{margin-top:26px;display:flex;justify-content:flex-end;gap:12px}
+
+  /* ============ SCREEN 3 : 推荐方案 ============ */
+  .s3 h1{font-size:22px;margin-bottom:6px}
+  .s3 .lead{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .plan{border:2px solid var(--primary);border-radius:14px;padding:24px;position:relative;background:linear-gradient(180deg,#F7F9FF,#fff)}
+  .plan .pick{position:absolute;top:-11px;left:24px;background:var(--primary);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px}
+  .plan .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+  .plan h3{font-size:18px}
+  .plan .desc{font-size:13px;color:var(--muted);margin-bottom:18px;max-width:70%}
+  .plan .cols{display:grid;grid-template-columns:1.1fr 1fr;gap:26px}
+  .can-do{font-size:13px}
+  .can-do li{display:flex;gap:8px;margin-bottom:9px;list-style:none}
+  .can-do .ck{color:var(--green);font-weight:700;flex:none}
+  .adv{margin-top:18px;border-top:1px dashed var(--border);padding-top:14px}
+  .adv summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600;list-style:none}
+  .adv summary::before{content:"▸ ";color:var(--primary)}
+  .adv[open] summary::before{content:"▾ "}
+  .adv table{width:100%;font-size:12.5px;margin-top:12px;border-collapse:collapse}
+  .adv td{padding:6px 0;border-bottom:1px solid var(--soft);color:var(--muted)}
+  .adv td:last-child{text-align:right;color:var(--text);font-weight:500}
+  .s3 .actions{margin-top:22px;display:flex;gap:12px;align-items:center}
+  .alt{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:14px 18px;
+    display:flex;justify-content:space-between;align-items:center}
+  .alt h4{font-size:14px}.alt p{font-size:12px;color:var(--muted)}
+
+  /* ============ SCREEN 4 : 安装进度 ============ */
+  .s4{text-align:center;padding:46px 44px}
+  .s4 h1{font-size:22px;margin-bottom:6px}
+  .s4 .lead{color:var(--muted);font-size:14px;margin-bottom:8px}
+  .bigbar{max-width:560px;margin:22px auto 6px;height:10px;background:var(--soft);border-radius:999px;overflow:hidden}
+  .bigbar .fill{height:100%;width:62%;background:linear-gradient(90deg,var(--primary),var(--purple));border-radius:999px}
+  .s4 .pct{font-size:13px;color:var(--muted);margin-bottom:30px}
+  .steps{max-width:520px;margin:0 auto;text-align:left}
+  .step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--soft)}
+  .step .si{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:13px;font-weight:700}
+  .step.done .si{background:var(--green);color:#fff}
+  .step.now .si{background:var(--primary);color:#fff}
+  .step.wait .si{background:var(--soft);color:var(--muted)}
+  .step .txt h4{font-size:14px;margin-bottom:2px}
+  .step .txt p{font-size:12.5px;color:var(--muted)}
+  .step.now .txt h4{color:var(--primary)}
+  .s4 .foot{margin-top:26px}
+
+  /* ============ SCREEN 5 : 对话界面 ============ */
+  .s5{display:flex;height:520px}
+  .side{width:230px;background:var(--soft);border-right:1px solid var(--border);display:flex;flex-direction:column;flex:none}
+  .side .newbtn{margin:14px;padding:10px;background:var(--primary);color:#fff;border-radius:9px;font-size:13px;font-weight:600;text-align:center;cursor:pointer}
+  .side .sec{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 16px 4px}
+  .conv{padding:9px 16px;font-size:13px;cursor:pointer;border-left:2px solid transparent;color:#3a3f4b}
+  .conv:hover{background:#eceef1}
+  .conv.active{background:#E9EDFF;border-left-color:var(--primary);color:var(--primary-dark);font-weight:600}
+  .side .kb{margin-top:auto;border-top:1px solid var(--border);padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;color:#3a3f4b}
+  .side .kb:hover{background:#eceef1}
+  .chat{flex:1;display:flex;flex-direction:column}
+  .chat-top{height:46px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:10px;font-size:13px}
+  .live{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px #d6f5e9}
+  .chat-body{flex:1;overflow:auto;padding:22px 24px;background:#fff}
+  .msg{display:flex;gap:12px;margin-bottom:20px;max-width:88%}
+  .msg .av{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;font-size:14px;color:#fff}
+  .msg.user{margin-left:auto;flex-direction:row-reverse}
+  .msg.user .av{background:#111827}
+  .msg.ai .av{background:linear-gradient(135deg,var(--primary),var(--purple))}
+  .bubble{font-size:14px;line-height:1.65;padding:12px 15px;border-radius:12px}
+  .msg.user .bubble{background:var(--primary);color:#fff;border-bottom-right-radius:3px}
+  .msg.ai .bubble{background:var(--soft);border-bottom-left-radius:3px}
+  .cite{margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;display:flex;align-items:center;gap:9px;cursor:pointer}
+  .cite:hover{border-color:var(--primary)}
+  .cite .fi{width:24px;height:24px;border-radius:6px;background:#FDECEC;color:#d64545;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+  .cite b{color:var(--text)} .cite span{color:var(--muted)}
+  .chat-input{border-top:1px solid var(--border);padding:14px 18px;display:flex;gap:10px;align-items:center;background:#fff}
+  .chat-input .box{flex:1;border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--muted)}
+  .chat-input .send{width:40px;height:40px;border-radius:10px;background:var(--primary);color:#fff;display:grid;place-items:center;flex:none;cursor:pointer}
+
+  /* ============ SCREEN 6 : 知识库 ============ */
+  .s6 h1{font-size:22px;margin-bottom:6px}
+  .s6 .lead{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .drop{border:2px dashed #C7CDFB;border-radius:14px;padding:34px;text-align:center;background:#F7F9FF;margin-bottom:24px}
+  .drop .ic{font-size:30px;margin-bottom:10px}
+  .drop h3{font-size:15px;margin-bottom:4px}
+  .drop p{font-size:13px;color:var(--muted)}
+  .filerow{display:flex;align-items:center;gap:14px;padding:13px 16px;border:1px solid var(--border);border-radius:11px;margin-bottom:10px}
+  .filerow .fi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+  .fi.pdf{background:#d64545}.fi.xls{background:#1d8f52}.fi.doc{background:#2b5fd6}.fi.eml{background:#8a6d3b}
+  .filerow .meta{flex:1}
+  .filerow .meta h4{font-size:14px;margin-bottom:2px}
+  .filerow .meta p{font-size:12px;color:var(--muted)}
+  .prog{width:90px;height:6px;background:var(--soft);border-radius:999px;overflow:hidden}
+  .prog .f{height:100%;background:var(--primary)}
+
+  /* ============ SCREEN 7 : Control Center ============ */
+  .s7 h1{font-size:22px;margin-bottom:6px}
+  .s7 .lead{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .cc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .cc-card{border:1px solid var(--border);border-radius:12px;padding:18px}
+  .cc-card .ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .cc-card .ch h3{font-size:14px;display:flex;align-items:center;gap:8px}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--soft)}
+  .kv:last-child{border:none} .kv span{color:var(--muted)} .kv b{font-weight:600}
+  .switch{width:40px;height:23px;border-radius:999px;background:var(--green);position:relative;cursor:pointer;flex:none}
+  .switch::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2.5px;right:2.5px}
+  .switch.off{background:#D1D5DB}.switch.off::after{left:2.5px;right:auto}
+  .usebars{display:flex;flex-direction:column;gap:12px}
+  .keyrow{display:flex;align-items:center;gap:10px;background:var(--soft);border-radius:8px;padding:9px 12px;font-size:12.5px;font-family:ui-monospace,monospace;color:var(--muted)}
+
+  .footnote{max-width:1120px;margin:0 auto;padding:0 24px 80px;color:var(--muted);font-size:12.5px;text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="brand"><div class="logo">◆</div> Build My AI · 产品原型</div>
+  <nav class="nav">
+    <a href="#s1">1 需求选择</a>
+    <a href="#s2">2 设备检测</a>
+    <a href="#s3">3 推荐方案</a>
+    <a href="#s4">4 安装进度</a>
+    <a href="#s5">5 对话</a>
+    <a href="#s6">6 知识库</a>
+    <a href="#s7">7 控制台</a>
+  </nav>
+  <div class="tag">MVP · Windows + NVIDIA · 本地部署</div>
+</div>
+
+<div class="canvas">
+
+  <!-- ================= 1 需求选择 ================= -->
+  <div class="frame-wrap" id="s1">
+    <div class="frame-label"><span class="num">1</span><h2>需求选择</h2><span>一个输入框开始一切,不做技术选择题</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">Build My AI</div><div class="win-tag"><span class="shield">●</span> 全程本地 · 数据不出这台电脑</div></div>
+      <div class="screen s1">
+        <div class="kicker">BUILD MY AI</div>
+        <h1>你想让 AI 帮你做什么?</h1>
+        <div class="sub">用一句话描述就行,剩下的技术问题我们来解决。</div>
+        <div class="inputbox">
+          <input value="我想要一个能读公司 PDF、Excel 和内部资料的私有 AI" readonly>
+          <button class="btn primary">开始 →</button>
+        </div>
+        <div class="templates">
+          <div class="tmpl sel">
+            <div class="ic" style="background:#EAEEFF">🏢</div>
+            <h3>公司知识 AI</h3>
+            <p>读你的内部资料,私密问答</p>
+          </div>
+          <div class="tmpl">
+            <div class="ic" style="background:#F1EBFF">✍️</div>
+            <h3>写作助手</h3>
+            <p>起草、润色、改写</p>
+          </div>
+          <div class="tmpl">
+            <div class="ic" style="background:#E6F7F1">🔬</div>
+            <h3>研究助手</h3>
+            <p>读论文资料,归纳总结</p>
+          </div>
+          <div class="tmpl">
+            <div class="ic" style="background:#FEF0E6">💬</div>
+            <h3>通用助手</h3>
+            <p>日常问答与帮忙</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 2 设备检测 ================= -->
+  <div class="frame-wrap" id="s2">
+    <div class="frame-label"><span class="num">2</span><h2>设备检测</h2><span>结果用人话展示,自动给出适配结论</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">检测你的电脑</div></div>
+      <div class="screen s2">
+        <h1>已检测完你的电脑</h1>
+        <div class="lead">用来判断哪种 AI 跑得又快又好。整个过程不需要你懂任何硬件参数。</div>
+        <div class="spec-grid">
+          <div class="spec"><div class="lbl">🧠 处理器</div><div class="val">Intel Core i7</div><div class="sub badge green">足够</div></div>
+          <div class="spec"><div class="lbl">💾 内存</div><div class="val">32 GB</div><div class="sub badge green">充裕</div></div>
+          <div class="spec"><div class="lbl">🎮 显卡</div><div class="val">NVIDIA RTX 4070</div><div class="sub badge green">支持加速</div></div>
+          <div class="spec"><div class="lbl">⚡ 显卡内存</div><div class="val">12 GB</div><div class="sub badge green">可运行中大型 AI</div></div>
+          <div class="spec"><div class="lbl">🪟 系统</div><div class="val">Windows 11</div><div class="sub badge green">已支持</div></div>
+          <div class="spec"><div class="lbl">📀 可用空间</div><div class="val">340 GB</div><div class="sub badge green">充足</div></div>
+        </div>
+        <div class="verdict">
+          <div class="ic">✓</div>
+          <div>
+            <h3>你的电脑很适合运行本地 AI</h3>
+            <p>可以在本机流畅运行,回答又快又私密。下一步我们会为你挑选最合适的方案。</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost">重新检测</button>
+          <button class="btn primary">查看推荐方案 →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 3 推荐方案 ================= -->
+  <div class="frame-wrap" id="s3">
+    <div class="frame-label"><span class="num">3</span><h2>AI 推荐方案</h2><span>质量/速度/占用三维度,技术细节收进"高级模式"</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">为你推荐</div></div>
+      <div class="screen s3">
+        <h1>为你推荐的方案</h1>
+        <div class="lead">基于你的需求(公司知识问答 · 高隐私)和这台电脑的能力挑选。</div>
+        <div class="plan">
+          <div class="pick">✦ 最佳匹配</div>
+          <div class="head">
+            <div>
+              <h3>私有知识助手 · 均衡版</h3>
+              <div class="desc">在你本机运行,能读你的 PDF / Excel / 文档,回答带资料来源。数据全程不出这台电脑。</div>
+            </div>
+            <span class="badge blue">本地运行 · 免费</span>
+          </div>
+          <div class="cols">
+            <div>
+              <div class="meter"><div class="top"><span>回答质量</span><b>很好</b></div><div class="track"><div class="fill" style="width:85%;background:var(--green)"></div></div></div>
+              <div class="meter"><div class="top"><span>响应速度</span><b>快</b></div><div class="track"><div class="fill" style="width:78%;background:var(--primary)"></div></div></div>
+              <div class="meter"><div class="top"><span>占用空间</span><b>约 8 GB</b></div><div class="track"><div class="fill" style="width:40%;background:var(--purple)"></div></div></div>
+            </div>
+            <ul class="can-do">
+              <li><span class="ck">✓</span> 读取并理解你的公司文档</li>
+              <li><span class="ck">✓</span> 回答时标注来自哪份文件哪一页</li>
+              <li><span class="ck">✓</span> 完全离线,资料不上传云端</li>
+              <li><span class="ck">✓</span> 约 20 分钟装好,即装即用</li>
+            </ul>
+          </div>
+          <details class="adv">
+            <summary>高级模式(给懂技术的人看)</summary>
+            <table>
+              <tr><td>推荐模型</td><td>开源指令模型 · 8B 参数</td></tr>
+              <tr><td>量化档位</td><td>Q4_K_M(GGUF)</td></tr>
+              <tr><td>预计显存占用</td><td>~7.2 GB / 12 GB</td></tr>
+              <tr><td>推理运行时</td><td>llama.cpp server(CUDA)</td></tr>
+              <tr><td>RAG</td><td>本地 Embedding + 向量库,来源引用开启</td></tr>
+            </table>
+          </details>
+        </div>
+        <div class="actions">
+          <button class="btn primary lg">在本机安装(推荐)</button>
+          <button class="btn ghost">改用云端运行</button>
+        </div>
+        <div class="alt">
+          <div><h4>备选:轻量版</h4><p>更省空间、更快,回答质量略低。适合只做简单问答。</p></div>
+          <button class="btn ghost">选这个</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 4 安装进度 ================= -->
+  <div class="frame-wrap" id="s4">
+    <div class="frame-label"><span class="num">4</span><h2>安装进度</h2><span>每步人话说明,失败可重试</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">正在安装</div></div>
+      <div class="screen s4">
+        <h1>正在为你安装 AI</h1>
+        <div class="lead">你可以先去忙别的,装好会通知你。全程不需要你操作。</div>
+        <div class="bigbar"><div class="fill"></div></div>
+        <div class="pct">62% · 预计还需约 4 分钟</div>
+        <div class="steps">
+          <div class="step done"><div class="si">✓</div><div class="txt"><h4>准备运行环境</h4><p>已装好,无需你安装任何东西</p></div></div>
+          <div class="step done"><div class="si">✓</div><div class="txt"><h4>检查显卡加速</h4><p>NVIDIA 加速已就绪</p></div></div>
+          <div class="step now"><div class="si">3</div><div class="txt"><h4>正在下载 AI 模型</h4><p>约 4.5 GB · 已完成 62%(从官方来源安全下载)</p></div></div>
+          <div class="step wait"><div class="si">4</div><div class="txt"><h4>配置知识库引擎</h4><p>让 AI 能读你的文档</p></div></div>
+          <div class="step wait"><div class="si">5</div><div class="txt"><h4>启动你的 AI</h4><p>完成后自动打开对话界面</p></div></div>
+        </div>
+        <div class="foot"><button class="btn ghost">暂停</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 5 对话界面 ================= -->
+  <div class="frame-wrap" id="s5">
+    <div class="frame-label"><span class="num">5</span><h2>对话界面</h2><span>流式回答 + 来源引用</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">我的公司知识 AI</div><div class="win-tag"><span class="shield">●</span> 本地运行</div></div>
+      <div class="s5">
+        <div class="side">
+          <div class="newbtn">+ 新对话</div>
+          <div class="sec">最近</div>
+          <div class="conv active">2024 采购合同关键条款</div>
+          <div class="conv">供应商付款周期对比</div>
+          <div class="conv">Q2 库存报表摘要</div>
+          <div class="kb">📚 知识库 · 12 份文件</div>
+        </div>
+        <div class="chat">
+          <div class="chat-top"><span class="live"></span> AI 运行中 · 响应快 · 显存占用 7.2/12 GB</div>
+          <div class="chat-body">
+            <div class="msg user"><div class="av">你</div><div class="bubble">2024 年和 A 供应商的合同,付款周期是多少天?</div></div>
+            <div class="msg ai"><div class="av">◆</div><div>
+              <div class="bubble">根据合同,与 A 供应商约定的付款周期为 <b>验收后 45 天</b>,并设有 2% 的提前付款折扣(10 天内付款可享)。</div>
+              <div class="cite"><div class="fi">PDF</div><div><b>2024采购合同_A供应商.pdf</b> <span>· 第 3 页 · 第 2 条付款条款</span></div></div>
+            </div></div>
+          </div>
+          <div class="chat-input"><div class="box">问点关于你资料的问题…</div><div class="send">➤</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 6 知识库 ================= -->
+  <div class="frame-wrap" id="s6">
+    <div class="frame-label"><span class="num">6</span><h2>知识库管理</h2><span>拖拽上传 + 索引状态</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">知识库</div></div>
+      <div class="screen s6">
+        <h1>我的知识库</h1>
+        <div class="lead">把文件拖进来,AI 就能读懂并基于它回答。你唯一要做的就是拖文件。</div>
+        <div class="drop">
+          <div class="ic">📥</div>
+          <h3>把文件拖到这里</h3>
+          <p>支持 PDF、Word、Excel、邮件、文本 · 也可以点击选择</p>
+        </div>
+        <div class="filerow">
+          <div class="fi pdf">PDF</div>
+          <div class="meta"><h4>2024采购合同_A供应商.pdf</h4><p>2.4 MB · 18 页</p></div>
+          <span class="badge green">✓ 已索引</span>
+        </div>
+        <div class="filerow">
+          <div class="fi xls">XLS</div>
+          <div class="meta"><h4>Q2库存报表.xlsx</h4><p>860 KB · 6 个工作表</p></div>
+          <span class="badge green">✓ 已索引</span>
+        </div>
+        <div class="filerow">
+          <div class="fi doc">DOC</div>
+          <div class="meta"><h4>供应商管理制度.docx · 正在处理…</h4><div class="prog"><div class="f" style="width:55%"></div></div></div>
+          <span class="badge blue">处理中</span>
+        </div>
+        <div class="filerow">
+          <div class="fi eml">EML</div>
+          <div class="meta"><h4>报价往来邮件(37 封)</h4><p>排队中,前面还有 1 个文件</p></div>
+          <span class="badge gray">排队</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 7 Control Center ================= -->
+  <div class="frame-wrap" id="s7">
+    <div class="frame-label"><span class="num">7</span><h2>AI Control Center</h2><span>模型 / 知识库 / API / 运行状态一屏管理</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t">控制中心</div></div>
+      <div class="screen s7">
+        <h1>控制中心</h1>
+        <div class="lead">你的 AI 的总开关。想调什么都在这里,不需要碰命令行。</div>
+        <div class="cc-grid">
+          <div class="cc-card">
+            <div class="ch"><h3>🧩 当前模型</h3><span class="badge blue">均衡版 8B</span></div>
+            <div class="kv"><span>回答质量</span><b>很好</b></div>
+            <div class="kv"><span>响应速度</span><b>快</b></div>
+            <div class="kv"><span>有可用更新</span><b style="color:var(--primary)">升级到新版 →</b></div>
+          </div>
+          <div class="cc-card">
+            <div class="ch"><h3>💚 运行状态</h3><span class="badge green">● 运行中</span></div>
+            <div class="usebars">
+              <div class="meter" style="margin:0"><div class="top"><span>显存占用</span><b>7.2 / 12 GB</b></div><div class="track"><div class="fill" style="width:60%;background:var(--green)"></div></div></div>
+              <div class="meter" style="margin:0"><div class="top"><span>内存占用</span><b>9 / 32 GB</b></div><div class="track"><div class="fill" style="width:28%;background:var(--primary)"></div></div></div>
+            </div>
+            <div class="kv" style="margin-top:10px"><span>已连续运行</span><b>3 天 6 小时</b></div>
+          </div>
+          <div class="cc-card">
+            <div class="ch"><h3>📚 知识库</h3><span class="badge green">12 份 · 已就绪</span></div>
+            <div class="kv"><span>已索引文件</span><b>12</b></div>
+            <div class="kv"><span>处理中</span><b>1</b></div>
+            <div class="kv"><span>自动更新索引</span><div class="switch"></div></div>
+          </div>
+          <div class="cc-card">
+            <div class="ch"><h3>🔌 API 接入</h3><div class="switch"></div></div>
+            <div class="kv"><span>本地地址</span><b>localhost:11434</b></div>
+            <div class="keyrow">🔑 sk-local-••••••••••••3a9f <span style="margin-left:auto;color:var(--primary);cursor:pointer">复制</span></div>
+            <div class="kv" style="margin-top:8px"><span>兼容格式</span><b>OpenAI</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footnote">
+  Build My AI · MVP 产品界面原型 &nbsp;|&nbsp; 设计原则:对用户零技术名词 · 每步有默认最优解 · 失败可恢复 · 私有优先<br>
+  配色与架构图一致(见 docs/10-figma-diagrams.md)· 本原型为高保真静态稿,交互与真实数据在工程实现阶段接入
+</div>
+
+</body>
+</html>

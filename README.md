@@ -39,6 +39,7 @@
 | [08 资源与链接](docs/08-resources.md) | 美国生态的模型源、运行时、云 GPU、合规资源 |
 | [09 MVP 工程任务清单](docs/09-mvp-engineering-tasks.md) | 五个里程碑、可验收的任务拆解、执行顺序 |
 | [10 Figma 图表](docs/10-figma-diagrams.md) | 流程图与架构图的 FigJam 链接及源码 |
+| [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 
 ## 一句话定位
 
