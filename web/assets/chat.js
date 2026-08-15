@@ -194,14 +194,71 @@
     }, 600);
   }
 
-  function ask(en, zh) { fastComplete(); addUser(en, zh || en); var entry = match(en) || (zh ? match(zh) : null); addAI(entry); }
+  // live-streamed answer bubble for a real local model (used by local-llm.js).
+  // Same row structure/actions as addAI; onCancel is invoked if the user
+  // interrupts (new question / conversation switch) so the caller can abort.
+  function addAILive(onCancel) {
+    fastComplete();
+    var row = document.createElement('div'); row.className = 'chat-msg a';
+    var av = document.createElement('div'); av.className = 'av'; av.textContent = '◆';
+    var col = document.createElement('div');
+    var typing = document.createElement('div'); typing.className = 'chat-typing'; typing.innerHTML = '<span></span><span></span><span></span>';
+    var bub = document.createElement('div'); bub.className = 'chat-bub';
+    var actions = buildActions(bub); actions.style.display = 'none';
+    col.appendChild(typing); col.appendChild(bub); col.appendChild(actions);
+    row.appendChild(av); row.appendChild(col); inner.appendChild(row); toBottom();
+    var text = '', ended = false, enMsg = null, zhMsg = null, isFail = false;
+    function finalize() {
+      if (ended) return; ended = true;
+      if (typing.parentNode) typing.remove();
+      bub.classList.remove('typing-caret');
+      // live answers are single-language (attrs equal); failure notices keep
+      // separate en/zh so the language toggle re-translates them
+      bub.setAttribute('data-en-msg', enMsg !== null ? enMsg : text);
+      bub.setAttribute('data-zh-msg', zhMsg !== null ? zhMsg : text);
+      bub.textContent = bub.getAttribute('data-' + lang() + '-msg');
+      if (isFail) actions.remove(); else actions.style.display = '';
+      if (activeStream === s) activeStream = null;
+      toBottom();
+    }
+    var s = { delay: null, iv: null, done: function () { if (onCancel) onCancel(); finalize(); } };
+    activeStream = s;
+    return {
+      append: function (chunk) {
+        if (ended) return;
+        text += chunk;
+        if (typing.parentNode) { typing.remove(); bub.classList.add('typing-caret'); }
+        bub.textContent = text; toBottom();
+      },
+      done: finalize,
+      fail: function (en, zh) { if (!text) { isFail = true; enMsg = en; zhMsg = zh; text = t(en, zh); } finalize(); }
+    };
+  }
+
+  function ask(en, zh) {
+    fastComplete(); addUser(en, zh || en);
+    // a connected local model takes priority over the canned demo answers;
+    // send the variant matching the displayed language so replies match the UI
+    if (window.LocalLLM && window.LocalLLM.ready()) {
+      window.LocalLLM.ask(String(lang() === 'zh' && zh ? zh : en));
+      return;
+    }
+    var entry = match(en) || (zh ? match(zh) : null); addAI(entry);
+  }
 
   // ---- conversations ----
-  function renderGreeting() { if (!inner) return; fastComplete(); inner.innerHTML = ''; addAI({ en: GREET.en, zh: GREET.zh }, { instant: true, plain: true }); }
+  function renderGreeting() { if (!inner) return; fastComplete(); inner.innerHTML = ''; document.dispatchEvent(new CustomEvent('chat-reset')); addAI({ en: GREET.en, zh: GREET.zh }, { instant: true, plain: true }); }
   function loadConversation(id) {
     if (!inner) return;
     var seed = CONVERSATIONS[id]; if (!seed) { renderGreeting(); return; }
     fastComplete(); inner.innerHTML = '';
+    // hand the seeded thread to the local-model connector so follow-up
+    // questions carry the visible conversation as context
+    var msgs = seed.map(function (m) {
+      var e = m.r === 'u' ? m : (m.key ? KBBYID[m.key] : m);
+      return { role: m.r === 'u' ? 'user' : 'assistant', content: lang() === 'zh' ? e.zh : e.en };
+    });
+    document.dispatchEvent(new CustomEvent('chat-reset', { detail: { seed: msgs } }));
     seed.forEach(function (m) {
       if (m.r === 'u') addUser(m.en, m.zh);
       else addAI(m.key ? KBBYID[m.key] : { en: m.en, zh: m.zh, cite: m.cite }, { instant: true });
@@ -309,6 +366,9 @@
     document.querySelectorAll('.chat-side .c').forEach(function (x) { x.classList.remove('on'); });
     setCount(); renderFiles(); renderGreeting();
   });
+
+  // minimal surface for the optional local-model connector (local-llm.js)
+  window.__chatLive = { addAILive: addAILive, toast: toast };
 
   // language switch: re-render dynamic message text (i18n handles [data-en] nodes)
   document.addEventListener('langchange', function () {

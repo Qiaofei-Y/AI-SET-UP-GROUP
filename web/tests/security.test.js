@@ -46,8 +46,27 @@ ok('no document.write', !/document\.write/.test(jsAll));
 ok('no string-argument setTimeout/setInterval', !/set(Timeout|Interval)\s*\(\s*['"`]/.test(jsAll));
 ok('no .outerHTML assignment', !/\.outerHTML\s*=/.test(jsAll));
 ok('no insertAdjacentHTML', !/insertAdjacentHTML/.test(jsAll));
-// network egress: a static demo makes no external calls
-ok('no fetch/XHR/WebSocket egress', !/\bfetch\s*\(|XMLHttpRequest|new\s+WebSocket/.test(jsAll));
+// network egress: only the local-model connector may talk to the network, and
+// only to 127.0.0.1. The exemption is by EXACT path (not basename) so a rogue
+// second "local-llm.js" elsewhere would still be caught by the global check.
+const EGRESS_PAT = /\bfetch\s*\(|XMLHttpRequest|new\s+WebSocket|new\s+EventSource|sendBeacon|new\s+Image\s*\(|\bimport\s*\(/;
+const CONNECTOR_PATH = path.join(WEB, 'assets', 'local-llm.js');
+const connectorCopies = jsFiles.filter((f) => path.basename(f) === 'local-llm.js');
+ok('exactly one local-llm.js, at assets/', connectorCopies.length === 1 && connectorCopies[0] === CONNECTOR_PATH);
+const jsNoConnector = jsFiles.filter((f) => f !== CONNECTOR_PATH).map(read).join('\n');
+ok('no network egress outside assets/local-llm.js (fetch/XHR/WS/SSE/beacon/Image/import)',
+  !EGRESS_PAT.test(jsNoConnector));
+const conn = read(CONNECTOR_PATH);
+ok('local-llm.js: BASE pinned to 127.0.0.1 and assigned exactly once',
+  /var BASE = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bBASE\s*=/g) || []).length === 1);
+const fetches = conn.match(/\bfetch\s*\(/g) || [];
+const baseFetches = conn.match(/\bfetch\s*\(\s*BASE\s*\+/g) || [];
+ok('local-llm.js: every fetch() targets BASE (' + baseFetches.length + '/' + fetches.length + ')',
+  fetches.length > 0 && fetches.length === baseFetches.length);
+ok('local-llm.js: no other URL literals besides 127.0.0.1', !/https?:\/\/(?!127\.0\.0\.1)/.test(conn));
+ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',
+  !/XMLHttpRequest|new\s+WebSocket|new\s+EventSource|sendBeacon|new\s+Image\s*\(|\bimport\s*\(/.test(conn));
+ok('local-llm.js: no innerHTML use', !/innerHTML/.test(conn));
 
 // ---------- 2. HTML resource surface ----------
 for (const f of htmlFiles) {

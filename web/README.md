@@ -32,12 +32,29 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/hero.js` | 首页 Hero 截图的流式打字动画 | index |
 | `assets/build.js` | 向导逻辑 + 安装包/云端手册生成器 | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
+| `assets/local-llm.js` | 可选:本地模型连接器(只连 `127.0.0.1`,连上后聊天走真模型,连不上自动回退演示) | chat |
 
 原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。
 
 ## 动线
 
 首页(宣传)→ 引导流程(生成安装包/手册)→ 控制中心预览 → 在线对话体验,页面互相链接,形成完整闭环。顶部导航(How it works / Capabilities / Templates / Deploy / Pricing)跳转各自的独立营销页(带当前页高亮),不再是首页锚点滚动。
+
+## 接本地模型(可选)
+
+chat.html 会在加载时探测本机 `http://127.0.0.1:8080`(llm-lab 的 llama.cpp 聊天服务,OpenAI 兼容)。启动方式:
+
+```bash
+ai                                # 启动 llm-lab 模型服务(8080 聊天 / 8081 向量 / 8082 代码)
+cd ~/AI-SET-UP-GROUP/web
+python3 -m http.server 8931       # 必须走 http:// 访问(fetch 不能用 file://)
+open http://localhost:8931/chat.html
+```
+
+- 连上后:右上角芯片显示模型名(如 `Qwen2.5-7B-Instruct · 本地`),回答由本地模型流式生成,支持多轮上下文(最近 12 条)。
+- 没连上:自动回退到内置小样本演示,页面照常可用。
+- 安全边界由测试保证:`local-llm.js` 是全站唯一允许 `fetch` 的文件,且只许指向 `127.0.0.1`(见 `tests/security.test.js`)。
+- 注意:本地模型暂未接入知识库(RAG)——它回答通用问题,不会引用示例文件;接 8081 的 bge-m3 做真 RAG 是下一步。
 
 ## 说明
 
