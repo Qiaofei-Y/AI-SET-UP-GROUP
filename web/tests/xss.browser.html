@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Runtime XSS test: feeds a malicious payload into the real chat.js and
+     asserts it is rendered as inert text (no node injection, no code execution). -->
+<link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/chat.css">
+</head>
+<body>
+<div class="chatpage"><main class="chat-main">
+  <div class="chat-scroll" id="chatScroll"><div class="chat-inner" id="chatInner"></div></div>
+  <div class="chat-inputbar"><form class="chat-form" id="chatForm">
+    <input id="chatInput" autocomplete="off">
+    <button class="snd" type="submit">x</button>
+  </form></div>
+</main></div>
+<pre id="out">running…</pre>
+
+<script>
+  // trip flags if anything tries to execute
+  window.__xss = false;
+  window.alert = function () { window.__xss = true; };
+</script>
+<script src="../assets/i18n.js"></script>
+<script src="../assets/chat.js"></script>
+<script>
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var payload = '"><img src=x onerror="window.__xss=true"><script>window.__xss=true<\/script>';
+      var inp = document.getElementById('chatInput');
+      inp.value = payload;
+      document.getElementById('chatForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      setTimeout(function () {
+        var inner = document.getElementById('chatInner');
+        var injectedNode = inner.querySelector('img, script, svg, iframe');
+        var bub = inner.querySelector('.chat-msg.u .chat-bub');
+        var literal = !!bub && bub.textContent === payload;   // shown verbatim as text
+        var noNode = !injectedNode;                            // no element was parsed from it
+        var noExec = window.__xss === false;                  // nothing ran
+        var passed = literal && noNode && noExec;
+        document.getElementById('out').textContent = passed
+          ? 'XSS-SAFE-PASS'
+          : 'XSS-FAIL literal=' + literal + ' noNode=' + noNode + ' noExec=' + noExec;
+        document.title = passed ? 'XSS-SAFE-PASS' : 'XSS-FAIL';
+      }, 300);
+    }, 100);
+  });
+</script>
+</body>
+</html>
