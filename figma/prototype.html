@@ -160,6 +160,27 @@
   .alt{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surface)}
   .alt h4{font-size:14px;font-weight:600}.alt p{font-size:12px;color:var(--ink-2);margin-top:2px}
 
+  /* ===== S3B 本地/云端 ===== */
+  .s3b h1{font-size:23px;font-weight:600;margin-bottom:6px}
+  .s3b .lead{color:var(--ink-2);font-size:14px;margin-bottom:22px;max-width:640px}
+  .choose{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .opt{border:1.5px solid var(--line);border-radius:14px;padding:22px;position:relative;background:var(--surface);cursor:pointer;transition:.15s}
+  .opt:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(27,26,23,.08)}
+  .opt.rec{border-color:var(--accent);background:linear-gradient(180deg,var(--accent-soft),var(--surface) 55%)}
+  .opt .pick{position:absolute;top:-11px;left:22px;background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;padding:4px 12px;border-radius:999px}
+  .opt .oh{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .opt .oh .ic{font-size:20px}
+  .opt h3{font-size:17px;font-weight:600}
+  .opt .tagline{font-size:12.5px;color:var(--ink-2);margin-bottom:16px}
+  .opt .kv{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--soft)}
+  .opt .kv:last-of-type{border:none}
+  .opt .kv span{color:var(--ink-2)} .opt .kv b{font-weight:500}
+  .opt .cost{font-family:var(--mono);font-size:12px}
+  .opt .foot{margin-top:16px}
+  .opt .btn{width:100%;justify-content:center}
+  .privacy{margin-top:18px;background:var(--clay-soft);border:1px solid #E9D4C3;border-radius:12px;padding:14px 18px;display:flex;gap:12px;align-items:flex-start;font-size:13px;color:#7a4a26}
+  .privacy .ic{flex:none;font-size:16px}
+
   /* ===== S4 安装 ===== */
   .s4{text-align:center;padding:48px 46px}
   .s4 h1{font-size:23px;font-weight:600;margin-bottom:6px}
@@ -252,6 +273,7 @@
     <a href="#s1" data-en="01 NEED" data-zh="01 需求">01 NEED</a>
     <a href="#s2" data-en="02 DEVICE" data-zh="02 设备">02 DEVICE</a>
     <a href="#s3" data-en="03 PLAN" data-zh="03 方案">03 PLAN</a>
+    <a href="#s3b" data-en="03B LOCAL/CLOUD" data-zh="03B 本地/云端">03B LOCAL/CLOUD</a>
     <a href="#s4" data-en="04 INSTALL" data-zh="04 安装">04 INSTALL</a>
     <a href="#s5" data-en="05 CHAT" data-zh="05 对话">05 CHAT</a>
     <a href="#s6" data-en="06 KNOWLEDGE" data-zh="06 知识库">06 KNOWLEDGE</a>
@@ -384,6 +406,44 @@
         <div class="alt">
           <div><h4 data-en="Alternative: Lightweight" data-zh="备选:轻量版">Alternative: Lightweight</h4><p data-en="Less space, faster, slightly lower quality. Good for simple Q&amp;A." data-zh="更省空间、更快,回答质量略低。适合只做简单问答。">Less space, faster, slightly lower quality. Good for simple Q&amp;A.</p></div>
           <button class="btn ghost" data-en="Choose this" data-zh="选这个">Choose this</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3B 本地 vs 云端 ===== -->
+  <div class="frame-wrap" id="s3b">
+    <div class="frame-label"><span class="num">03B</span><h2 data-en="Local or Cloud" data-zh="本地 还是 云端">Local or Cloud</h2><span class="note" data-en="The privacy / cost tradeoff, in plain words" data-zh="隐私与成本的取舍,用人话说清">The privacy / cost tradeoff, in plain words</span></div>
+    <div class="win">
+      <div class="titlebar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><div class="t" data-en="Where should your AI run?" data-zh="你的 AI 在哪运行？">Where should your AI run?</div></div>
+      <div class="screen s3b">
+        <div class="s-eyebrow">LOCAL OR CLOUD</div>
+        <h1 data-en="Where should your AI run?" data-zh="你的 AI 在哪里运行？">Where should your AI run?</h1>
+        <div class="lead" data-en="Your computer can run it locally — private and free to use. Cloud is an option if you'd rather not use your own hardware." data-zh="你的电脑可以本地运行——私密、用起来免费。如果不想动用自己的硬件,也可以选云端。">Your computer can run it locally — private and free to use. Cloud is an option if you'd rather not use your own hardware.</div>
+        <div class="choose">
+          <div class="opt rec">
+            <div class="pick" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
+            <div class="oh"><span class="ic">💻</span><h3 data-en="Run on this computer" data-zh="在这台电脑上运行">Run on this computer</h3></div>
+            <div class="tagline" data-en="Best for private company data" data-zh="最适合私密的公司资料">Best for private company data</div>
+            <div class="kv"><span data-en="Privacy" data-zh="隐私">Privacy</span><b data-en="Highest — data never leaves" data-zh="最高 · 数据不出设备">Highest — data never leaves</b></div>
+            <div class="kv"><span data-en="Ongoing cost" data-zh="长期成本">Ongoing cost</span><b class="cost" data-en="Free after setup" data-zh="装好后免费">Free after setup</b></div>
+            <div class="kv"><span data-en="Works offline" data-zh="离线可用">Works offline</span><b data-en="Yes" data-zh="可以">Yes</b></div>
+            <div class="kv"><span data-en="Needs" data-zh="需要">Needs</span><b data-en="Your NVIDIA GPU (detected ✓)" data-zh="你的 NVIDIA 显卡(已检测 ✓)">Your NVIDIA GPU (detected ✓)</b></div>
+            <div class="foot"><button class="btn primary" data-en="Install locally" data-zh="本地安装">Install locally</button></div>
+          </div>
+          <div class="opt">
+            <div class="oh"><span class="ic">☁️</span><h3 data-en="Run in the cloud" data-zh="在云端运行">Run in the cloud</h3></div>
+            <div class="tagline" data-en="Best if your computer isn't powerful enough" data-zh="最适合电脑性能不够时">Best if your computer isn't powerful enough</div>
+            <div class="kv"><span data-en="Privacy" data-zh="隐私">Privacy</span><b data-en="Data leaves your computer" data-zh="数据会离开这台电脑">Data leaves your computer</b></div>
+            <div class="kv"><span data-en="Ongoing cost" data-zh="长期成本">Ongoing cost</span><b class="cost" data-en="Pay per use (~$X / mo)" data-zh="按用量付费(约 $X/月)">Pay per use (~$X / mo)</b></div>
+            <div class="kv"><span data-en="Works offline" data-zh="离线可用">Works offline</span><b data-en="No — needs internet" data-zh="不行 · 需要联网">No — needs internet</b></div>
+            <div class="kv"><span data-en="Needs" data-zh="需要">Needs</span><b data-en="Nothing — starts instantly" data-zh="无需硬件 · 即刻可用">Nothing — starts instantly</b></div>
+            <div class="foot"><button class="btn ghost" data-en="Use the cloud" data-zh="使用云端">Use the cloud</button></div>
+          </div>
+        </div>
+        <div class="privacy">
+          <span class="ic">🔒</span>
+          <span data-en="For a private company knowledge AI, we recommend local — your files stay on this computer. If you choose cloud, your documents will be sent to a US data center to answer questions." data-zh="对于私密的公司知识 AI,我们推荐本地——你的文件留在这台电脑上。若选择云端,你的文档会被发送到美国数据中心用于回答问题。">For a private company knowledge AI, we recommend local — your files stay on this computer. If you choose cloud, your documents will be sent to a US data center to answer questions.</span>
         </div>
       </div>
     </div>
