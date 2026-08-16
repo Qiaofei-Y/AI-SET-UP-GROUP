@@ -1,4 +1,4 @@
-# web/ — 可用的多页网站
+# frontend/ — 可用的多页网站
 
 真正可运行的网站(不是设计稿)。双击 `index.html` 用浏览器打开即可。
 
@@ -50,7 +50,7 @@ chat.html 加载时自动探测本机 llm-lab,按可用性走三档(详见 [docs
 
 ```bash
 ai                                # 启动 llm-lab(8080 聊天 / 8081 向量 / 8090 门户)
-cd ~/AI-SET-UP-GROUP/web
+cd ~/AI-SET-UP-GROUP/frontend
 python3 -m http.server 8931       # 必须走 http:// 访问(fetch 不能用 file://)
 open http://localhost:8931/chat.html
 ```

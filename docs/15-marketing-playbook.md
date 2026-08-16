@@ -9,7 +9,7 @@
 > - 🇨🇳 **中文说明区**:告诉你怎么用、为什么这么写、注意什么。
 > - 所有数字(CAC、转化率、预算)均为**假设值**,标注 `(假设)`,上线后用真实数据替换。
 >
-> 交叉引用:商业计划与 GTM 见 [`docs/12-business-plan.md`](./12-business-plan.md)、定价与套餐见 [`docs/05-business-model.md`](./05-business-model.md);落地页与演示见 [`web/`](../web/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`)。
+> 交叉引用:商业计划与 GTM 见 [`docs/12-business-plan.md`](./12-business-plan.md)、定价与套餐见 [`docs/05-business-model.md`](./05-business-model.md);落地页与演示见 [`frontend/`](../frontend/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`)。
 
 ---
 
@@ -811,7 +811,7 @@ utm_content  = 具体素材,如 short-privacy-01 / rebuttal-comment / ad-group-p
 - 商业模式、单元经济与 Go-to-Market 策略(§7):[`docs/12-business-plan.md`](./12-business-plan.md)
 - 定价与套餐(Pro/Business 功能清单,邮件/广告需对齐):[`docs/05-business-model.md`](./05-business-model.md)
 - AI 架构与模型路由(License 核对、推荐模型依据):[`docs/11-ai-architecture-and-model-routing.md`](./11-ai-architecture-and-model-routing.md)
-- 落地页与演示(投放去向):[`web/index.html`](../web/index.html)、[`web/build.html`](../web/build.html)、[`web/chat.html`](../web/chat.html)(演示机上运行本机 llm-lab 时,由真实本地模型给出带来源引用的回答,可用于录制真实演示素材,见 [`docs/16`](./16-local-ai-web-integration.md))、[`web/dashboard.html`](../web/dashboard.html)、[`web/signup.html`](../web/signup.html)
+- 落地页与演示(投放去向):[`frontend/index.html`](../frontend/index.html)、[`frontend/build.html`](../frontend/build.html)、[`frontend/chat.html`](../frontend/chat.html)(演示机上运行本机 llm-lab 时,由真实本地模型给出带来源引用的回答,可用于录制真实演示素材,见 [`docs/16`](./16-local-ai-web-integration.md))、[`frontend/dashboard.html`](../frontend/dashboard.html)、[`frontend/signup.html`](../frontend/signup.html)
 
 ---
 

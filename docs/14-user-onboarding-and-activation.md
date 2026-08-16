@@ -240,7 +240,7 @@ Build My AI 的价值主张是:**一个完全属于你、读你自己资料、�
 ### 4.2 演示 / 示例模式(没文档也能体验)
 
 - 为"手边没文档"的用户提供**演示模式**:预置一份示例文档(如样例采购合同 / 季度报告),让他体验"拖入 → 提问 → 带来源回答"的完整闭环。
-- 从 dashboard 空状态和首页均可进入;可 **cross-link 到 [web/chat.html](../web/chat.html)** 作为对话演示,让还没安装的人先看到"带来源回答"长什么样。该页在检测到本机模型栈时会由**真实本地模型**回答(优先带来源引用的项目知识库 RAG),检测不到则回退为预置演示,见 [docs/16 · 本地 AI 接入网页](16-local-ai-web-integration.md)。
+- 从 dashboard 空状态和首页均可进入;可 **cross-link 到 [frontend/chat.html](../frontend/chat.html)** 作为对话演示,让还没安装的人先看到"带来源回答"长什么样。该页在检测到本机模型栈时会由**真实本地模型**回答(优先带来源引用的项目知识库 RAG),检测不到则回退为预置演示,见 [docs/16 · 本地 AI 接入网页](16-local-ai-web-integration.md)。
 
 **文案示例**
 
@@ -407,7 +407,7 @@ Beta 期间,以上全部免费。注册免费账号即可解锁——无需信�
 [ 创建免费账号 ]        [ 以后再说 ]
 ```
 
-> 落点:所有升级 CTA 指向 **[web/signup.html](../web/signup.html)**(注册页,已有 "Unlock all features" / "Create free account" / "You're on the beta list!" 文案)。Business 注册需**填写公司名**(见 §8)。
+> 落点:所有升级 CTA 指向 **[frontend/signup.html](../frontend/signup.html)**(注册页,已有 "Unlock all features" / "Create free account" / "You're on the beta list!" 文案)。Business 注册需**填写公司名**(见 §8)。
 
 ### 7.3 升级引导的禁忌
 
@@ -556,8 +556,8 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 - [docs/13 · 测试、实验与假设验证](13-validation-testing-and-experiments.md) —— §6 埋点方案:事件字典与匿名口径(本文件的埋点以其为准)
 - [docs/05 · 商业模式](05-business-model.md) —— Free / Pro / Business 定价与 Beta 免费策略
 - 网站页面:
-  - [web/index.html](../web/index.html) —— 营销首页 / 落地
-  - [web/build.html](../web/build.html) —— 引导向导(需求→设备→推荐→本地/云端→生成)
-  - [web/chat.html](../web/chat.html) —— 带来源引用的对话演示(可用作没文档用户的体验入口;检测到本机 llm-lab 时接入真实本地模型,否则回退预置演示,见 [docs/16](16-local-ai-web-integration.md))
-  - [web/dashboard.html](../web/dashboard.html) —— 控制中心(空状态 + 新手清单 + 留存进度落点)
-  - [web/signup.html](../web/signup.html) —— Pro/Business 注册(升级 CTA 落点;Business 填公司名)
+  - [frontend/index.html](../frontend/index.html) —— 营销首页 / 落地
+  - [frontend/build.html](../frontend/build.html) —— 引导向导(需求→设备→推荐→本地/云端→生成)
+  - [frontend/chat.html](../frontend/chat.html) —— 带来源引用的对话演示(可用作没文档用户的体验入口;检测到本机 llm-lab 时接入真实本地模型,否则回退预置演示,见 [docs/16](16-local-ai-web-integration.md))
+  - [frontend/dashboard.html](../frontend/dashboard.html) —— 控制中心(空状态 + 新手清单 + 留存进度落点)
+  - [frontend/signup.html](../frontend/signup.html) —— Pro/Business 注册(升级 CTA 落点;Business 填公司名)

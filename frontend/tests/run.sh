@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run all local security tests. Usage: bash web/tests/run.sh
+# Run all local security tests. Usage: bash frontend/tests/run.sh
 set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"
 

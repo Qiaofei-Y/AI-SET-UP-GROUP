@@ -46,7 +46,8 @@
 | [15 营销手册](docs/15-marketing-playbook.md) | 各渠道广告 + 教程 + 可直接用的英文脚本文案 |
 | [16 本地 AI 接入网页](docs/16-local-ai-web-integration.md) | chat.html ↔ llm-lab:本地 RAG + 流式聊天的完整实现说明 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
-| [web/ 可用网站](web/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
+| [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
+| [backend/ 后端演进计划](backend/) | 什么阶段需要什么后端、SaaS 选型与自建边界、接口草案、隐私红线 |
 
 ## 一句话定位
 

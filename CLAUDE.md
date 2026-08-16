@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的纯前端演示站**,没有真实后端:
 
 - `docs/01–16`:愿景、MVP、商业、营销等全套产品文档(编号即阅读顺序,`README.md` 有索引)。
-- `web/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
+- `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
+- `backend/`:目前只有演进计划(`backend/README.md`)——什么阶段需要什么后端、哪些用美国第三方 SaaS 顶、哪些必须自建(护城河)。**未经计划确认不要在这里写服务代码。**
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
 硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
@@ -16,11 +17,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
-bash web/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node web/tests/security.test.js    # 只跑静态+单元部分(83 项)
+bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(83 项)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
-cd web && python3 -m http.server 8931
+cd frontend && python3 -m http.server 8931
 open http://localhost:8931/chat.html
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
@@ -31,9 +32,9 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 
 ## 安全边界(由测试强制,改代码前必读)
 
-`web/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
+`frontend/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
-- **全站只有 `web/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
+- **全站只有 `frontend/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
 - 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以三者之一开头;不允许出现其他 URL 字面量。
 - `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
@@ -43,7 +44,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 
 ## 架构要点
 
-**代码分割约定**(`web/README.md` 有完整表):HTML 只放内容;共享样式进 `assets/base.css`,页面专属样式一页一个 CSS;JS 按功能拆文件。加新页面 = `base.css` + 一个页面 CSS。
+**代码分割约定**(`frontend/README.md` 有完整表):HTML 只放内容;共享样式进 `assets/base.css`,页面专属样式一页一个 CSS;JS 按功能拆文件。加新页面 = `base.css` + 一个页面 CSS。
 
 **双语 i18n**(`assets/i18n.js`):HTML 元素用 `data-en`/`data-zh` 属性(占位符用 `data-en-ph`/`data-zh-ph`),JS 生成的字符串用全局 `t(en, zh)`;当前语言在 `window.__lang`,切换派发 `langchange` 事件。**任何新增的可见文案都必须成对提供中英文。**
 

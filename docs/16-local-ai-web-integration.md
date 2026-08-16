@@ -1,6 +1,6 @@
 # 16 · 本地 AI 接入网页:chat.html ↔ llm-lab 实现说明
 
-> 一句话:演示站的聊天页(`web/chat.html`)现在会自动探测本机 llm-lab 模型栈——探测到就把真实模型接进聊天 UI(优先走带出处的项目知识库 RAG),探测不到就自动回退为纯静态演示。整个链路没有任何数据离开这台电脑。
+> 一句话:演示站的聊天页(`frontend/chat.html`)现在会自动探测本机 llm-lab 模型栈——探测到就把真实模型接进聊天 UI(优先走带出处的项目知识库 RAG),探测不到就自动回退为纯静态演示。整个链路没有任何数据离开这台电脑。
 
 ## 1. 架构总览
 
@@ -30,7 +30,7 @@
 
 ```bash
 ai                                # llm-lab:8080 聊天 / 8081 向量 / 8082 代码 / 8090 门户
-cd ~/AI-SET-UP-GROUP/web
+cd ~/AI-SET-UP-GROUP/frontend
 python3 -m http.server 8931       # 必须走 http://(file:// 下浏览器禁止 fetch)
 open http://localhost:8931/chat.html
 ```
@@ -42,7 +42,7 @@ open http://localhost:8931/chat.html
 - 文档改动后增量更新:`ai ingest ~/AI-SET-UP-GROUP`;彻底重建:`ai reindex ~/AI-SET-UP-GROUP`。
 - 换回旧语料:`ai reindex knowledge-base`(或把备份文件复制回 `rag/index-pro.json`)。
 
-## 4. 连接器(web/assets/local-llm.js)关键实现
+## 4. 连接器(frontend/assets/local-llm.js)关键实现
 
 **探测与降级**:`DOMContentLoaded` 时 GET `BASE/v1/models`(1.5s 超时)拿模型名,再探 `PORTAL/api/health` 决定 RAG 模式;任一失败进入下一档,并安排 15 秒重探。UI(右上角模型芯片、页头标题、底部提示、建议问题)随模式切换,且都带 `data-en/data-zh` 双语属性。
 
@@ -55,8 +55,8 @@ open http://localhost:8931/chat.html
 
 **引用渲染**:`/api/rag` 的 `sources[{file, section}]` 经 `chat.js` 的 `addCite()` 渲染为与演示一致的引用卡;全部走 `textContent`,模型输出没有任何 HTML 注入路径。
 
-**安全边界(由测试强制)**:`web/tests/security.test.js`(83 项)规定——
-- 全站只有 `web/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
+**安全边界(由测试强制)**:`frontend/tests/security.test.js`(83 项)规定——
+- 全站只有 `frontend/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
 - 其余文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 即测试失败;
 - 连接器内 `BASE`/`PORTAL`/`ADVISOR` 必须各只赋值一次、指向 `127.0.0.1`,每个 `fetch` 必须以三者之一开头,不允许出现其他 URL 字面量。
 

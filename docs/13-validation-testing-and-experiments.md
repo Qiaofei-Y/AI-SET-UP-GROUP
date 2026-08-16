@@ -34,13 +34,13 @@
 
 | 层 | 名称 | 回答的问题 | 现状 | 主要产出 |
 |----|------|-----------|------|---------|
-| ① | 代码 / 软件测试 | 代码正确吗?安全吗?改动会回归吗? | 已有 `web/tests`(静态扫描 + `esc()` 单元测试 + 无头浏览器 XSS) | 绿灯 / 红灯,退出码,可进 CI |
+| ① | 代码 / 软件测试 | 代码正确吗?安全吗?改动会回归吗? | 已有 `frontend/tests`(静态扫描 + `esc()` 单元测试 + 无头浏览器 XSS) | 绿灯 / 红灯,退出码,可进 CI |
 | ② | 部署测试 | 在真实硬件上装得上、跑得动吗? | 待建:硬件矩阵 | 安装成功率矩阵 + 失败原因分布 |
 | ③ | 用户 / 可用性测试 | 非技术用户能独立跑通吗?觉得有用吗? | 待建:可用性测试 + Beta | 完成率、SUS、卡点清单 |
 
 ### 1.1 第 ① 层:代码 / 软件测试
 
-**已有基础(不要重复造):** `bash web/tests/run.sh`
+**已有基础(不要重复造):** `bash frontend/tests/run.sh`
 
 - `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(83 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
 - `xss.browser.html`:无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当纯文本渲染。
@@ -55,7 +55,7 @@
 | 端到端(E2E) | 引导向导五步全流程能生成正确安装包 / 云端手册;聊天页能出带来源回答 | Playwright(无头) | 每晚 nightly + 里程碑 |
 | 合约测试(contract) | 本地 API 的 OpenAI 兼容格式(请求 / 响应结构) | schema 断言 | API 改动时 |
 
-> **原则**:能用现有零依赖脚本覆盖的,就别引重框架;`web/tests` 的「小依赖面」是资产,别轻易破坏。
+> **原则**:能用现有零依赖脚本覆盖的,就别引重框架;`frontend/tests` 的「小依赖面」是资产,别轻易破坏。
 
 ### 1.2 第 ② 层:部署测试(安装成功率硬件矩阵)
 
@@ -347,7 +347,7 @@
 ### 6.1 三条铁律
 1. **匿名**:只用随机 `anon_id`,不绑真实身份;Free 用户免注册。
 2. **可关闭**:设置里一键关闭遥测,默认可见、可撤。
-3. **绝不含文档内容**:永远不上传用户文档的任何原文、片段、文件名、问题原文、答案原文。只上传**结构化的元数据**(档位、耗时、成败、原因码、布尔信号)。这条呼应 `web/tests` 里「不把自由文本读进内容」的既有安全约束。
+3. **绝不含文档内容**:永远不上传用户文档的任何原文、片段、文件名、问题原文、答案原文。只上传**结构化的元数据**(档位、耗时、成败、原因码、布尔信号)。这条呼应 `frontend/tests` 里「不把自由文本读进内容」的既有安全约束。
 
 ### 6.2 事件清单(copy-paste 表)
 
@@ -525,7 +525,7 @@ Build My AI · 周实验会议  |  日期:____  |  主持:____
 
 **目标**:让「不回归」变成自动的,而不是靠人记得。
 
-### 9.1 把 `web/tests` 纳入 pre-commit / CI
+### 9.1 把 `frontend/tests` 纳入 pre-commit / CI
 
 **pre-commit(本地,提交即挡):** 在 `.git/hooks/pre-commit` 或用 husky/pre-commit 框架:
 
@@ -533,8 +533,8 @@ Build My AI · 周实验会议  |  日期:____  |  主持:____
 #!/usr/bin/env bash
 # .git/hooks/pre-commit  —— 提交前跑本地安全测试
 set -e
-echo "Running web/tests before commit..."
-bash web/tests/run.sh
+echo "Running frontend/tests before commit..."
+bash frontend/tests/run.sh
 ```
 
 **CI(GitHub Actions 示例):** `.github/workflows/tests.yml`
@@ -550,7 +550,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - name: Security + unit tests
-        run: bash web/tests/run.sh   # 退出码非 0 即让 CI 变红
+        run: bash frontend/tests/run.sh   # 退出码非 0 即让 CI 变红
 ```
 
 > `run.sh` 在没有 Chrome 的 CI 上会自动跳过浏览器 XSS 测试(转义仍由单元测试覆盖);要跑完整套就在 CI 里装 Chromium。
@@ -559,7 +559,7 @@ jobs:
 
 | 门槛 | 要求 |
 |------|------|
-| 安全测试 | `bash web/tests/run.sh` 全绿(含 XSS / 危险 API / 无远程资源 / 无硬编码密钥) |
+| 安全测试 | `bash frontend/tests/run.sh` 全绿(含 XSS / 危险 API / 无远程资源 / 无硬编码密钥) |
 | 埋点净化 | 新增/改动的埋点事件必须只含白名单元数据字段,**无自由文本 / 无文档内容**(加断言) |
 | 单元 / 集成 | 触及的模块有对应测试且通过 |
 | 无术语回归 | 面向用户的新文案不引入未解释的 AI 术语(评审 checklist) |
@@ -599,7 +599,7 @@ jobs:
 - [09 · MVP 工程任务清单](09-mvp-engineering-tasks.md) —— 测试与埋点对应的工程落点
 - [15 · Marketing Playbook](15-marketing-playbook.md) —— A/B 与渠道实验的下游(增长 / GTM)
 - [16 · 本地 AI 接入网页](16-local-ai-web-integration.md) —— chat.html 可选接入本机 llm-lab 模型栈的实现与安全边界(网络边界断言的来源)
-- [`web/tests/`](../web/tests/) —— 现有本地安全测试(`bash web/tests/run.sh`)
+- [`frontend/tests/`](../frontend/tests/) —— 现有本地安全测试(`bash frontend/tests/run.sh`)
 
 ---
 

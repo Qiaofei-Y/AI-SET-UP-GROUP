@@ -1,18 +1,18 @@
-# web/tests — 本地安全测试
+# frontend/tests — 本地安全测试
 
 确保前端代码没有注入类漏洞,并在以后改动时自动抓回归。
 
 ## 运行
 
 ```bash
-bash web/tests/run.sh
+bash frontend/tests/run.sh
 ```
 
 - 只需 **Node**(静态 + 单元测试,零依赖)。
 - 若装了 Chrome/Chromium,会额外跑一个**真实浏览器 XSS 攻击测试**;没有则自动跳过(转义已由单元测试覆盖)。
 - 任一测试失败,退出码为 `1`(可直接用于 CI / pre-commit)。
 
-也可单独跑:`node web/tests/security.test.js`
+也可单独跑:`node frontend/tests/security.test.js`
 
 ## 覆盖什么
 

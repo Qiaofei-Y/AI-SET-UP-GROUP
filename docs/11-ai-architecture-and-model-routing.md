@@ -43,7 +43,7 @@
 
 **隐私硬约束**:公司知识 AI 等场景**默认必须本地**("私有"就是卖点)。云端必须是**用户显式选择**,并明确提示"数据会离开这台电脑"。
 
-> 参考实现:"本地 RAG → 本地模型 → 带来源引用回答"这条链路,已在演示站聊天页(`web/chat.html`)用本机 llm-lab 模型栈(llama.cpp + bge-m3,全程数据不出本机)跑通,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md)。
+> 参考实现:"本地 RAG → 本地模型 → 带来源引用回答"这条链路,已在演示站聊天页(`frontend/chat.html`)用本机 llm-lab 模型栈(llama.cpp + bge-m3,全程数据不出本机)跑通,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md)。
 
 ## 对商业模式的意义
 

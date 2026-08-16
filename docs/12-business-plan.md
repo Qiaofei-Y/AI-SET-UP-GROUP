@@ -134,7 +134,7 @@
 | AI 架构与模型路由 | [11 AI 架构与模型路由](11-ai-architecture-and-model-routing.md) |
 | 营销打法(待建) | [15 营销 Playbook](15-marketing-playbook.md) |
 | 本地 AI 接入网页(演示聊天页 ↔ 本机模型) | [16 本地 AI 接入网页](16-local-ai-web-integration.md) |
-| 可运行网站 | [`web/index.html`](../web/index.html) · [`web/build.html`](../web/build.html) · [`web/chat.html`](../web/chat.html)(可选接入本机模型,见 [16](16-local-ai-web-integration.md)) · [`web/dashboard.html`](../web/dashboard.html) · [`web/signup.html`](../web/signup.html) |
+| 可运行网站 | [`frontend/index.html`](../frontend/index.html) · [`frontend/build.html`](../frontend/build.html) · [`frontend/chat.html`](../frontend/chat.html)(可选接入本机模型,见 [16](16-local-ai-web-integration.md)) · [`frontend/dashboard.html`](../frontend/dashboard.html) · [`frontend/signup.html`](../frontend/signup.html) |
 | 设计原型 | [`figma/prototype.html`](../figma/prototype.html) · [`figma/design-system.md`](../figma/design-system.md) |
 
 ---
@@ -445,4 +445,4 @@ flowchart LR
 
 [01 愿景](01-vision.md) · [02 产品概览](02-product-overview.md) · [03 核心模块](03-core-modules.md) · [04 MVP 范围](04-mvp.md) · [05 商业模式](05-business-model.md) · [06 护城河](06-moat.md) · [07 路线图](07-roadmap.md) · [08 资源与链接](08-resources.md) · [09 MVP 工程任务清单](09-mvp-engineering-tasks.md) · [10 Figma 图表](10-figma-diagrams.md) · [11 AI 架构与模型路由](11-ai-architecture-and-model-routing.md) · [15 营销 Playbook](15-marketing-playbook.md)
 
-网站与原型:[`web/`](../web/) · [`figma/prototype.html`](../figma/prototype.html)
+网站与原型:[`frontend/`](../frontend/) · [`figma/prototype.html`](../figma/prototype.html)
