@@ -1,0 +1,53 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 这个仓库是什么
+
+「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的纯前端演示站**,没有真实后端:
+
+- `docs/01–16`:愿景、MVP、商业、营销等全套产品文档(编号即阅读顺序,`README.md` 有索引)。
+- `web/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
+- `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
+
+硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
+
+## 常用命令
+
+```bash
+# 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
+bash web/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
+node web/tests/security.test.js    # 只跑静态+单元部分(82 项)
+
+# 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
+cd web && python3 -m http.server 8931
+open http://localhost:8931/chat.html
+
+# 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
+ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户
+ai ingest ~/AI-SET-UP-GROUP        # 文档改动后增量更新 RAG 索引
+ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
+```
+
+## 安全边界(由测试强制,改代码前必读)
+
+`web/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
+
+- **全站只有 `web/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以二者开头;不允许出现其他 URL 字面量。
+- 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
+- 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。
+
+新增页面或 JS 时,先想清楚是否触碰以上任何一条;需要放宽时同步改测试并说明理由。
+
+## 架构要点
+
+**代码分割约定**(`web/README.md` 有完整表):HTML 只放内容;共享样式进 `assets/base.css`,页面专属样式一页一个 CSS;JS 按功能拆文件。加新页面 = `base.css` + 一个页面 CSS。
+
+**双语 i18n**(`assets/i18n.js`):HTML 元素用 `data-en`/`data-zh` 属性(占位符用 `data-en-ph`/`data-zh-ph`),JS 生成的字符串用全局 `t(en, zh)`;当前语言在 `window.__lang`,切换派发 `langchange` 事件。**任何新增的可见文案都必须成对提供中英文。**
+
+**聊天页三档模式**(`chat.html`,详见 `docs/16`):`chat.js` 负责 UI 并暴露 `__chatLive` 接口;`local-llm.js` 加载时探测本机 llm-lab,按可用性走阶梯——① 项目 RAG(8080+8090 都在,回答带引用卡,检索不到自动降级)→ ② 通用流式聊天(仅 8080,SSE,最近 12 条上下文)→ ③ 静态演示(内置小样本答案)。断线每 15 秒重探。
+
+**打断语义是连接器最易错的部分**:每个请求持独立 `AbortController` + 全局代数计数器 `gen`,过期请求的一切异步收尾都要先判 stale 才能碰共享状态;用户打断时同步提交半截回答进历史、没流出内容就删掉悬空 user 轮,保证 messages 永远是干净交替。改 `local-llm.js` 的请求生命周期前先读 `docs/16-local-ai-web-integration.md` 第 4 节。
+
+**文档与演示互为镜像**:网站的文案/流程/定价要和 `docs/`(尤其 02、04、05、11)一致,界面风格与 `figma/design-system.md` 一致;改一侧时检查另一侧是否需要同步。RAG 演示的语料就是本仓库的 `.md` 文档,文档改后记得 `ai ingest`。
