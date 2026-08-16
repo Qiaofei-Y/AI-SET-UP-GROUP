@@ -119,14 +119,18 @@
     };
     var up = document.createElement('button'); up.type = 'button'; up.className = 'iconbtn'; up.textContent = '👍';
     var down = document.createElement('button'); down.type = 'button'; down.className = 'iconbtn'; down.textContent = '👎';
+    // rating events carry ONLY up/down — never message text, never the
+    // teach-box correction (local-llm.js may forward them to the local API)
     up.onclick = function () {
       if (up.classList.contains('on')) { up.classList.remove('on'); return; }
       up.classList.add('on'); down.classList.remove('on');
+      document.dispatchEvent(new CustomEvent('chat-feedback', { detail: { rating: 'up' } }));
       toast(t('Thanks — logged as a good answer.', '已记录为满意回答。'));
     };
     down.onclick = function () {
       if (down.classList.contains('on')) { down.classList.remove('on'); return; }
       down.classList.add('on'); up.classList.remove('on');
+      document.dispatchEvent(new CustomEvent('chat-feedback', { detail: { rating: 'down' } }));
       openTeach(wrap.parentElement);
     };
     wrap.appendChild(copy); wrap.appendChild(up); wrap.appendChild(down);

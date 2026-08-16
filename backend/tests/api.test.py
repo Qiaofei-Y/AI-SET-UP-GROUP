@@ -154,13 +154,19 @@ class ApiTest(unittest.TestCase):
             self.assertEqual((s, j['error']), (400, want))
 
     def test_feedback_rejects_content(self):
-        s, j, _ = call(self.port, '/v1/feedback',
-                       {'rating': 'up', 'template': 'company', 'model': 'llama-3.1-8b-instruct'})
-        self.assertEqual(s, 200)
-        s, j, _ = call(self.port, '/v1/feedback',
-                       {'rating': 'up', 'template': 'company',
-                        'model': 'llama-3.1-8b-instruct', 'comment': 'the answer said...'})
-        self.assertEqual((s, j['error']), (400, 'unknown_field:comment'))
+        # any shape-limited model id is fine (chat may run models outside the registry)
+        for model in ('llama-3.1-8b-instruct', 'Qwen2.5-7B-Instruct'):
+            s, j, _ = call(self.port, '/v1/feedback',
+                           {'rating': 'up', 'template': 'company', 'model': model})
+            self.assertEqual(s, 200, model)
+        # but free text can't hide in any field
+        for bad, want in (({'rating': 'up', 'template': 'company',
+                            'model': 'llama-3.1-8b-instruct', 'comment': 'the answer said...'},
+                           'unknown_field:comment'),
+                          ({'rating': 'up', 'template': 'company',
+                            'model': 'my secret file notes'}, 'invalid_field:model')):
+            s, j, _ = call(self.port, '/v1/feedback', bad)
+            self.assertEqual((s, j['error']), (400, want))
 
     # ---- transport hardening ----
     def test_cors_localhost_only(self):

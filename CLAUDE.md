@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 这个仓库是什么
 
-「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的纯前端演示站**,没有真实后端:
+「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的演示站 + 零依赖后端 API v0**(前端离线可独立运行,后端在线时自动增强):
 
 - `docs/01–19`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)。
 - `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
-- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback 五端点,隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘)。前端尚未接入(P1 顺序使然)。
+- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback 五端点,隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘)。**前端已接入**(API 在线时向导方案走 `/v1/advise`,聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端)。
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
 硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(83 项)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(84 项)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931
@@ -40,7 +40,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 `frontend/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
 - **全站只有 `frontend/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
-- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以三者之一开头;不允许出现其他 URL 字面量。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)/`API`(8940,自建后端)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以四者之一开头;不允许出现其他 URL 字面量。
 - `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
 - 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。

@@ -63,8 +63,39 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // Backend API plan, fetched via the planProvider hook that local-llm.js (the
+  // only network-capable file) registers. apiPlan holds the /v1/advise answer
+  // for the current render; planGen invalidates stale responses when the user
+  // switches mode or navigates back and forth.
+  var apiPlan = null, planGen = 0;
+  function planFromApi(j) {
+    var m = j.model;
+    return {
+      title: t('Private Knowledge Assistant · Balanced', '私有知识助手 · 均衡版'),
+      model: { name: m.name, quant: m.quant, repo: m.repo, file: m.file, size: '~' + m.size_gb + ' GB' },
+      rag: j.rag, space: '~' + m.size_gb + ' GB',
+      quality: m.quality, speed: m.speed,
+      spacePct: STATE.mode === 'cloud' ? 30 : Math.min(70, Math.round((m.size_gb / 24) * 100)),
+      fromApi: true
+    };
+  }
   function renderPlan() {
-    var p = buildPlan();
+    var myGen = ++planGen;
+    apiPlan = null;
+    drawPlan(buildPlan());
+    var provider = window.__buildAdvisor && window.__buildAdvisor.planProvider;
+    if (provider) {
+      provider({
+        template: STATE.need, mode: STATE.mode,
+        hardware: { gpu: STATE.gpu, vram_gb: Number(STATE.vram), ram_gb: Number(STATE.ram) }
+      }, function (api) {
+        if (myGen !== planGen || !api) return; // stale, or API down — the rule plan stands
+        apiPlan = api;
+        drawPlan(planFromApi(api));
+      });
+    }
+  }
+  function drawPlan(p) {
     var isHybrid = STATE.mode === 'hybrid';
     var localNoGpu = STATE.gpu === 'none' && STATE.mode !== 'cloud'; // local and hybrid both have an on-device half
     var runsWhere = STATE.mode === 'cloud' ? t('runs in the cloud', '云端运行')
@@ -73,7 +104,9 @@
     $('planBox').innerHTML =
       '<span class="pick">✦ ' + t('BEST MATCH', '最佳匹配') + '</span>' +
       '<h3>' + p.title + '</h3>' +
-      '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) + ' · ' + runsWhere + '</div>' +
+      '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) + ' · ' + runsWhere +
+        (p.fromApi ? ' · <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">' +
+          t('✦ live · model registry @ :8940', '✦ 实时推荐 · 模型库 @ :8940') + '</span>' : '') + '</div>' +
       meter(t('Answer quality', '回答质量'), t('Very good', '很好'), p.quality, 'var(--accent)') +
       meter(t('Response speed', '响应速度'), t('Fast', '快'), p.speed, 'var(--info)') +
       meter(t('Space used', '占用空间'), p.space, p.spacePct, 'var(--clay)') +
@@ -232,7 +265,8 @@
   }
 
   function renderOutput() {
-    var p = buildPlan();
+    // generated files must match what the plan step showed: prefer the API plan
+    var p = apiPlan ? planFromApi(apiPlan) : buildPlan();
     var isLocal = STATE.mode === 'local', isHybrid = STATE.mode === 'hybrid';
     $('outTitle').textContent = isLocal ? t('Your local installer is ready', '你的本地安装包已生成')
                               : isHybrid ? t('Your hybrid setup files are ready', '你的混合部署文件已生成')

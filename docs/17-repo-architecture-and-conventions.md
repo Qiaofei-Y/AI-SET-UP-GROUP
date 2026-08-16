@@ -68,6 +68,8 @@ AI-SET-UP-GROUP/
 | `chat-reset` 事件(detail.seed) | chat.js | local-llm.js | 切会话时重置对话历史 |
 | `window.LocalLLM`(`ready()`、`ask(q)`) | local-llm.js | chat.js | 聊天页询问真实模型 |
 | `window.__buildAdvisor`(`needs`、`select(slug, via)`) | build.js | local-llm.js | 本地 AI 分类结果选中模板卡 |
+| `window.__buildAdvisor.planProvider(req, cb)` | local-llm.js 注册 | build.js 调用 | 方案步骤向后端 `/v1/advise` 要实时推荐 |
+| `chat-feedback` 事件(detail.rating) | chat.js | local-llm.js | 👍/👎 转发到后端 `/v1/feedback`(仅评分,无内容) |
 
 约定:钩子全部挂 window 或 document 事件,**不互相 import**(没有模块系统);使用方必须容忍钩子不存在(页面可能没加载对方文件)。
 

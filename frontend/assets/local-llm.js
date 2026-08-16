@@ -5,6 +5,9 @@
 //   ADVISOR :8092  RESERVED — run your own OpenAI-compatible server here and the
 //                  build wizard's need-classifier switches to it automatically
 //                  (until then it falls back to the chat model on :8080)
+//   API     :8940  Build My AI backend v0 — /v1/advise powers the wizard's plan
+//                  step when up; chat 👍/👎 ratings post to /v1/feedback
+//                  (rating + template + model id only, never any content)
 // chat.html ladder: RAG (portal up) > general chat (8080 up) > canned demo.
 // build.html: the need box is classified into a template slug by ADVISOR/BASE.
 // All model output is rendered via textContent — no HTML injection path.
@@ -12,6 +15,7 @@
   var BASE = 'http://127.0.0.1:8080';
   var PORTAL = 'http://127.0.0.1:8090';
   var ADVISOR = 'http://127.0.0.1:8092';
+  var API = 'http://127.0.0.1:8940';
   var SYSTEM =
     'You are "Build My AI", a private AI assistant running fully on this computer. ' +
     'Be concise and helpful. Always reply in the same language as the user\'s last message ' +
@@ -331,6 +335,7 @@
     var box = document.getElementById('needText');
     if (!box || !window.__buildAdvisor) return; // not the build wizard
     probeAdvisor();
+    window.__buildAdvisor.planProvider = advisePlan; // backend API drives the plan step when up
     box.addEventListener('input', function () {
       clearTimeout(advTimer);
       advTimer = setTimeout(function () { classifyNeed(box.value.trim()); }, 900);
@@ -339,6 +344,45 @@
       if (e.key === 'Enter') { clearTimeout(advTimer); classifyNeed(box.value.trim()); }
     });
   }
+
+  // ---- backend API (:8940): advise for the wizard, feedback from chat ----
+  var apiUp = false;
+  function probeApi() {
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 1500);
+    fetch(API + '/v1/health', { signal: pc.signal })
+      .then(function (r) { clearTimeout(timer); apiUp = r.ok; })
+      .catch(function () { clearTimeout(timer); apiUp = false; });
+  }
+  // called by build.js's renderPlan; req is {template, mode, hardware} — slugs
+  // and numbers only, no free text (build.js never reads the need box)
+  function advisePlan(req, cb) {
+    if (!apiUp) { cb(null); probeApi(); return; } // retry availability for next time
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 4000);
+    fetch(API + '/v1/advise', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: pc.signal,
+      body: JSON.stringify(req)
+    })
+      .then(function (r) { if (!r.ok) throw new Error('bad response'); return r.json(); })
+      .then(function (j) { clearTimeout(timer); cb(j && j.model ? j : null); })
+      .catch(function () { clearTimeout(timer); apiUp = false; cb(null); });
+  }
+  // chat 👍/👎 → /v1/feedback. Structurally content-free: rating + template +
+  // model id only. Sent only when a real local model answered (isReady).
+  document.addEventListener('chat-feedback', function (e) {
+    if (!isReady || !apiUp || !e.detail) return;
+    var modelId = String(modelName).replace(/[^A-Za-z0-9.\-]/g, '-');
+    if (!/^[A-Za-z0-9.\-]{4,64}$/.test(modelId)) return;
+    fetch(API + '/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rating: e.detail.rating === 'up' ? 'up' : 'down',
+                             template: 'company', model: modelId })
+    }).catch(function () { apiUp = false; });
+  });
 
   window.LocalLLM = {
     ready: function () { return isReady && !!window.__chatLive; },
@@ -365,5 +409,5 @@
     if (!modelName) return;
     if (isReady) setChip(); else setChipOffline();
   });
-  document.addEventListener('DOMContentLoaded', function () { probe(); wireBuildPage(); });
+  document.addEventListener('DOMContentLoaded', function () { probe(); probeApi(); wireBuildPage(); });
 })();

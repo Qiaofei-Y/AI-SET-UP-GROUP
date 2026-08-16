@@ -55,7 +55,7 @@ open http://localhost:8931/chat.html
 
 **引用渲染**:`/api/rag` 的 `sources[{file, section}]` 经 `chat.js` 的 `addCite()` 渲染为与演示一致的引用卡;全部走 `textContent`,模型输出没有任何 HTML 注入路径。
 
-**安全边界(由测试强制)**:`frontend/tests/security.test.js`(83 项)规定——
+**安全边界(由测试强制)**:`frontend/tests/security.test.js`(84 项)规定——
 - 全站只有 `frontend/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
 - 其余文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 即测试失败;
 - 连接器内 `BASE`/`PORTAL`/`ADVISOR` 必须各只赋值一次、指向 `127.0.0.1`,每个 `fetch` 必须以三者之一开头,不允许出现其他 URL 字面量。
@@ -73,7 +73,7 @@ open http://localhost:8931/chat.html
 - 连续两次打断流式回答 → 无卡死、无孤儿流、历史不错序 ✓
 - 中文模式点建议问题 → 中文回答 ✓;预置会话追问 → 正确利用 seed 上下文 ✓
 - 服务停掉 → 回退演示答案 + "已断开"提示,15 秒自动重连 ✓(代码路径)
-- 安全套件 83 项全绿 ✓
+- 安全套件 84 项全绿 ✓
 
 ## 7. 边界与下一步
 
@@ -88,3 +88,13 @@ open http://localhost:8931/chat.html
 **端点阶梯**:`ADVISOR = 127.0.0.1:8092`(**预留端口**——在此起任意 OpenAI 兼容服务即接管分类,适合以后换专门的顾问模型)→ 回退 `BASE = 127.0.0.1:8080`(llm-lab 聊天模型)→ 都不在则纯演示(手动选卡)。请求为非流式 `/v1/chat/completions`,`temperature 0`、`max_tokens 6`,带代数计数器防止打字过程中的过期回包乱选卡。
 
 **安全分工**(与既有边界一致):读框、发请求都在 `local-llm.js`(唯一联网文件);`build.js` 只暴露 `window.__buildAdvisor.select(slug)` 钩子,自己**从不读框值**——自由文本只会到 `127.0.0.1`,永远不会进入生成的安装包/清单/手册(两条都有测试断言)。
+
+## 9. 前端 ↔ 后端 API(127.0.0.1:8940)
+
+自建后端 v0(`python3 backend/api/server.py`,见 [backend/README.md](../backend/README.md))在线时,前端自动增强两处;离线自动回退,页面功能不变:
+
+**向导推荐方案**:进入第 3 步时,`build.js` 通过 `window.__buildAdvisor.planProvider` 钩子(由 `local-llm.js` 注册)请求 `POST /v1/advise`(只传 模板 slug + 硬件档位,**不传需求框文本**——分类已由 §8 的本地模型完成)。成功则方案卡换用 registry 数据并显示"✦ 实时推荐 · 模型库 @ :8940";带 `planGen` 代数守卫防止切换模式后的过期回包覆盖;**生成的安装包/手册与 API 方案一致**(renderOutput 优先用 apiPlan)。
+
+**聊天反馈**:👍/👎 时 `chat.js` 派发 `chat-feedback` 事件(detail 只有 rating),`local-llm.js` 监听并在 满足"真实本地模型已回答 + API 在线"时 `POST /v1/feedback`,载荷仅 `{rating, template, model_id}`——纠正文本框的内容**永不上报**(后端 schema 结构上也收不了)。
+
+**边界不变**:`API` 常量与 BASE/PORTAL/ADVISOR 同规矩——钉死 `127.0.0.1`、只赋值一次、每个 fetch 以固定常量开头(安全套件 84 项)。

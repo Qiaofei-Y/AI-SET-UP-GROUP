@@ -21,7 +21,9 @@ python3 backend/tests/api.test.py          # 18 项测试(起真实服务打真�
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
 
-尚未做(按计划触发条件推进):Stripe/Clerk 对接、LLM 版顾问(替换关键词分类)、生产部署(Fly.io/Railway)、registry 的持续测录流程。前端**尚未接入**本 API(P1 顺序:先 SaaS 埋点验证漏斗)。
+**前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时)。离线自动回退纯前端。
+
+尚未做(按计划触发条件推进):Stripe/Clerk 对接、LLM 版顾问(替换关键词分类)、生产部署(Fly.io/Railway)、registry 的持续测录流程。
 
 隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 

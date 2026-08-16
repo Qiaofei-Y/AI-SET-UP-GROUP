@@ -13,7 +13,7 @@
 | 密钥泄漏 | 低(无后端) | 静态扫描硬编码密钥;界面上的 `sk-local-••••` 是打码占位 |
 | 恶意模型输出(本地模型被投毒语料诱导) | 低但存在 | 模型输出与用户输入同等对待:只走 `textContent`,无 HTML 注入路径 |
 
-不在模型内:llm-lab 自身安全(用户本机服务,信任边界之内)。后端 API v0 已存在但**前端尚未接入**;其自身的红线(schema 白名单、need_text 不落盘、CORS 仅本机来源、请求体上限)由 `backend/tests/api.test.py` 强制,见 [18 §6](18-testing-and-quality.md)。
+不在模型内:llm-lab 自身安全(用户本机服务,信任边界之内)。后端 API v0(127.0.0.1:8940)**前端已接入**(advise/feedback,见 [16 §9](16-local-ai-web-integration.md)),`API` 常量与其他端点同受 §2-A 钉死;后端自身的红线(schema 白名单、need_text 不落盘、CORS 仅本机来源、请求体上限)由 `backend/tests/api.test.py` 强制,见 [18 §6](18-testing-and-quality.md)。
 
 ## 2. 不变量 → 断言映射
 

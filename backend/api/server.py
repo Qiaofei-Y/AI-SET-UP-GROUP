@@ -165,7 +165,9 @@ TELEMETRY_SCHEMA = {
 FEEDBACK_SCHEMA = {
     'rating':   (True, _enum('up', 'down')),
     'template': (True, _enum(*TEMPLATES)),
-    'model':    (True, _enum(*MODEL_IDS)),
+    # shape-limited id, not an enum: chat feedback may name any local model the
+    # user runs (e.g. Qwen2.5-7B-Instruct); the pattern still shuts out free text
+    'model':    (True, _short_id),
 }
 
 LICENSE_SCHEMA = {
