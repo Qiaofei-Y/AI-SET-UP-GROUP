@@ -143,6 +143,19 @@ class ApiTest(unittest.TestCase):
         self.assertEqual((s, j['ok']), (200, True))
         self.assertEqual(db_count('telemetry'), 1)
 
+    def test_telemetry_stage_field(self):
+        base = {'template': 'legal', 'model': 'qwen2.5-14b-instruct', 'os': 'win11',
+                'gpu': 'nvidia', 'vram_gb': 12, 'ram_gb': 32, 'mode': 'hybrid', 'success': True}
+        s, j, _ = call(self.port, '/v1/telemetry/deploy', dict(base, stage='plan_generated'))
+        self.assertEqual((s, j['ok']), (200, True))
+        import sqlite3
+        con = sqlite3.connect(os.environ['BMA_DB'])
+        stages = [r[0] for r in con.execute('SELECT stage FROM telemetry').fetchall()]
+        con.close()
+        self.assertIn('plan_generated', stages)
+        s, j, _ = call(self.port, '/v1/telemetry/deploy', dict(base, stage='whatever'))
+        self.assertEqual((s, j['error']), (400, 'invalid_field:stage'))
+
     def test_telemetry_rejects_unknown_and_freetext_fields(self):
         base = {'template': 'company', 'model': 'qwen2.5-14b-instruct', 'os': 'win11',
                 'gpu': 'nvidia', 'vram_gb': 12, 'ram_gb': 32, 'mode': 'local', 'success': True}

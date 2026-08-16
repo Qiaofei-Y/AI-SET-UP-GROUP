@@ -336,6 +336,7 @@
     if (!box || !window.__buildAdvisor) return; // not the build wizard
     probeAdvisor();
     window.__buildAdvisor.planProvider = advisePlan; // backend API drives the plan step when up
+    window.__buildAdvisor.reportPlan = reportPlan;   // anonymous plan stats on "Generate"
     box.addEventListener('input', function () {
       clearTimeout(advTimer);
       advTimer = setTimeout(function () { classifyNeed(box.value.trim()); }, 900);
@@ -369,6 +370,16 @@
       .then(function (r) { if (!r.ok) throw new Error('bad response'); return r.json(); })
       .then(function (j) { clearTimeout(timer); cb(j && j.model ? j : null); })
       .catch(function () { clearTimeout(timer); apiUp = false; cb(null); });
+  }
+  // wizard "Generate" → /v1/telemetry/deploy. Fire-and-forget; payload is
+  // built by build.js from slugs/tiers/booleans only (schema-whitelisted server-side).
+  function reportPlan(payload) {
+    if (!apiUp || !payload) return;
+    fetch(API + '/v1/telemetry/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(function () { apiUp = false; });
   }
   // chat 👍/👎 → /v1/feedback. Structurally content-free: rating + template +
   // model id only. Sent only when a real local model answered (isReady).

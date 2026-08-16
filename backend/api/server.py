@@ -150,6 +150,8 @@ def _need_text(v):
 MODEL_IDS = tuple(m['id'] for m in load_registry()['models'])
 
 TELEMETRY_SCHEMA = {
+    # keeps wizard plan-stats separate from real installer results in the flywheel
+    'stage':      (False, _enum('plan_generated', 'install')),
     'template':   (True,  _enum(*TEMPLATES)),
     'model':      (True,  _enum(*MODEL_IDS)),
     'os':         (True,  _enum('win10', 'win11', 'mac')),
@@ -212,9 +214,13 @@ def init_db(path=DB_PATH):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     con = sqlite3.connect(path)
     con.execute('''CREATE TABLE IF NOT EXISTS telemetry (
-        id INTEGER PRIMARY KEY, ts INTEGER, template TEXT, model TEXT, os TEXT,
+        id INTEGER PRIMARY KEY, ts INTEGER, stage TEXT, template TEXT, model TEXT, os TEXT,
         gpu TEXT, vram_gb INTEGER, ram_gb INTEGER, mode TEXT, success INTEGER,
         duration_s INTEGER, error_code TEXT)''')
+    try:  # migrate pre-stage databases
+        con.execute('ALTER TABLE telemetry ADD COLUMN stage TEXT')
+    except sqlite3.OperationalError:
+        pass
     con.execute('''CREATE TABLE IF NOT EXISTS feedback (
         id INTEGER PRIMARY KEY, ts INTEGER, rating TEXT, template TEXT, model TEXT)''')
     con.commit()
@@ -327,11 +333,11 @@ class Api(BaseHTTPRequestHandler):
         if err:
             return self._json(400, {'error': err})
         insert('telemetry',
-               ('ts', 'template', 'model', 'os', 'gpu', 'vram_gb', 'ram_gb', 'mode',
+               ('ts', 'stage', 'template', 'model', 'os', 'gpu', 'vram_gb', 'ram_gb', 'mode',
                 'success', 'duration_s', 'error_code'),
-               (int(time.time()), body['template'], body['model'], body['os'], body['gpu'],
-                body['vram_gb'], body['ram_gb'], body['mode'], int(body['success']),
-                body.get('duration_s'), body.get('error_code')))
+               (int(time.time()), body.get('stage', 'install'), body['template'], body['model'],
+                body['os'], body['gpu'], body['vram_gb'], body['ram_gb'], body['mode'],
+                int(body['success']), body.get('duration_s'), body.get('error_code')))
         return self._json(200, {'ok': True})
 
     def _feedback(self, body):

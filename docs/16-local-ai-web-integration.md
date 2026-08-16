@@ -97,4 +97,6 @@ open http://localhost:8931/chat.html
 
 **聊天反馈**:👍/👎 时 `chat.js` 派发 `chat-feedback` 事件(detail 只有 rating),`local-llm.js` 监听并在 满足"真实本地模型已回答 + API 在线"时 `POST /v1/feedback`,载荷仅 `{rating, template, model_id}`——纠正文本框的内容**永不上报**(后端 schema 结构上也收不了)。
 
+**方案统计(数据飞轮种子)**:点"生成我的文件"时,`build.js` 用 slug/档位/布尔构造载荷,经 `window.__buildAdvisor.reportPlan` 钩子 `POST /v1/telemetry/deploy`,带 `stage:'plan_generated'` 与真实安装结果区分;仅当方案本身来自 API(id 与 registry 对齐)且 API 在线时上报,fire-and-forget。
+
 **边界不变**:`API` 常量与 BASE/PORTAL/ADVISOR 同规矩——钉死 `127.0.0.1`、只赋值一次、每个 fetch 以固定常量开头(安全套件 84 项)。

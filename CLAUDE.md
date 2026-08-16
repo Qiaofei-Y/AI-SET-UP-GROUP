@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `docs/01–19`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)。
 - `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
-- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback 五端点,隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘)。**前端已接入**(API 在线时向导方案走 `/v1/advise`,聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端)。
+- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback 五端点,隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘)。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端)。
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
 硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
@@ -27,7 +27,7 @@ open http://localhost:8931/chat.html
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
 python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(18 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(19 项,起真实服务)
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
 ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户(8092 为预留顾问端口,用户可自行起服务)

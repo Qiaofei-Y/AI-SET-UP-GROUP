@@ -446,7 +446,21 @@
     $('b1').onclick = function () { showStep(0); };
     $('n1').onclick = function () { showStep(2); };
     $('b2').onclick = function () { showStep(1); };
-    $('gen').onclick = function () { showStep(3); };
+    $('gen').onclick = function () {
+      // anonymous plan stats for the deployment-data flywheel: slugs, tiers and
+      // booleans only. Sent via the reportPlan hook (local-llm.js, API up) and
+      // only when the plan itself came from the API — so ids match the registry.
+      var report = window.__buildAdvisor && window.__buildAdvisor.reportPlan;
+      if (report && apiPlan && apiPlan.model && apiPlan.model.id) {
+        report({
+          stage: 'plan_generated', template: STATE.need, model: apiPlan.model.id,
+          os: STATE.os, gpu: STATE.gpu,
+          vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram),
+          mode: STATE.mode, success: true
+        });
+      }
+      showStep(3);
+    };
     $('b3').onclick = function () { showStep(2); };
     $('restart').onclick = function () { showStep(0); };
     showStep(0);
