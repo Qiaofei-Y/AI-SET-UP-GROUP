@@ -38,9 +38,11 @@
     </div>
     <div class="tmpls" id="tmplGroup" role="radiogroup">
       <div class="tmpl sel" data-need="company" role="radio" tabindex="0" aria-checked="true"><div class="ic">🏢</div><h4 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h4><p data-en="Reads your internal docs" data-zh="读你的内部资料">Reads your internal docs</p></div>
+      <div class="tmpl" data-need="legal" role="radio" tabindex="0" aria-checked="false"><div class="ic">⚖️</div><h4 data-en="Contract &amp; Legal Review" data-zh="合同 / 法务审阅">Contract &amp; Legal Review</h4><p data-en="Find clauses, terms and risks" data-zh="查条款、找风险">Find clauses, terms and risks</p></div>
       <div class="tmpl" data-need="writing" role="radio" tabindex="0" aria-checked="false"><div class="ic">✍️</div><h4 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h4><p data-en="Draft, polish, rewrite" data-zh="起草、润色、改写">Draft, polish, rewrite</p></div>
       <div class="tmpl" data-need="research" role="radio" tabindex="0" aria-checked="false"><div class="ic">🔬</div><h4 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h4><p data-en="Read papers, summarize" data-zh="读论文,归纳总结">Read papers, summarize</p></div>
-      <div class="tmpl" data-need="general" role="radio" tabindex="0" aria-checked="false"><div class="ic">💬</div><h4 data-en="General Assistant" data-zh="通用助手">General Assistant</h4><p data-en="Everyday Q&amp;A" data-zh="日常问答">Everyday Q&amp;A</p></div>
+      <div class="tmpl" data-need="support" role="radio" tabindex="0" aria-checked="false"><div class="ic">💬</div><h4 data-en="Customer Support AI" data-zh="客服 AI">Customer Support AI</h4><p data-en="Answers from product docs &amp; FAQs" data-zh="基于产品文档和 FAQ 回答">Answers from product docs &amp; FAQs</p></div>
+      <div class="tmpl" data-need="data" role="radio" tabindex="0" aria-checked="false"><div class="ic">📊</div><h4 data-en="Data Analyst AI" data-zh="数据分析 AI">Data Analyst AI</h4><p data-en="Ask your spreadsheets in plain words" data-zh="用人话问你的表格">Ask your spreadsheets in plain words</p></div>
     </div>
     <div class="wizard-nav" style="justify-content:flex-end">
       <button class="btn primary" id="n0" data-en="Next: check my computer →" data-zh="下一步:检测电脑 →">Next: check my computer →</button>
@@ -53,7 +55,7 @@
     <p class="lead" data-en="The installed app detects this automatically. Here, confirm your setup so we pick the right model." data-zh="安装后的应用会自动检测。这里请确认一下配置,好让我们挑对模型。">The installed app detects this automatically. Here, confirm your setup so we pick the right model.</p>
     <div class="fields">
       <div class="field"><label for="f_os" data-en="Operating system" data-zh="操作系统">Operating system</label>
-        <select id="f_os"><option value="win11">Windows 11</option><option value="win10">Windows 10</option></select></div>
+        <select id="f_os"><option value="win11">Windows 11</option><option value="win10">Windows 10</option><option value="mac" disabled data-en="macOS — coming soon" data-zh="macOS——即将支持">macOS — coming soon</option></select></div>
       <div class="field"><label for="f_gpu" data-en="Graphics card" data-zh="显卡">Graphics card</label>
         <select id="f_gpu"><option value="nvidia">NVIDIA (GeForce / RTX)</option><option value="none" data-en="No dedicated GPU" data-zh="无独立显卡">No dedicated GPU</option></select></div>
       <div class="field"><label for="f_vram" data-en="Graphics card memory" data-zh="显卡内存">Graphics card memory</label>
@@ -88,6 +90,12 @@
         <h3><span>☁️</span> <span data-en="In the cloud" data-zh="在云端">In the cloud</span></h3>
         <div class="tag" data-en="No local GPU needed · pay per use" data-zh="无需本地显卡 · 按用量付费">No local GPU needed · pay per use</div>
         <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A deployment guide" data-zh="部署手册">A deployment guide</b></div>
+      </div>
+      <div class="opt" data-mode="hybrid" role="radio" tabindex="0" aria-checked="false">
+        <h3><span>🔗</span> <span data-en="Hybrid" data-zh="混合">Hybrid</span></h3>
+        <div class="tag" data-en="Local for private answers · cloud for heavy tasks · Pro (free during beta)" data-zh="私密回答走本地 · 繁重任务走云端 · Pro(Beta 期免费)">Local for private answers · cloud for heavy tasks · Pro (free during beta)</div>
+        <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="Installer + cloud guide" data-zh="安装包 + 云端手册">Installer + cloud guide</b></div>
+        <div class="hidden" id="hybridGpuWarn" style="margin-top:10px;font-size:13px;color:var(--clay)" data-en="⚠ The local half needs an NVIDIA graphics card — this computer doesn't have one." data-zh="⚠ 本地部分需要 NVIDIA 显卡——这台电脑没有。">⚠ The local half needs an NVIDIA graphics card — this computer doesn't have one.</div>
       </div>
     </div>
     <div class="privacy"><span>🔒</span><span data-en="For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center." data-zh="对于私密的公司资料我们推荐本地——文件留在这台电脑。云端会把你的文档发送到美国数据中心。">For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center.</span></div>

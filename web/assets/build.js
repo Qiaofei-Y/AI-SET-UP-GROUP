@@ -14,17 +14,20 @@
     if (v >= 12) return { name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', quality: 85, speed: 78 };
     return { name: 'Llama 3.1 8B Instruct', size: '~4.9 GB', file: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', repo: 'bartowski/Meta-Llama-3.1-8B-Instruct-GGUF', quant: 'Q4_K_M', quality: 78, speed: 88 };
   }
-  function ragDefault(need) { return need === 'company' || need === 'research'; }
+  function ragDefault(need) { return need !== 'writing'; } // all doc-grounded needs get RAG; writing works from style samples
   function needLabel(k) {
-    return { company: t('Company Knowledge AI', '公司知识 AI'), writing: t('Writing Assistant', '写作助手'),
-             research: t('Research Assistant', '研究助手'), general: t('General Assistant', '通用助手') }[k];
+    return { company: t('Company Knowledge AI', '公司知识 AI'), legal: t('Contract & Legal Review', '合同 / 法务审阅'),
+             writing: t('Writing Assistant', '写作助手'), research: t('Research Assistant', '研究助手'),
+             support: t('Customer Support AI', '客服 AI'), data: t('Data Analyst AI', '数据分析 AI') }[k];
   }
 
-  function buildPlan() {
+  function buildPlan(modeOverride) {
+    var mode = modeOverride || STATE.mode;
     // no dedicated GPU: the VRAM dropdown must not drive the pick — local falls back
     // to the smallest sensible config (cloud is the recommended path in that case)
     var vram = STATE.gpu === 'none' ? '8' : STATE.vram;
-    var m = pickModel(STATE.mode === 'cloud' ? '24' : vram); // cloud gets a bigger tier
+    // cloud gets a bigger tier; hybrid's on-device half is sized like local
+    var m = pickModel(mode === 'cloud' ? '24' : vram);
     var rag = ragDefault(STATE.need);
     var gb = parseFloat((m.size.match(/[\d.]+/) || ['0'])[0]); // keep decimals: '~4.9 GB' → 4.9
     return {
@@ -32,7 +35,7 @@
       model: m, rag: rag,
       space: m.size,
       quality: m.quality, speed: m.speed,
-      spacePct: STATE.mode === 'cloud' ? 30 : Math.min(70, Math.round((gb / 24) * 100))
+      spacePct: mode === 'cloud' ? 30 : Math.min(70, Math.round((gb / 24) * 100))
     };
   }
 
@@ -62,21 +65,25 @@
 
   function renderPlan() {
     var p = buildPlan();
-    var localNoGpu = STATE.gpu === 'none' && STATE.mode === 'local';
+    var isHybrid = STATE.mode === 'hybrid';
+    var localNoGpu = STATE.gpu === 'none' && STATE.mode !== 'cloud'; // local and hybrid both have an on-device half
+    var runsWhere = STATE.mode === 'cloud' ? t('runs in the cloud', '云端运行')
+                  : isHybrid ? t('runs on your computer + cloud for heavy tasks', '本机运行 + 繁重任务走云端')
+                  : t('runs on your computer', '本机运行');
     $('planBox').innerHTML =
       '<span class="pick">✦ ' + t('BEST MATCH', '最佳匹配') + '</span>' +
       '<h3>' + p.title + '</h3>' +
-      '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) +
-        (STATE.mode === 'cloud' ? ' · ' + t('runs in the cloud', '云端运行') : ' · ' + t('runs on your computer', '本机运行')) + '</div>' +
+      '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) + ' · ' + runsWhere + '</div>' +
       meter(t('Answer quality', '回答质量'), t('Very good', '很好'), p.quality, 'var(--accent)') +
       meter(t('Response speed', '响应速度'), t('Fast', '快'), p.speed, 'var(--info)') +
       meter(t('Space used', '占用空间'), p.space, p.spacePct, 'var(--clay)') +
       (localNoGpu ?
         '<div style="margin-top:12px;font-size:13px;color:var(--clay)">⚠ ' +
-        t('You chose local, but local needs an NVIDIA graphics card and this computer doesn\'t have one. We recommend the cloud option below.',
-          '你选择了本地运行,但本地需要 NVIDIA 显卡,而这台电脑没有。我们推荐下方的云端方案。') + '</div>' : '') +
+        t('The on-device part needs an NVIDIA graphics card and this computer doesn\'t have one. We recommend the cloud option below.',
+          '本机运行的部分需要 NVIDIA 显卡,而这台电脑没有。我们推荐下方的云端方案。') + '</div>' : '') +
       '<details class="adv"><summary>' + t('Advanced (for the technical)', '高级模式(给懂技术的人看)') + '</summary><table>' +
         row(t('Recommended model', '推荐模型'), p.model.name + ' (' + p.model.quant + ')') +
+        (isHybrid ? row(t('Cloud escalation model', '云端升级模型'), pickModel('24').name) : '') +
         row(t('Runtime', '推理运行时'), 'llama.cpp server (CUDA)') +
         row(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('On · bge-base-en + local vector store', '开启 · bge-base-en + 本地向量库') : t('Off', '关闭')) +
         row(t('Source', '下载来源'), 'huggingface.co / ' + p.model.repo) +
@@ -93,10 +100,11 @@
       o.classList.toggle('rec', noGpu ? o.getAttribute('data-mode') === 'cloud'
                                       : o.getAttribute('data-mode') === 'local');
     });
-    var recLocal = $('recLocal'), recCloud = $('recCloud'), warn = $('localGpuWarn');
+    var recLocal = $('recLocal'), recCloud = $('recCloud'), warn = $('localGpuWarn'), warnH = $('hybridGpuWarn');
     if (recLocal) recLocal.classList.toggle('hidden', noGpu);
     if (recCloud) recCloud.classList.toggle('hidden', !noGpu);
     if (warn) warn.classList.toggle('hidden', !noGpu);
+    if (warnH) warnH.classList.toggle('hidden', !noGpu);
   }
   function meter(label, val, pct, color) {
     return '<div class="meter"><div class="top"><span>' + label + '</span><b>' + val + '</b></div>' +
@@ -157,7 +165,8 @@
   function installManifest(p) {
     return JSON.stringify({
       product: 'Build My AI', generated: 'client-demo',
-      need: STATE.need, target: { os: STATE.os, gpu: STATE.gpu, vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram) },
+      need: STATE.need, mode: STATE.mode,
+      target: { os: STATE.os, gpu: STATE.gpu, vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram) },
       plan: {
         model: p.model.name, quant: p.model.quant, model_file: p.model.file,
         source: 'huggingface.co/' + p.model.repo, approx_size: p.model.size,
@@ -224,35 +233,46 @@
 
   function renderOutput() {
     var p = buildPlan();
-    var isLocal = STATE.mode === 'local';
+    var isLocal = STATE.mode === 'local', isHybrid = STATE.mode === 'hybrid';
     $('outTitle').textContent = isLocal ? t('Your local installer is ready', '你的本地安装包已生成')
-                                        : t('Your cloud deployment guide is ready', '你的云端部署手册已生成');
+                              : isHybrid ? t('Your hybrid setup files are ready', '你的混合部署文件已生成')
+                                         : t('Your cloud deployment guide is ready', '你的云端部署手册已生成');
     $('outLead').textContent = isLocal
       ? t('Download it and double-click it on your Windows machine. It installs everything — no command line needed.', '下载后在你的 Windows 电脑上双击运行,自动装好一切,无需命令行。')
+      : isHybrid
+      ? t('The installer sets up the private half on your Windows machine; the guide sets up a cloud model for heavy tasks. Hybrid is a Pro feature — free during beta.', '安装包在你的 Windows 电脑上装好私密的本地部分;手册用于搭建处理繁重任务的云端模型。混合模式为 Pro 功能——Beta 期免费。')
       : t('A step-by-step guide customized to your model, for a US GPU server.', '为你的模型定制的分步手册,面向美国 GPU 服务器。');
-    if (isLocal && STATE.gpu === 'none') {
-      $('outLead').textContent += ' ' + t('Note: local needs an NVIDIA graphics card and you told us this computer doesn\'t have one — the installer will stop at the graphics card check. We recommend the cloud option instead.',
-                                          '注意:本地运行需要 NVIDIA 显卡,而你填写的电脑没有——安装程序会在显卡检查处停止。我们推荐改用云端方案。');
+    if ((isLocal || isHybrid) && STATE.gpu === 'none') {
+      $('outLead').textContent += ' ' + t('Note: the on-device part needs an NVIDIA graphics card and you told us this computer doesn\'t have one — the installer will stop at the graphics card check. We recommend the cloud option instead.',
+                                          '注意:本机运行的部分需要 NVIDIA 显卡,而你填写的电脑没有——安装程序会在显卡检查处停止。我们推荐改用云端方案。');
     }
     // summary
     $('outSummary').innerHTML =
       kv(t('Purpose', '用途'), needLabel(STATE.need)) +
-      kv(t('Model', '模型'), p.model.name + ' (' + p.model.quant + ')') +
-      kv(t('Runs', '运行方式'), isLocal ? t('On your computer', '本机') : t('Cloud GPU server', '云 GPU 服务器')) +
+      kv(t('Model', '模型'), p.model.name + ' (' + p.model.quant + ')' +
+        (isHybrid ? ' + ' + pickModel('24').name + t(' (cloud)', '(云端)') : '')) +
+      kv(t('Runs', '运行方式'), isLocal ? t('On your computer', '本机')
+                              : isHybrid ? t('Your computer + cloud for heavy tasks', '本机 + 繁重任务走云端')
+                                         : t('Cloud GPU server', '云 GPU 服务器')) +
       kv(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('On', '开启') : t('Off', '关闭'));
     // downloads + preview
     var dl = $('outDownloads'), pv = $('outPreview'), fm = $('outFileMeta');
-    if (isLocal) {
+    dl.innerHTML = '';
+    if (isLocal || isHybrid) {
       var script = localInstaller(p), manifest = installManifest(p);
       var bat = batInstaller(script);
-      dl.innerHTML = '';
       addBtn(dl, t('⬇ Download installer (.bat) — double-click to install', '⬇ 下载安装包 (.bat)——双击即可安装'), 'primary', function () { download('build-my-ai-setup.bat', bat, 'text/plain'); });
       addBtn(dl, t('⬇ Download plan (.json)', '⬇ 下载方案清单 (.json)'), 'ghost', function () { download('install-plan.json', manifest, 'application/json'); });
-      fm.textContent = 'build-my-ai-setup.bat · ' + t('preview of the install steps it runs', '内含安装步骤预览');
+      if (isHybrid) {
+        var hybridManual = cloudManual(buildPlan('cloud'));
+        addBtn(dl, t('⬇ Download cloud guide (.md)', '⬇ 下载云端手册 (.md)'), 'ghost', function () { download('cloud-deployment-guide.md', hybridManual, 'text/markdown'); });
+        fm.textContent = 'build-my-ai-setup.bat + cloud-deployment-guide.md · ' + t('preview shows the installer', '预览为安装包内容');
+      } else {
+        fm.textContent = 'build-my-ai-setup.bat · ' + t('preview of the install steps it runs', '内含安装步骤预览');
+      }
       pv.textContent = script;
     } else {
       var manual = cloudManual(p);
-      dl.innerHTML = '';
       addBtn(dl, t('⬇ Download guide (.md)', '⬇ 下载手册 (.md)'), 'primary', function () { download('cloud-deployment-guide.md', manual, 'text/markdown'); });
       fm.textContent = 'cloud-deployment-guide.md · ' + t('preview', '预览');
       pv.textContent = manual;
@@ -264,14 +284,15 @@
     parent.appendChild(b);
   }
 
-  // template slug (from homepage ?template=) → wizard need + a tailored prefill
+  // template slug (from homepage ?template=) — one wizard card per homepage template,
+  // so the card the user clicked is the card that lights up here
   var TEMPLATES = {
     company: { need: 'company', en: 'A private AI that reads my company PDFs, Excel and internal docs', zh: '一个能读公司 PDF、Excel 和内部资料的私有 AI' },
-    legal: { need: 'company', en: 'An AI that reviews contracts and finds clauses, terms and risks', zh: '一个审阅合同、查找条款与风险的 AI' },
+    legal: { need: 'legal', en: 'An AI that reviews contracts and finds clauses, terms and risks', zh: '一个审阅合同、查找条款与风险的 AI' },
     writing: { need: 'writing', en: 'A writing assistant that drafts and polishes in my voice', zh: '一个按我的风格起草、润色的写作助手' },
     research: { need: 'research', en: 'A research assistant that reads papers and summarizes with sources', zh: '一个读论文并带来源归纳的研究助手' },
-    support: { need: 'company', en: 'A customer support AI that answers from my product docs and FAQs', zh: '一个基于产品文档和 FAQ 回答的客服 AI' },
-    data: { need: 'research', en: 'A data analyst AI I can ask about my spreadsheets in plain words', zh: '一个能用人话问我表格的数据分析 AI' }
+    support: { need: 'support', en: 'A customer support AI that answers from my product docs and FAQs', zh: '一个基于产品文档和 FAQ 回答的客服 AI' },
+    data: { need: 'data', en: 'A data analyst AI I can ask about my spreadsheets in plain words', zh: '一个能用人话问我表格的数据分析 AI' }
   };
   function applyTemplate() {
     var slug = (location.search.match(/[?&]template=([a-z]+)/) || [])[1];
