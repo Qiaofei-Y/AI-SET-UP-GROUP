@@ -61,9 +61,11 @@ ok('local-llm.js: BASE pinned to 127.0.0.1 and assigned exactly once',
   /var BASE = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bBASE\s*=/g) || []).length === 1);
 ok('local-llm.js: PORTAL pinned to 127.0.0.1 and assigned exactly once',
   /var PORTAL = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bPORTAL\s*=/g) || []).length === 1);
+ok('local-llm.js: ADVISOR pinned to 127.0.0.1 and assigned exactly once',
+  /var ADVISOR = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bADVISOR\s*=/g) || []).length === 1);
 const fetches = conn.match(/\bfetch\s*\(/g) || [];
-const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL)\s*\+/g) || [];
-ok('local-llm.js: every fetch() targets BASE or PORTAL (' + pinnedFetches.length + '/' + fetches.length + ')',
+const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL|ADVISOR)\s*\+/g) || [];
+ok('local-llm.js: every fetch() targets BASE, PORTAL or ADVISOR (' + pinnedFetches.length + '/' + fetches.length + ')',
   fetches.length > 0 && fetches.length === pinnedFetches.length);
 ok('local-llm.js: no other URL literals besides 127.0.0.1', !/https?:\/\/(?!127\.0\.0\.1)/.test(conn));
 ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',

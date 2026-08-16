@@ -312,6 +312,33 @@
     var box = $('needText');
     if (box && activeTemplate && !needEdited) box.value = (window.__lang === 'zh' ? activeTemplate.zh : activeTemplate.en);
   }
+  // Local-AI advisor hook. local-llm.js (the ONLY file allowed to talk to the
+  // network, 127.0.0.1-pinned) reads the need box, classifies the sentence with
+  // the local model, and calls select() with a template slug. build.js itself
+  // never reads the box and never touches the network.
+  var lastAdvice = null;
+  window.__buildAdvisor = {
+    needs: ['company', 'legal', 'writing', 'research', 'support', 'data'],
+    select: function (slug, via) {
+      if (window.__buildAdvisor.needs.indexOf(slug) === -1) return;
+      document.querySelectorAll('#step0 .tmpl').forEach(function (x) {
+        var isSel = x.getAttribute('data-need') === slug;
+        x.classList.toggle('sel', isSel);
+        x.setAttribute('aria-checked', isSel ? 'true' : 'false');
+      });
+      STATE.need = slug;
+      lastAdvice = { slug: slug, via: via };
+      renderAdviceHint();
+    }
+  };
+  function renderAdviceHint() {
+    var h = $('advisorHint');
+    if (!h || !lastAdvice) return;
+    h.classList.remove('hidden');
+    h.textContent = '🤖 ' + t('Your local AI picked: ', '你的本地 AI 已选中:') +
+      needLabel(lastAdvice.slug) + (lastAdvice.via ? ' · ' + lastAdvice.via : '');
+  }
+
   // bilingual accessible names that can't live in static attributes
   function applyA11yLabels() {
     var box = $('needText');
@@ -338,6 +365,12 @@
         });
         el.classList.add('sel'); el.setAttribute('aria-checked', 'true');
         STATE.need = el.getAttribute('data-need');
+        // a manual pick overrides (and hides) the local-AI suggestion
+        if (lastAdvice && lastAdvice.slug !== STATE.need) {
+          lastAdvice = null;
+          var hint = $('advisorHint');
+          if (hint) hint.classList.add('hidden');
+        }
         // a manual pick of a different need retires the URL-template prefill
         // (and clears the untouched prefill text, so a stale sentence in the
         //  old language doesn't linger; write-only — we never read the box)
@@ -391,5 +424,6 @@
     renderProgress();
     applyA11yLabels();
     writeTemplatePrefill(); // untouched template prefill follows the language
+    renderAdviceHint();     // AI-pick hint follows the language too
   });
 })();

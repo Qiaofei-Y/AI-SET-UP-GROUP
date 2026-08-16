@@ -42,7 +42,7 @@
 
 **已有基础(不要重复造):** `bash web/tests/run.sh`
 
-- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(82 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
+- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(83 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
 - `xss.browser.html`:无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当纯文本渲染。
 - `run.sh`:串起两者,任一失败退出码 `1`(可直接进 CI / pre-commit)。
 

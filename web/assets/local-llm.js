@@ -1,12 +1,17 @@
-// Build My AI — optional local-model connector (chat.html).
+// Build My AI — optional local-model connector (chat.html + build.html).
 // Talks ONLY to local llm-lab services at 127.0.0.1 — never any remote host:
-//   BASE   :8080  llama.cpp chat model (OpenAI-compatible, streamed)
-//   PORTAL :8090  Michael AI Portal — /api/rag Q&A over the indexed project docs
-// Mode ladder: RAG (portal up) > general chat (8080 up) > canned demo (nothing up).
-// All model output is rendered via textContent (see addAILive) — no HTML injection path.
+//   BASE    :8080  llama.cpp chat model (OpenAI-compatible, streamed)
+//   PORTAL  :8090  Michael AI Portal — /api/rag Q&A over the indexed project docs
+//   ADVISOR :8092  RESERVED — run your own OpenAI-compatible server here and the
+//                  build wizard's need-classifier switches to it automatically
+//                  (until then it falls back to the chat model on :8080)
+// chat.html ladder: RAG (portal up) > general chat (8080 up) > canned demo.
+// build.html: the need box is classified into a template slug by ADVISOR/BASE.
+// All model output is rendered via textContent — no HTML injection path.
 (function () {
   var BASE = 'http://127.0.0.1:8080';
   var PORTAL = 'http://127.0.0.1:8090';
+  var ADVISOR = 'http://127.0.0.1:8092';
   var SYSTEM =
     'You are "Build My AI", a private AI assistant running fully on this computer. ' +
     'Be concise and helpful. Always reply in the same language as the user\'s last message ' +
@@ -273,6 +278,68 @@
     }
   }
 
+  // ---- build.html: classify the need-box sentence into a template slug ----
+  // The free text is sent ONLY to 127.0.0.1 (ADVISOR if up, else the chat
+  // model) and never enters any generated file — build.js never reads the box.
+  var advisorUp = false, advGen = 0, advTimer = null;
+  function probeAdvisor() {
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 1500);
+    fetch(ADVISOR + '/v1/models', { signal: pc.signal })
+      .then(function (r) { clearTimeout(timer); advisorUp = r.ok; })
+      .catch(function () { clearTimeout(timer); advisorUp = false; });
+  }
+  function classifyNeed(text) {
+    var myGen = ++advGen;
+    if ((!advisorUp && !isReady) || !text || text.length < 4) return;
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 8000);
+    var opts = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: pc.signal,
+      body: JSON.stringify({
+        stream: false, temperature: 0, max_tokens: 6,
+        messages: [
+          { role: 'system', content:
+            'Classify the user\'s AI need into exactly one of these template ids: ' +
+            'company (internal company knowledge base), legal (contracts / legal review), ' +
+            'writing (writing assistant), research (read papers / reports), ' +
+            'support (customer support / product FAQ), data (spreadsheets / data analysis). ' +
+            'Reply with the single id only, nothing else.' },
+          { role: 'user', content: text }
+        ]
+      })
+    };
+    // two literal fetch sites (not one via a variable) so the security test can
+    // prove every fetch target starts with a 127.0.0.1-pinned constant
+    (advisorUp ? fetch(ADVISOR + '/v1/chat/completions', opts)
+               : fetch(BASE + '/v1/chat/completions', opts))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(timer);
+        if (myGen !== advGen) return; // stale — the user kept typing
+        var out = (j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '';
+        var m = String(out).toLowerCase().match(/\b(company|legal|writing|research|support|data)\b/);
+        if (m && window.__buildAdvisor) {
+          window.__buildAdvisor.select(m[1], advisorUp ? t('your advisor AI @ :8092', '你的顾问 AI @ :8092') : modelName);
+        }
+      })
+      .catch(function () { clearTimeout(timer); });
+  }
+  function wireBuildPage() {
+    var box = document.getElementById('needText');
+    if (!box || !window.__buildAdvisor) return; // not the build wizard
+    probeAdvisor();
+    box.addEventListener('input', function () {
+      clearTimeout(advTimer);
+      advTimer = setTimeout(function () { classifyNeed(box.value.trim()); }, 900);
+    });
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { clearTimeout(advTimer); classifyNeed(box.value.trim()); }
+    });
+  }
+
   window.LocalLLM = {
     ready: function () { return isReady && !!window.__chatLive; },
     ask: function (q) {
@@ -298,5 +365,5 @@
     if (!modelName) return;
     if (isReady) setChip(); else setChipOffline();
   });
-  document.addEventListener('DOMContentLoaded', probe);
+  document.addEventListener('DOMContentLoaded', function () { probe(); wireBuildPage(); });
 })();

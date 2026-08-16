@@ -17,14 +17,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash web/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node web/tests/security.test.js    # 只跑静态+单元部分(82 项)
+node web/tests/security.test.js    # 只跑静态+单元部分(83 项)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd web && python3 -m http.server 8931
 open http://localhost:8931/chat.html
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
-ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户
+ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户(8092 为预留顾问端口,用户可自行起服务)
 ai ingest ~/AI-SET-UP-GROUP        # 文档改动后增量更新 RAG 索引
 ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 ```
@@ -34,7 +34,8 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 `web/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
 - **全站只有 `web/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
-- 连接器内 `BASE`(8080)/`PORTAL`(8090)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以二者开头;不允许出现其他 URL 字面量。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以三者之一开头;不允许出现其他 URL 字面量。
+- `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
 - 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。
 

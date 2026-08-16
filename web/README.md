@@ -32,7 +32,7 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/hero.js` | 首页 Hero 截图的流式打字动画 | index |
 | `assets/build.js` | 向导逻辑 + 安装包/云端手册生成器 | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
-| `assets/local-llm.js` | 可选:本地模型连接器(只连 `127.0.0.1`;优先项目知识库 RAG 带出处回答,其次通用流式聊天,连不上回退演示) | chat |
+| `assets/local-llm.js` | 可选:本地模型连接器(只连 `127.0.0.1`;chat:项目 RAG > 通用聊天 > 演示;build:需求框一句话由本地 AI 分类并自动选模板) | chat + build |
 
 原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。
 
@@ -55,8 +55,9 @@ python3 -m http.server 8931       # 必须走 http:// 访问(fetch 不能用 fil
 open http://localhost:8931/chat.html
 ```
 
+- **build.html 的需求框也接了本地 AI**:输入一句话,由本地模型分类到六个模板之一并自动选卡。分类优先走**预留顾问端口 `127.0.0.1:8092`**(在这个端口起任意 OpenAI 兼容服务即可接管,如 `llama-server --port 8092`),没有则回退 8080 聊天模型;两个都不在就保持纯演示(手动选卡)。
 - 文档改动后更新知识库:`ai ingest ~/AI-SET-UP-GROUP`;彻底重建:`ai reindex ~/AI-SET-UP-GROUP`。
-- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,82 项)。
+- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,83 项)。需求框文本只会发往 `127.0.0.1`,且永远不会进入生成的安装包/手册(`build.js` 不读框值,由测试强制)。
 
 ## 说明
 

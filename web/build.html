@@ -36,6 +36,7 @@
     <div class="needbox">
       <input id="needText" data-en-ph="e.g. a private AI that reads my company PDFs and Excel files" data-zh-ph="例如:一个能读公司 PDF 和 Excel 的私有 AI" placeholder="e.g. a private AI that reads my company PDFs and Excel files">
     </div>
+    <div class="advhint hidden" id="advisorHint"></div>
     <div class="tmpls" id="tmplGroup" role="radiogroup">
       <div class="tmpl sel" data-need="company" role="radio" tabindex="0" aria-checked="true"><div class="ic">🏢</div><h4 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h4><p data-en="Reads your internal docs" data-zh="读你的内部资料">Reads your internal docs</p></div>
       <div class="tmpl" data-need="legal" role="radio" tabindex="0" aria-checked="false"><div class="ic">⚖️</div><h4 data-en="Contract &amp; Legal Review" data-zh="合同 / 法务审阅">Contract &amp; Legal Review</h4><p data-en="Find clauses, terms and risks" data-zh="查条款、找风险">Find clauses, terms and risks</p></div>
@@ -131,5 +132,6 @@
 
 <script src="assets/i18n.js"></script>
 <script src="assets/build.js"></script>
+<script src="assets/local-llm.js"></script>
 </body>
 </html>
