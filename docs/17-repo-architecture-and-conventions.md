@@ -15,7 +15,7 @@ AI-SET-UP-GROUP/
 │   ├── *.html         每页一个文件,HTML 只放内容
 │   ├── assets/        CSS/JS 按"共享 vs 页面专属 vs 功能"拆分
 │   └── tests/         安全测试套件(全仓唯一测试入口)
-├── backend/           演进计划(backend/README.md);未经计划确认不写服务代码
+├── backend/           演进计划 + API v0(零依赖 stdlib;api/server.py、api/registry.json、tests/)
 └── figma/             高保真原型 + design-system.md(视觉规范唯一出处)
 ```
 
@@ -26,6 +26,7 @@ AI-SET-UP-GROUP/
 | 端口 | 服务 | 归属 |
 |------|------|------|
 | 8931 | 前端开发服务器(`python3 -m http.server`) | 本仓库 |
+| 8940 | 后端 API v0(`python3 backend/api/server.py`) | 本仓库 |
 | 8080 | llama.cpp 聊天模型(OpenAI 兼容) | llm-lab |
 | 8081 | bge-m3 向量服务 | llm-lab |
 | 8082 | Qwen2.5-Coder(尚未接入网页) | llm-lab |

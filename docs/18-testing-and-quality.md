@@ -10,6 +10,7 @@
 | 单元测试 | 对 chat.js 里真实的 `esc()` 投喂 XSS 载荷 | 同上(同一文件内) | 同上 |
 | 浏览器实测 | 无头 Chrome 加载真实 chat.js,验证恶意输入被当纯文本 | `frontend/tests/xss.browser.html` | `bash frontend/tests/run.sh`(无 Chrome 自动跳过) |
 | 端到端驱动 | 临时 harness 页驱动真实页面流程(见 §4) | 用完即删,不入库 | 手动/AI 执行 |
+| 后端 API 测试 | 起真实服务打真实 HTTP,含隐私红线用例(自由文本/未知字段必须 400) | `backend/tests/api.test.py` | `python3 backend/tests/api.test.py` |
 
 一切从 `bash frontend/tests/run.sh` 开始:任一失败退出码 1,可直接作 pre-commit / CI 门槛。零依赖,只需 Node(+ 可选 Chrome)。
 
@@ -58,10 +59,11 @@ cd frontend && python3 -m http.server 8931   # 必须走 http://(file:// 禁 fet
 - 断言信息里带上实际数字(如 `(6/6)`),失败时能直接看出差在哪;
 - 计数变化(如 82→83)按 §2 第 3 条同步所有提到数字的文档。
 
-## 6. 面向后端阶段的测试原则(预告)
+## 6. 后端测试原则(API v0 已落地)
 
-backend 动工时(见 [backend/README.md](../backend/README.md)),沿用同一哲学:
+backend API v0(见 [backend/README.md](../backend/README.md))沿用同一哲学,已实现:
 
-- 隐私红线写成测试:对 `/v1/telemetry`、`/v1/feedback` 的请求体做 schema 白名单断言,出现自由文本字段即失败;
-- license 校验必须测离线宽限路径;
-- 前端接入任何外部 SaaS,先走 §3 白名单流程。
+- **隐私红线写成测试**:`/v1/telemetry`、`/v1/feedback` 的请求体做 schema 白名单校验,未知字段、自由文本形态的值一律 400,均有测试用例;`/v1/advise` 的 `need_text` 有"不回显、不落库、不进日志"断言(直接扫 SQLite 文件字节验证);
+- license 校验覆盖 铸造→验证/篡改/垃圾输入 三路;
+- 测试起**真实服务**打真实 HTTP(临时端口 + 隔离数据库),不 mock 内部函数;
+- 前端接入本 API 或任何外部 SaaS 前,先走 §3 白名单流程。

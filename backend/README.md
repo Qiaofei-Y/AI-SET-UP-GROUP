@@ -1,8 +1,29 @@
-# backend/ — 后端演进计划
+# backend/ — 后端演进计划与 API v0
 
 > 一句话:**营销站和产品本体可以长期无后端;账号、支付校验、埋点回收、方案顾问 API 这四样绕不开**——前三样用美国 SaaS 加"胶水级"小服务解决,只有方案顾问与数据飞轮值得认真自建,它们也正是护城河([docs/06](../docs/06-moat.md))所在。
->
-> 本目录目前**只有这份计划**。未经计划确认,不要在这里写服务代码。
+
+## 当前状态:API v0 已动工(2026-08-16,决策人拍板提前启动)
+
+计划里 P2/P3 草拟的端点已有**零依赖参考实现**(纯 Python 标准库,与前端同一哲学:无包管理器、随处可跑、易审计):
+
+```bash
+python3 backend/api/server.py              # 127.0.0.1:8940
+python3 backend/api/server.py --mint pro   # 铸造演示 license
+python3 backend/tests/api.test.py          # 18 项测试(起真实服务打真实 HTTP)
+```
+
+| 端点 | 状态 | 说明 |
+|------|------|------|
+| `GET /v1/health` | ✅ v0 | 存活探测 |
+| `POST /v1/advise` | ✅ v0 规则版 | 关键词分类 + 显存档位选模型,镜像 frontend 规则;`need_text` 只在内存处理,不落日志/库/回显 |
+| `GET /v1/registry/models` | ✅ v0 | 数据文件 `api/registry.json` 驱动(与 frontend `pickModel` 保持同步) |
+| `POST /v1/license/verify` | ✅ v0 | HMAC 签名 key、无状态、72h 离线宽限;密钥用 `BMA_LICENSE_SECRET` 注入 |
+| `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
+| `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
+
+尚未做(按计划触发条件推进):Stripe/Clerk 对接、LLM 版顾问(替换关键词分类)、生产部署(Fly.io/Railway)、registry 的持续测录流程。前端**尚未接入**本 API(P1 顺序:先 SaaS 埋点验证漏斗)。
+
+隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 
 ## 0. 设计原则
 

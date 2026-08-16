@@ -1,0 +1,42 @@
+{
+  "updated": "2026-08-16",
+  "note": "Model registry data file (docs/09 M2-2: rules are data, not code). Mirrors frontend/assets/build.js pickModel() tiers — keep the two in sync.",
+  "models": [
+    {
+      "id": "qwen2.5-32b-instruct",
+      "name": "Qwen2.5 32B Instruct",
+      "quant": "Q4_K_M",
+      "file": "qwen2.5-32b-instruct-q4_k_m.gguf",
+      "repo": "Qwen/Qwen2.5-32B-Instruct-GGUF",
+      "size_gb": 20.0,
+      "vram_min_gb": 24,
+      "license": "Apache-2.0",
+      "quality": 92,
+      "speed": 62
+    },
+    {
+      "id": "qwen2.5-14b-instruct",
+      "name": "Qwen2.5 14B Instruct",
+      "quant": "Q4_K_M",
+      "file": "qwen2.5-14b-instruct-q4_k_m.gguf",
+      "repo": "Qwen/Qwen2.5-14B-Instruct-GGUF",
+      "size_gb": 9.0,
+      "vram_min_gb": 12,
+      "license": "Apache-2.0",
+      "quality": 85,
+      "speed": 78
+    },
+    {
+      "id": "llama-3.1-8b-instruct",
+      "name": "Llama 3.1 8B Instruct",
+      "quant": "Q4_K_M",
+      "file": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+      "repo": "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+      "size_gb": 4.9,
+      "vram_min_gb": 8,
+      "license": "Llama 3.1 Community License",
+      "quality": 78,
+      "speed": 88
+    }
+  ]
+}

@@ -50,7 +50,7 @@
 | [19 安全与隐私模型](docs/19-security-model.md) | 威胁模型、不变量→断言映射、需求框数据流、隐私红线、部署 CSP 加固 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 | [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
-| [backend/ 后端演进计划](backend/) | 什么阶段需要什么后端、SaaS 选型与自建边界、接口草案、隐私红线 |
+| [backend/ 后端演进计划 + API v0](backend/) | 分阶段计划、SaaS 选型与自建边界、隐私红线;已含零依赖 API v0(advise/registry/license/telemetry/feedback) |
 
 ## 一句话定位
 
