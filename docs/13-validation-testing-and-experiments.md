@@ -42,11 +42,11 @@
 
 **已有基础(不要重复造):** `bash web/tests/run.sh`
 
-- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流断言(约 41 项),零依赖,只需 Node。
+- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(82 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
 - `xss.browser.html`:无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当纯文本渲染。
 - `run.sh`:串起两者,任一失败退出码 `1`(可直接进 CI / pre-commit)。
 
-**建议补充的测试类型**(随着 MVP 从静态站走向真实安装器,逐步补齐):
+**建议补充的测试类型**(随着 MVP 从演示站——目前除聊天页可选接入本机模型外均为静态演示——走向真实安装器,逐步补齐):
 
 | 类型 | 测什么 | 建议工具 | 触发时机 |
 |------|--------|---------|---------|
@@ -598,6 +598,7 @@ jobs:
 - [08 · 资源与链接](08-resources.md) —— 「合规与 License」一节:埋点匿名化与美国隐私合规(CCPA/CPRA)要点
 - [09 · MVP 工程任务清单](09-mvp-engineering-tasks.md) —— 测试与埋点对应的工程落点
 - [15 · Marketing Playbook](15-marketing-playbook.md) —— A/B 与渠道实验的下游(增长 / GTM)
+- [16 · 本地 AI 接入网页](16-local-ai-web-integration.md) —— chat.html 可选接入本机 llm-lab 模型栈的实现与安全边界(网络边界断言的来源)
 - [`web/tests/`](../web/tests/) —— 现有本地安全测试(`bash web/tests/run.sh`)
 
 ---

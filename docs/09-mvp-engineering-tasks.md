@@ -19,6 +19,8 @@
 
 ## M0 · 技术骨架与选型验证(先手动跑通,再谈自动化)
 
+> 参考:M0-2(llama.cpp + OpenAI 兼容流式接口)和 M0-3(Embedding → 检索 → 来源引用)对应的技术路径,已在开发机(macOS,llm-lab 栈)上跑通一套可运行的参考实现,并接入了演示站聊天页 —— 见 [16 本地 AI 接入网页](16-local-ai-web-integration.md)。Windows + NVIDIA 环境仍需按下表逐项验证。
+
 | ID | 任务 | 验收标准 | 依赖 | 估算 |
 |----|------|----------|------|------|
 | M0-1 | 确定技术栈:安装器框架(Tauri vs Electron vs 原生 NSIS+WebView2)、推理运行时(llama.cpp server vs Ollama 内嵌)、UI 框架 | 写成 ADR(架构决策记录)入库,含理由和放弃项 | — | 2 |

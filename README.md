@@ -44,8 +44,9 @@
 | [13 测试与实验](docs/13-validation-testing-and-experiments.md) | 假设验证、可用性测试、Beta 计划、指标、埋点、A/B |
 | [14 用户引导与激活](docs/14-user-onboarding-and-activation.md) | 激活漏斗、首次体验、留存、升级引导、FAQ |
 | [15 营销手册](docs/15-marketing-playbook.md) | 各渠道广告 + 教程 + 可直接用的英文脚本文案 |
+| [16 本地 AI 接入网页](docs/16-local-ai-web-integration.md) | chat.html ↔ llm-lab:本地 RAG + 流式聊天的完整实现说明 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
-| [web/ 可用网站](web/) | 营销首页 + 引导流程,自动生成本地安装包 / 云端部署手册 |
+| [web/ 可用网站](web/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
 
 ## 一句话定位
 

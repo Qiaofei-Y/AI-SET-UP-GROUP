@@ -59,10 +59,12 @@ ok('no network egress outside assets/local-llm.js (fetch/XHR/WS/SSE/beacon/Image
 const conn = read(CONNECTOR_PATH);
 ok('local-llm.js: BASE pinned to 127.0.0.1 and assigned exactly once',
   /var BASE = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bBASE\s*=/g) || []).length === 1);
+ok('local-llm.js: PORTAL pinned to 127.0.0.1 and assigned exactly once',
+  /var PORTAL = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bPORTAL\s*=/g) || []).length === 1);
 const fetches = conn.match(/\bfetch\s*\(/g) || [];
-const baseFetches = conn.match(/\bfetch\s*\(\s*BASE\s*\+/g) || [];
-ok('local-llm.js: every fetch() targets BASE (' + baseFetches.length + '/' + fetches.length + ')',
-  fetches.length > 0 && fetches.length === baseFetches.length);
+const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL)\s*\+/g) || [];
+ok('local-llm.js: every fetch() targets BASE or PORTAL (' + pinnedFetches.length + '/' + fetches.length + ')',
+  fetches.length > 0 && fetches.length === pinnedFetches.length);
 ok('local-llm.js: no other URL literals besides 127.0.0.1', !/https?:\/\/(?!127\.0\.0\.1)/.test(conn));
 ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',
   !/XMLHttpRequest|new\s+WebSocket|new\s+EventSource|sendBeacon|new\s+Image\s*\(|\bimport\s*\(/.test(conn));

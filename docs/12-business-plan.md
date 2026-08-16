@@ -133,7 +133,8 @@
 | 流程图与架构图 | [10 Figma 图表](10-figma-diagrams.md) |
 | AI 架构与模型路由 | [11 AI 架构与模型路由](11-ai-architecture-and-model-routing.md) |
 | 营销打法(待建) | [15 营销 Playbook](15-marketing-playbook.md) |
-| 可运行网站 | [`web/index.html`](../web/index.html) · [`web/build.html`](../web/build.html) · [`web/chat.html`](../web/chat.html) · [`web/dashboard.html`](../web/dashboard.html) · [`web/signup.html`](../web/signup.html) |
+| 本地 AI 接入网页(演示聊天页 ↔ 本机模型) | [16 本地 AI 接入网页](16-local-ai-web-integration.md) |
+| 可运行网站 | [`web/index.html`](../web/index.html) · [`web/build.html`](../web/build.html) · [`web/chat.html`](../web/chat.html)(可选接入本机模型,见 [16](16-local-ai-web-integration.md)) · [`web/dashboard.html`](../web/dashboard.html) · [`web/signup.html`](../web/signup.html) |
 | 设计原型 | [`figma/prototype.html`](../figma/prototype.html) · [`figma/design-system.md`](../figma/design-system.md) |
 
 ---

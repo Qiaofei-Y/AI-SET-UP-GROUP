@@ -231,7 +231,20 @@
         bub.textContent = text; toBottom();
       },
       done: finalize,
-      fail: function (en, zh) { if (!text) { isFail = true; enMsg = en; zhMsg = zh; text = t(en, zh); } finalize(); }
+      fail: function (en, zh) { if (!text) { isFail = true; enMsg = en; zhMsg = zh; text = t(en, zh); } finalize(); },
+      // citation row for RAG answers — same look as the demo cites, textContent only
+      addCite: function (file, loc) {
+        var d = document.createElement('div'); d.className = 'chat-cite reveal';
+        var fi = document.createElement('span'); fi.className = 'fi';
+        fi.textContent = String(file).split('.').pop().toUpperCase().slice(0, 3);
+        var wrap = document.createElement('span');
+        var b = document.createElement('b'); b.textContent = String(file);
+        var s2 = document.createElement('span'); s2.textContent = ' · ' + String(loc);
+        wrap.appendChild(b); wrap.appendChild(s2);
+        d.appendChild(fi); d.appendChild(wrap);
+        col.insertBefore(d, actions);
+        toBottom();
+      }
     };
   }
 
