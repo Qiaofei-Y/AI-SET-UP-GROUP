@@ -45,6 +45,9 @@
 | [14 用户引导与激活](docs/14-user-onboarding-and-activation.md) | 激活漏斗、首次体验、留存、升级引导、FAQ |
 | [15 营销手册](docs/15-marketing-playbook.md) | 各渠道广告 + 教程 + 可直接用的英文脚本文案 |
 | [16 本地 AI 接入网页](docs/16-local-ai-web-integration.md) | chat.html ↔ llm-lab:本地 RAG + 流式聊天的完整实现说明 |
+| [17 仓库架构与工程约定](docs/17-repo-architecture-and-conventions.md) | 目录职责、端口表、前端三铁律、i18n 规则、全局钩子清单、文档镜像规则、决策记录 |
+| [18 测试与质量规范](docs/18-testing-and-quality.md) | 测试全景、提交门槛(DoD)、安全断言放宽流程、无头浏览器端到端验证 playbook |
+| [19 安全与隐私模型](docs/19-security-model.md) | 威胁模型、不变量→断言映射、需求框数据流、隐私红线、部署 CSP 加固 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 | [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
 | [backend/ 后端演进计划](backend/) | 什么阶段需要什么后端、SaaS 选型与自建边界、接口草案、隐私红线 |

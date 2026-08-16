@@ -34,7 +34,7 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
 | `assets/local-llm.js` | 可选:本地模型连接器(只连 `127.0.0.1`;chat:项目 RAG > 通用聊天 > 演示;build:需求框一句话由本地 AI 分类并自动选模板) | chat + build |
 
-原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。
+原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。完整工程约定(i18n 规则、全局钩子清单、文档镜像规则)见 [docs/17](../docs/17-repo-architecture-and-conventions.md)。
 
 ## 动线
 

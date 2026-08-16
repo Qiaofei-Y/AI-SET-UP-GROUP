@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的纯前端演示站**,没有真实后端:
 
-- `docs/01–16`:愿景、MVP、商业、营销等全套产品文档(编号即阅读顺序,`README.md` 有索引)。
+- `docs/01–19`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)。
 - `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
 - `backend/`:目前只有演进计划(`backend/README.md`)——什么阶段需要什么后端、哪些用美国第三方 SaaS 顶、哪些必须自建(护城河)。**未经计划确认不要在这里写服务代码。**
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
