@@ -32,11 +32,9 @@ python3 backend/tests/api.test.py        # 后端测试(26 项,起真实服务)
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
 ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户(8092 为预留顾问端口,用户可自行起服务)
-ai ingest ~/AI-SET-UP-GROUP        # 文档改动后增量更新 RAG 索引(目录扫描按 llm-lab 约定跳过所有 README)
-# backend/frontend 的 README 是演进计划/测试规范而非目录说明,改动后需显式重新入库:
-ai ingest ~/AI-SET-UP-GROUP/backend/README.md
-ai ingest ~/AI-SET-UP-GROUP/frontend/README.md
-ai ingest ~/AI-SET-UP-GROUP/frontend/tests/README.md
+ai ingest ~/AI-SET-UP-GROUP        # 文档改动后增量更新 RAG 索引(已入库文件——含 README——都会自动查新)
+# 新增 README 需显式入库一次(目录扫描按 llm-lab 约定跳过 README),之后目录命令即可刷新:
+# ai ingest ~/AI-SET-UP-GROUP/<路径>/README.md
 ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 ```
 
