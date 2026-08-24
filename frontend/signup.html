@@ -24,15 +24,15 @@
   <div class="signup-card">
     <!-- form -->
     <div id="formView">
-      <div class="eyebrow" data-en="CREATE ACCOUNT" data-zh="创建账号">CREATE ACCOUNT</div>
-      <h1 data-en="Unlock all features" data-zh="解锁全部功能">Unlock all features</h1>
-      <div class="lead" data-en="A free account unlocks everything that's live during beta." data-zh="创建免费账号即可解锁 Beta 期间已上线的全部功能。">A free account unlocks everything that's live during beta.</div>
+      <div class="eyebrow" id="suEyebrow" data-en="CREATE ACCOUNT" data-zh="创建账号">CREATE ACCOUNT</div>
+      <h1 id="suTitle" data-en="Unlock all features" data-zh="解锁全部功能">Unlock all features</h1>
+      <div class="lead" id="suLead" data-en="A free account unlocks everything that's live during beta." data-zh="创建免费账号即可解锁 Beta 期间已上线的全部功能。">A free account unlocks everything that's live during beta.</div>
       <div class="plan-pill" id="planPill">Pro plan</div>
 
-      <div class="beta-note" data-en="It's free during beta — no card, no charge. New features unlock for you as they roll out." data-zh="Beta 期间免费——无需信用卡、不收费。新功能上线后会自动为你解锁。">It's free during beta — no card, no charge. New features unlock for you as they roll out.</div>
+      <div class="beta-note" id="betaNote" data-en="It's free during beta — no card, no charge. New features unlock for you as they roll out." data-zh="Beta 期间免费——无需信用卡、不收费。新功能上线后会自动为你解锁。">It's free during beta — no card, no charge. New features unlock for you as they roll out.</div>
 
       <form id="signupForm" novalidate>
-        <div class="form-field">
+        <div class="form-field" id="nameField">
           <label for="fName" data-en="Name " data-zh="姓名 ">Name <span class="req">*</span></label>
           <input id="fName" autocomplete="name" aria-describedby="errName" data-en-ph="Your name" data-zh-ph="你的姓名" placeholder="Your name">
           <div class="form-err" id="errName" role="alert"></div>
@@ -47,11 +47,17 @@
           <input id="fCompany" autocomplete="organization" aria-describedby="errCompany" data-en-ph="Your company" data-zh-ph="你的公司" placeholder="Your company">
           <div class="form-err" id="errCompany" role="alert"></div>
         </div>
-        <div class="privacy-line" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
-        <button class="btn primary lg" type="submit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
+        <div class="privacy-line" id="privacyLine" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
+        <button class="btn primary lg" type="submit" id="suSubmit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
       </form>
 
-      <div class="alt-link" data-en="Just want the free version? " data-zh="只想用免费版? ">Just want the free version? <a href="build.html" data-en="Start with no signup →" data-zh="免注册直接开始 →">Start with no signup →</a></div>
+      <div class="alt-link" id="altSignup">
+        <span data-en="Just want the free version? " data-zh="只想用免费版? ">Just want the free version? </span><a href="build.html" data-en="Start with no signup →" data-zh="免注册直接开始 →">Start with no signup →</a>
+        <br><span data-en="Already have an account? " data-zh="已有账号? ">Already have an account? </span><a href="signup.html?mode=login" data-en="Log in →" data-zh="登录 →">Log in →</a>
+      </div>
+      <div class="alt-link hidden" id="altLogin">
+        <span data-en="New here? " data-zh="还没有账号? ">New here? </span><a href="signup.html?plan=pro" data-en="Create a free account →" data-zh="创建免费账号 →">Create a free account →</a>
+      </div>
     </div>
 
     <!-- success -->
@@ -61,6 +67,7 @@
         <h1 id="successGreet" data-en="You're on the beta list!" data-zh="你已加入 Beta 名单!">You're on the beta list!</h1>
         <p data-en="Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime." data-zh="Beta 期间已上线的功能全部解锁且免费。新功能上线后会陆续开放——欢迎随时回来体验。">Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime.</p>
         <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+        <a class="btn ghost lg" href="dashboard.html" style="margin-top:8px" data-en="Open your Control Center →" data-zh="打开你的控制中心 →">Open your Control Center →</a>
       </div>
     </div>
 

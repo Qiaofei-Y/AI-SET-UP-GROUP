@@ -1,11 +1,28 @@
-// Build My AI — signup (beta). Reads ?plan=pro|business, shows the right fields.
+// Build My AI — signup + login (beta). Reads ?plan=pro|business and ?mode=login.
 // Static demo: no backend, no data echoed into innerHTML (XSS-safe by construction).
+// Login is demo-only: validates the email shape locally, then opens the Control
+// Center — nothing is sent or stored (real auth is P2, see backend/README).
 (function () {
   function plan() {
     var p = (location.search.match(/[?&]plan=([a-z]+)/) || [])[1];
     return p === 'business' ? 'business' : 'pro';
   }
   var P = plan();
+  var LOGIN = /[?&]mode=login\b/.test(location.search);
+
+  // swap a bilingual label: attributes keep langchange working, textContent shows now
+  function relabel(id, en, zh) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.setAttribute('data-en', en);
+    el.setAttribute('data-zh', zh);
+    el.textContent = t(en, zh);
+  }
+
+  function hide(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
 
   document.addEventListener('DOMContentLoaded', function () {
     var isBiz = P === 'business';
@@ -18,6 +35,22 @@
     // company field only for business
     var companyField = document.getElementById('companyField');
     if (companyField) companyField.style.display = isBiz ? '' : 'none';
+
+    if (LOGIN) {
+      relabel('suEyebrow', 'LOG IN', '登录');
+      relabel('suTitle', 'Welcome back', '欢迎回来');
+      relabel('suLead', 'Log in with the email you used for the beta.', '用你注册 Beta 时的邮箱登录。');
+      relabel('suSubmit', 'Log in', '登录');
+      var titleEl = document.querySelector('title');
+      if (titleEl) {
+        titleEl.setAttribute('data-en', 'Build My AI — Log in');
+        titleEl.setAttribute('data-zh', 'Build My AI — 登录');
+      }
+      document.title = t('Build My AI — Log in', 'Build My AI — 登录');
+      hide('planPill'); hide('betaNote'); hide('nameField'); hide('companyField'); hide('privacyLine');
+      document.getElementById('altSignup').classList.add('hidden');
+      document.getElementById('altLogin').classList.remove('hidden');
+    }
 
     var form = document.getElementById('signupForm');
     var fName = document.getElementById('fName');
@@ -50,15 +83,21 @@
       var name = fName.value.trim();
       var email = fEmail.value.trim();
       var company = fCompany.value.trim();
-      errs.name = !name;
+      errs.name = !LOGIN && !name;
       errs.email = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      errs.company = isBiz && !company;
+      errs.company = !LOGIN && isBiz && !company;
       renderErrs();
       mark(fName, errs.name);
       mark(fEmail, errs.email);
       mark(fCompany, errs.company);
       var firstBad = errs.name ? fName : (errs.email ? fEmail : (errs.company ? fCompany : null));
       if (firstBad) { firstBad.focus(); return; }
+
+      if (LOGIN) {
+        // demo login: straight to the Control Center, nothing sent or stored
+        location.href = 'dashboard.html';
+        return;
+      }
 
       // Success — NO user input is inserted into the DOM (avoids any injection).
       document.getElementById('formView').classList.add('hidden');
