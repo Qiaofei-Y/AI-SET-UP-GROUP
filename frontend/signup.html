@@ -47,6 +47,11 @@
           <input id="fCompany" autocomplete="organization" aria-describedby="errCompany" data-en-ph="Your company" data-zh-ph="你的公司" placeholder="Your company">
           <div class="form-err" id="errCompany" role="alert"></div>
         </div>
+        <div class="form-field">
+          <label for="fPassword" data-en="Password " data-zh="密码 ">Password <span class="req">*</span></label>
+          <input id="fPassword" type="password" autocomplete="new-password" aria-describedby="errPassword" data-en-ph="At least 8 characters" data-zh-ph="至少 8 位" placeholder="At least 8 characters">
+          <div class="form-err" id="errPassword" role="alert"></div>
+        </div>
         <div class="privacy-line" id="privacyLine" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
         <button class="btn primary lg" type="submit" id="suSubmit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
       </form>
@@ -72,11 +77,12 @@
     </div>
 
     <!-- demo notice (shared by form + success views) -->
-    <div class="alt-link"><span class="mono" data-en="Demo · this form runs entirely in your browser — nothing is sent or stored." data-zh="演示 · 此表单完全在你的浏览器本地运行——不会发送或存储任何数据。">Demo · this form runs entirely in your browser — nothing is sent or stored.</span></div>
+    <div class="alt-link"><span class="mono" data-en="Demo · everything stays on this machine: with the local API online your account lives in a local database (127.0.0.1); otherwise the form runs entirely in your browser." data-zh="演示 · 一切都留在这台电脑上:本机 API 在线时账号存入本地数据库(127.0.0.1),离线时表单完全在浏览器内运行。">Demo · everything stays on this machine: with the local API online your account lives in a local database (127.0.0.1); otherwise the form runs entirely in your browser.</span></div>
   </div>
 </div>
 
 <script src="assets/i18n.js"></script>
+<script src="assets/local-llm.js"></script>
 <script src="assets/signup.js"></script>
 </body>
 </html>

@@ -395,6 +395,29 @@
     }).catch(function () { apiUp = false; });
   });
 
+  // ---- auth (:8940): real signup/login for signup.html ----
+  // Identity fields go ONLY to the self-hosted API on this machine (users.db);
+  // signup.js falls back to the pure-frontend demo flow when the API is offline.
+  function authCall(path, body, cb) {
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 4000);
+    fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: pc.signal,
+      body: JSON.stringify(body || {})
+    })
+      .then(function (r) {
+        return r.json().then(function (j) { return { status: r.status, json: j }; });
+      })
+      .then(function (res) { clearTimeout(timer); cb(null, res); })
+      .catch(function () { clearTimeout(timer); cb(new Error('offline'), null); });
+  }
+  window.__bmaAuth = {
+    signup: function (body, cb) { authCall('/v1/auth/signup', body, cb); },
+    login: function (body, cb) { authCall('/v1/auth/login', body, cb); }
+  };
+
   window.LocalLLM = {
     ready: function () { return isReady && !!window.__chatLive; },
     ask: function (q) {

@@ -56,16 +56,23 @@
     var fName = document.getElementById('fName');
     var fEmail = document.getElementById('fEmail');
     var fCompany = document.getElementById('fCompany');
+    var fPassword = document.getElementById('fPassword');
     var errName = document.getElementById('errName');
     var errEmail = document.getElementById('errEmail');
     var errCompany = document.getElementById('errCompany');
+    var errPassword = document.getElementById('errPassword');
+    if (LOGIN && fPassword) fPassword.setAttribute('autocomplete', 'current-password');
 
     // Current validation state, so visible errors re-render on language toggle.
-    var errs = { name: false, email: false, company: false };
+    var errs = { name: false, email: false, company: false, password: false,
+                 emailTaken: false, badCred: false };
     function renderErrs() {
       errName.textContent = errs.name ? t('Please enter your name.', '请填写姓名。') : '';
-      errEmail.textContent = errs.email ? t('Please enter a valid email.', '请填写有效邮箱。') : '';
+      errEmail.textContent = errs.email ? t('Please enter a valid email.', '请填写有效邮箱。')
+        : (errs.emailTaken ? t('This email is already registered — log in instead.', '该邮箱已注册,请直接登录。') : '');
       errCompany.textContent = errs.company ? t('Company name is required for Business.', '企业版需填写公司名称。') : '';
+      errPassword.textContent = errs.password ? t('Password must be at least 8 characters.', '密码至少 8 位。')
+        : (errs.badCred ? t('Email or password is incorrect.', '邮箱或密码不正确。') : '');
     }
     function mark(input, bad) {
       if (bad) input.setAttribute('aria-invalid', 'true');
@@ -78,28 +85,8 @@
       renderErrs();
     });
 
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var name = fName.value.trim();
-      var email = fEmail.value.trim();
-      var company = fCompany.value.trim();
-      errs.name = !LOGIN && !name;
-      errs.email = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      errs.company = !LOGIN && isBiz && !company;
-      renderErrs();
-      mark(fName, errs.name);
-      mark(fEmail, errs.email);
-      mark(fCompany, errs.company);
-      var firstBad = errs.name ? fName : (errs.email ? fEmail : (errs.company ? fCompany : null));
-      if (firstBad) { firstBad.focus(); return; }
-
-      if (LOGIN) {
-        // demo login: straight to the Control Center, nothing sent or stored
-        location.href = 'dashboard.html';
-        return;
-      }
-
-      // Success — NO user input is inserted into the DOM (avoids any injection).
+    // Success — NO user input is inserted into the DOM (avoids any injection).
+    function showSuccess(name) {
       document.getElementById('formView').classList.add('hidden');
       var s = document.getElementById('successView');
       s.classList.remove('hidden');
@@ -113,6 +100,82 @@
       // (setAttribute + textContent only — never innerHTML)
       greet.setAttribute('data-en', greetEn);
       greet.setAttribute('data-zh', greetZh);
+    }
+
+    function rememberSession(res) {
+      // session-scoped only (cleared when the tab closes); token comes from
+      // the local API and never leaves this machine
+      try {
+        sessionStorage.setItem('bma-session', res.json.token);
+        sessionStorage.setItem('bma-user', res.json.user.name);
+      } catch (ignore) { /* private mode: still works, just not remembered */ }
+    }
+
+    var busy = false;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (busy) return;
+      var name = fName.value.trim();
+      var email = fEmail.value.trim();
+      var company = fCompany.value.trim();
+      var password = fPassword.value;
+      errs.name = !LOGIN && !name;
+      errs.email = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      errs.company = !LOGIN && isBiz && !company;
+      errs.password = password.length < 8;
+      errs.emailTaken = false;
+      errs.badCred = false;
+      renderErrs();
+      mark(fName, errs.name);
+      mark(fEmail, errs.email);
+      mark(fCompany, errs.company);
+      mark(fPassword, errs.password);
+      var firstBad = errs.name ? fName : (errs.email ? fEmail
+        : (errs.company ? fCompany : (errs.password ? fPassword : null)));
+      if (firstBad) { firstBad.focus(); return; }
+
+      var auth = window.__bmaAuth;
+
+      if (LOGIN) {
+        if (!auth) { location.href = 'dashboard.html'; return; } // demo fallback
+        busy = true;
+        auth.login({ email: email, password: password }, function (err, res) {
+          busy = false;
+          if (err) { location.href = 'dashboard.html'; return; } // API offline: demo fallback
+          if (res.status === 200 && res.json.ok) {
+            rememberSession(res);
+            location.href = 'dashboard.html';
+            return;
+          }
+          errs.badCred = true;
+          renderErrs();
+          fPassword.focus();
+        });
+        return;
+      }
+
+      if (!auth) { showSuccess(name); return; } // demo fallback
+      var body = { name: name, email: email, password: password,
+                   plan: isBiz ? 'business' : 'pro' };
+      if (isBiz) body.company = company;
+      busy = true;
+      auth.signup(body, function (err, res) {
+        busy = false;
+        if (err) { showSuccess(name); return; } // API offline: demo fallback
+        if (res.status === 200 && res.json.ok) {
+          rememberSession(res);
+          showSuccess(name);
+          return;
+        }
+        if (res.status === 409) {
+          errs.emailTaken = true;
+          renderErrs();
+          mark(fEmail, true);
+          fEmail.focus();
+          return;
+        }
+        showSuccess(name); // unexpected server shape: don't strand the user
+      });
     });
   });
 })();

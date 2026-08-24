@@ -11,6 +11,16 @@ Endpoints (drafts from the plan, minimal but real):
   POST /v1/license/verify             HMAC-signed key -> {valid, tier, grace_until}
   POST /v1/telemetry/deploy           anonymous deploy stats (schema-whitelisted)
   POST /v1/feedback                   up/down aggregate (no content, ever)
+  POST /v1/auth/signup                create account -> session token
+  POST /v1/auth/login                 email + password -> session token
+  POST /v1/auth/logout                invalidate the presented session token
+  GET  /v1/auth/me                    Bearer token -> {name, email, plan}
+
+Identity vs telemetry stay in SEPARATE databases: users/sessions live in
+data/users.db, anonymous events in data/events.db — so the "telemetry is
+anonymous" claim stays auditable at the file level. Passwords are stored
+as PBKDF2-HMAC-SHA256 (per-user salt); sessions store only the sha256 of
+the token, so neither secret exists in the database.
 
 Privacy red lines (docs/19 §4), enforced in code and by backend/tests:
   - every POST body is validated against a strict field whitelist; unknown
@@ -43,7 +53,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 ROOT = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(ROOT, 'registry.json')
 DB_PATH = os.environ.get('BMA_DB', os.path.join(ROOT, 'data', 'events.db'))
+USERS_DB = os.environ.get('BMA_USERS_DB', os.path.join(ROOT, 'data', 'users.db'))
 LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', 'dev-secret-change-me')
+PBKDF2_ITERS = 100000            # stdlib-only password hashing
+SESSION_DAYS = 30
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
 MAX_NEED_TEXT = 500              # one sentence, not a document
@@ -169,6 +182,54 @@ def verify_license(license_key, secret=None):
     return tier.lower() if hmac.compare_digest(sig, _license_sig(tier, token, secret)) else None
 
 
+# ---------- auth (self-built P2: users + sessions in their own database) ----------
+
+def hash_password(password, salt=None):
+    salt = salt or secrets.token_bytes(16)
+    return salt, hashlib.pbkdf2_hmac('sha256', password.encode(), salt, PBKDF2_ITERS)
+
+
+def _token_hash(token):
+    # sessions store only this digest: a leaked users.db can't impersonate anyone
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def users_con():
+    return sqlite3.connect(USERS_DB)
+
+
+def init_users_db(path=None):
+    path = path or USERS_DB
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    con = sqlite3.connect(path)
+    con.execute('''CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
+        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB)''')
+    con.execute('''CREATE TABLE IF NOT EXISTS sessions (
+        token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
+    con.commit()
+    con.close()
+
+
+def create_session(con, user_id):
+    token = secrets.token_hex(24)
+    now = int(time.time())
+    con.execute('INSERT INTO sessions (token_hash, user_id, ts, expires) VALUES (?,?,?,?)',
+                (_token_hash(token), user_id, now, now + SESSION_DAYS * 86400))
+    return token
+
+
+def session_user(con, token):
+    """token -> (id, name, email, plan) or None (unknown / expired)."""
+    if not token:
+        return None
+    row = con.execute(
+        'SELECT u.id, u.name, u.email, u.plan FROM sessions s JOIN users u ON u.id = s.user_id '
+        'WHERE s.token_hash = ? AND s.expires > ?',
+        (_token_hash(token), int(time.time()))).fetchone()
+    return row
+
+
 # ---------- schema whitelist (the privacy red line, executable) ----------
 
 def _enum(*vals):
@@ -235,6 +296,32 @@ ADVISE_SCHEMA = {
 }
 
 
+def _email_shape(v):
+    return isinstance(v, str) and len(v) <= 254 and re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', v) is not None
+
+
+def _identity_name(v):  # identity field (users.db, never events.db): capped, single line
+    return isinstance(v, str) and 0 < len(v.strip()) <= 80 and re.search(r'[\r\n\t]', v) is None
+
+
+def _password_shape(v):
+    return isinstance(v, str) and 8 <= len(v) <= 128
+
+
+SIGNUP_SCHEMA = {
+    'name':     (True,  _identity_name),
+    'email':    (True,  _email_shape),
+    'password': (True,  _password_shape),
+    'company':  (False, _identity_name),
+    'plan':     (False, _enum('free', 'pro', 'business')),
+}
+
+LOGIN_SCHEMA = {
+    'email':    (True, _email_shape),
+    'password': (True, _password_shape),
+}
+
+
 def validate(body, schema):
     """Strict whitelist: unknown key, missing required or bad value -> error name."""
     if not isinstance(body, dict):
@@ -288,7 +375,7 @@ class Api(BaseHTTPRequestHandler):
         origin = self.headers.get('Origin', '')
         if ALLOWED_ORIGIN.match(origin):
             self.send_header('Access-Control-Allow-Origin', origin)
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
 
     def _json(self, status, obj):
@@ -336,6 +423,8 @@ class Api(BaseHTTPRequestHandler):
                 models = [m for m in models if m['vram_min_gb'] <= int(vram)]
             return self._json(200, {'models': models,
                                     'recommended': models[0]['id'] if models else None})
+        if path == '/v1/auth/me':
+            return self._auth_me()
         return self._json(404, {'error': 'not_found'})
 
     def do_POST(self):
@@ -344,6 +433,9 @@ class Api(BaseHTTPRequestHandler):
             '/v1/license/verify': self._license,
             '/v1/telemetry/deploy': self._telemetry,
             '/v1/feedback': self._feedback,
+            '/v1/auth/signup': self._auth_signup,
+            '/v1/auth/login': self._auth_login,
+            '/v1/auth/logout': self._auth_logout,
         }
         h = handlers.get(self.path)
         if not h:
@@ -392,9 +484,84 @@ class Api(BaseHTTPRequestHandler):
                (int(time.time()), body['rating'], body['template'], body['model']))
         return self._json(200, {'ok': True})
 
+    # -- auth (users.db only; nothing here ever touches events.db) --
+    def _bearer(self):
+        m = re.match(r'^Bearer\s+([0-9a-f]{48})$', self.headers.get('Authorization', '') or '')
+        return m.group(1) if m else None
+
+    def _auth_signup(self, body):
+        err = validate(body, SIGNUP_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        email = body['email'].strip().lower()
+        salt, pw = hash_password(body['password'])
+        con = users_con()
+        try:
+            cur = con.execute(
+                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash) '
+                'VALUES (?,?,?,?,?,?,?)',
+                (int(time.time()), body['name'].strip(), email,
+                 (body.get('company') or '').strip() or None,
+                 body.get('plan', 'free'), salt, pw))
+            token = create_session(con, cur.lastrowid)
+            con.commit()
+        except sqlite3.IntegrityError:
+            return self._json(409, {'error': 'email_taken'})
+        finally:
+            con.close()
+        return self._json(200, {'ok': True, 'token': token,
+                                'user': {'name': body['name'].strip(), 'email': email,
+                                         'plan': body.get('plan', 'free')}})
+
+    def _auth_login(self, body):
+        err = validate(body, LOGIN_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        email = body['email'].strip().lower()
+        con = users_con()
+        try:
+            row = con.execute(
+                'SELECT id, name, plan, pw_salt, pw_hash FROM users WHERE email = ?',
+                (email,)).fetchone()
+            # unknown email still runs the hash: same timing, same error either way
+            salt = row[3] if row else b'\x00' * 16
+            _, pw = hash_password(body['password'], salt)
+            if not row or not hmac.compare_digest(pw, row[4]):
+                return self._json(401, {'error': 'bad_credentials'})
+            token = create_session(con, row[0])
+            con.commit()
+        finally:
+            con.close()
+        return self._json(200, {'ok': True, 'token': token,
+                                'user': {'name': row[1], 'email': email, 'plan': row[2]}})
+
+    def _auth_logout(self, body):
+        token = self._bearer()
+        if not token:
+            return self._json(401, {'error': 'no_token'})
+        con = users_con()
+        try:
+            con.execute('DELETE FROM sessions WHERE token_hash = ?', (_token_hash(token),))
+            con.commit()
+        finally:
+            con.close()
+        return self._json(200, {'ok': True})
+
+    def _auth_me(self):
+        con = users_con()
+        try:
+            row = session_user(con, self._bearer())
+        finally:
+            con.close()
+        if not row:
+            return self._json(401, {'error': 'not_logged_in'})
+        return self._json(200, {'ok': True,
+                                'user': {'name': row[1], 'email': row[2], 'plan': row[3]}})
+
 
 def create_server(port=8940, host='127.0.0.1'):
     init_db()
+    init_users_db()
     return ThreadingHTTPServer((host, port), Api)
 
 

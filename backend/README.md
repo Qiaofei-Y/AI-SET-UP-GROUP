@@ -9,7 +9,7 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 26 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 31 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |
@@ -20,10 +20,11 @@ python3 backend/tests/api.test.py          # 26 项测试(起真实服务打真�
 | `POST /v1/license/verify` | ✅ v0 | HMAC 签名 key、无状态、72h 离线宽限;密钥用 `BMA_LICENSE_SECRET` 注入 |
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
+| `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」 |
 
-**前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时)。离线自动回退纯前端。
+**前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时);signup 页注册/登录走 `/v1/auth/*`(经 `local-llm.js` 的 `__bmaAuth`,session token 存 sessionStorage、随标签页关闭清除)。离线自动回退纯前端。
 
-尚未做(按计划触发条件推进):Stripe/Clerk 对接、生产部署(Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
+尚未做(按计划触发条件推进):Stripe 对接(收款)、生产部署(Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。注册/登录已自建 v0(见上表),Clerk/Supabase 保留为正式上线时的可选替换。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
 
 隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 
@@ -59,7 +60,7 @@ python3 backend/tests/api.test.py          # 26 项测试(起真实服务打真�
 
 | 需求 | 选型 | 说明 |
 |------|------|------|
-| 注册/登录 | Clerk 或 Supabase Auth | signup.html 已区分 Free(免注册)/ Pro / Business(收公司名),照 [docs/05](../docs/05-business-model.md) 分层 |
+| 注册/登录 | ~~Clerk 或 Supabase Auth~~ → **已自建 v0**(`/v1/auth/*`,见上表) | signup.html 已区分 Free(免注册)/ Pro / Business(收公司名),照 [docs/05](../docs/05-business-model.md) 分层;正式上线若需社交登录/邮箱验证再评估 Clerk/Supabase |
 | 支付 | Stripe(Payment Links 起步)| 免代码收款;正式后换 Checkout + Webhook |
 | license 校验 | **自建小 API**(第一个) | 安装器/Control Center 激活 Pro 功能时验一次 license;离线宽限期设计,不能让断网用户被锁 |
 

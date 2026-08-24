@@ -17,8 +17,10 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api'))
-# isolate the db BEFORE importing the server module
-os.environ['BMA_DB'] = os.path.join(tempfile.mkdtemp(prefix='bma-test-'), 'events.db')
+# isolate the dbs BEFORE importing the server module
+_TMP = tempfile.mkdtemp(prefix='bma-test-')
+os.environ['BMA_DB'] = os.path.join(_TMP, 'events.db')
+os.environ['BMA_USERS_DB'] = os.path.join(_TMP, 'users.db')
 import server  # noqa: E402
 
 
@@ -270,6 +272,82 @@ class ApiTest(unittest.TestCase):
                             'model': 'my secret file notes'}, 'invalid_field:model')):
             s, j, _ = call(self.port, '/v1/feedback', bad)
             self.assertEqual((s, j['error']), (400, want))
+
+    # ---- auth: real users table, identity kept out of events.db ----
+    def _call_auth(self, path, body=None, token=None, method=None):
+        url = 'http://127.0.0.1:%d%s' % (self.port, path)
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(url, data=data,
+                                     method=method or ('POST' if data is not None else 'GET'))
+        req.add_header('Content-Type', 'application/json')
+        if token:
+            req.add_header('Authorization', 'Bearer ' + token)
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, json.loads(r.read() or b'{}')
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read() or b'{}')
+
+    def test_auth_signup_login_me_logout_roundtrip(self):
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Ada Lovelace', 'email': 'Ada@Example.com',
+            'password': 'correct-horse-9', 'plan': 'pro'})
+        self.assertEqual((s, j['ok']), (200, True))
+        self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
+        self.assertEqual(j['user'], {'name': 'Ada Lovelace', 'email': 'ada@example.com',
+                                     'plan': 'pro'})
+        s, j = self._call_auth('/v1/auth/me', token=j['token'])
+        self.assertEqual((s, j['user']['email']), (200, 'ada@example.com'))
+
+        s, j = self._call_auth('/v1/auth/login',
+                               {'email': 'ADA@example.com', 'password': 'correct-horse-9'})
+        self.assertEqual((s, j['ok']), (200, True))
+        token = j['token']
+        s, _ = self._call_auth('/v1/auth/logout', {}, token=token)
+        self.assertEqual(s, 200)
+        s, j = self._call_auth('/v1/auth/me', token=token)
+        self.assertEqual((s, j['error']), (401, 'not_logged_in'))
+
+    def test_auth_duplicate_email_conflict(self):
+        body = {'name': 'A', 'email': 'dup@example.com', 'password': 'longenough1'}
+        s, _ = self._call_auth('/v1/auth/signup', body)
+        self.assertEqual(s, 200)
+        s, j = self._call_auth('/v1/auth/signup', dict(body, email='DUP@example.com'))
+        self.assertEqual((s, j['error']), (409, 'email_taken'))
+
+    def test_auth_bad_credentials(self):
+        self._call_auth('/v1/auth/signup', {'name': 'B', 'email': 'b@example.com',
+                                            'password': 'right-password'})
+        for email, pw in (('b@example.com', 'wrong-password'),
+                          ('nobody@example.com', 'right-password')):
+            s, j = self._call_auth('/v1/auth/login', {'email': email, 'password': pw})
+            self.assertEqual((s, j['error']), (401, 'bad_credentials'), email)
+        s, j = self._call_auth('/v1/auth/me', token='0' * 48)
+        self.assertEqual(s, 401)
+
+    def test_auth_rejects_bad_shapes(self):
+        base = {'name': 'C', 'email': 'c@example.com', 'password': 'longenough1'}
+        for mutation, want in ((dict(base, password='short'), 'invalid_field:password'),
+                               (dict(base, email='not-an-email'), 'invalid_field:email'),
+                               (dict(base, name='line\nbreak'), 'invalid_field:name'),
+                               (dict(base, bio='free text about me'), 'unknown_field:bio'),
+                               (dict(base, plan='enterprise'), 'invalid_field:plan')):
+            s, j = self._call_auth('/v1/auth/signup', mutation)
+            self.assertEqual((s, j['error']), (400, want))
+
+    def test_auth_secrets_never_stored_and_events_db_untouched(self):
+        before = db_count('telemetry') + db_count('feedback')
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Secret Keeper', 'email': 'keeper@example.com',
+            'password': 'PLAINTEXT-MARKER-789'})
+        self.assertEqual(s, 200)
+        with open(os.environ['BMA_USERS_DB'], 'rb') as f:
+            blob = f.read()
+        self.assertNotIn(b'PLAINTEXT-MARKER-789', blob)      # password only as PBKDF2
+        self.assertNotIn(j['token'].encode(), blob)          # session stores sha256(token)
+        self.assertEqual(before, db_count('telemetry') + db_count('feedback'))
+        with open(os.environ['BMA_DB'], 'rb') as f:
+            self.assertNotIn(b'keeper@example.com', f.read())  # identity never in events.db
 
     # ---- transport hardening ----
     def test_cors_localhost_only(self):
