@@ -1,24 +1,23 @@
-### AL ###
-#Template for AL projects for Dynamics 365 Business Central
-#launch.json folder
-.vscode/
-#Cache folder
-.alcache/
-#Symbols folder
-.alpackages/
-#Snapshots folder
-.snapshots/
-#Testing Output folder
-.output/
-#Extension App-file
-*.app
-#Rapid Application Development File
-rad.json
-#Translation Base-file
-*.g.xlf
-#License-files
-*.bclicense
-*.flf
-#Test results file
-TestResults.xml.DS_Store
+# macOS
+.DS_Store
 **/.DS_Store
+
+# Python(后端为 stdlib-only,无依赖;仅缓存产物)
+__pycache__/
+*.pyc
+.venv/
+
+# 本地数据(backend/.gitignore 已忽略 api/data/,此处兜底)
+*.db
+*.sqlite3
+
+# 编辑器
+.vscode/
+.idea/
+
+# Claude Code 本地配置(个人机器专属,不入库)
+.claude/settings.local.json
+
+# 临时文件
+*.log
+*.tmp
