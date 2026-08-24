@@ -398,15 +398,16 @@
   // ---- auth (:8940): real signup/login for signup.html ----
   // Identity fields go ONLY to the self-hosted API on this machine (users.db);
   // signup.js falls back to the pure-frontend demo flow when the API is offline.
-  function authCall(path, body, cb) {
+  function authCall(path, body, token, cb) {
     var pc = new AbortController();
     var timer = setTimeout(function () { pc.abort(); }, 4000);
-    fetch(API + path, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal: pc.signal,
-      body: JSON.stringify(body || {})
-    })
+    var opts = { method: body === null ? 'GET' : 'POST', headers: {}, signal: pc.signal };
+    if (body !== null) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+    fetch(API + path, opts)
       .then(function (r) {
         return r.json().then(function (j) { return { status: r.status, json: j }; });
       })
@@ -414,8 +415,10 @@
       .catch(function () { clearTimeout(timer); cb(new Error('offline'), null); });
   }
   window.__bmaAuth = {
-    signup: function (body, cb) { authCall('/v1/auth/signup', body, cb); },
-    login: function (body, cb) { authCall('/v1/auth/login', body, cb); }
+    signup: function (body, cb) { authCall('/v1/auth/signup', body, null, cb); },
+    login: function (body, cb) { authCall('/v1/auth/login', body, null, cb); },
+    me: function (token, cb) { authCall('/v1/auth/me', null, token, cb); },
+    logout: function (token, cb) { authCall('/v1/auth/logout', {}, token, cb); }
   };
 
   window.LocalLLM = {

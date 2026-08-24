@@ -16,6 +16,11 @@
       <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
       <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
     </div>
+    <span id="acctBox" class="hidden">
+      <span id="acctHello" class="mono"></span>
+      <button class="btn ghost" id="acctLogout" data-en="Log out" data-zh="退出登录">Log out</button>
+    </span>
+    <a class="btn ghost hidden" id="acctLogin" href="signup.html?mode=login" data-en="Log in" data-zh="登录">Log in</a>
     <a class="btn ghost" href="index.html" data-en="← Home" data-zh="← 首页">← Home</a>
   </div>
 </div></div></header>
@@ -88,7 +93,52 @@
 </div></div>
 
 <script src="assets/i18n.js"></script>
+<script src="assets/local-llm.js"></script>
 <script>
+// Account state: sessionStorage token -> /v1/auth/me via __bmaAuth (the only
+// network path is local-llm.js). Offline or logged out -> show the Log in link.
+// All rendering via textContent + data attributes — never innerHTML.
+(function () {
+  var box = document.getElementById('acctBox');
+  var loginLink = document.getElementById('acctLogin');
+  var hello = document.getElementById('acctHello');
+  var logoutBtn = document.getElementById('acctLogout');
+  var token = null;
+  try { token = sessionStorage.getItem('bma-session'); } catch (ignore) {}
+
+  function showLogin() {
+    box.classList.add('hidden');
+    loginLink.classList.remove('hidden');
+  }
+  function showUser(u) {
+    var name = String(u.name || '').slice(0, 40);
+    var en = name + ' · ' + (u.plan === 'business' ? 'Business' : (u.plan === 'pro' ? 'Pro' : 'Free'));
+    var zh = name + ' · ' + (u.plan === 'business' ? '企业版' : (u.plan === 'pro' ? '专业版' : '免费版'));
+    hello.textContent = t(en, zh);
+    hello.setAttribute('data-en', en);
+    hello.setAttribute('data-zh', zh);
+    loginLink.classList.add('hidden');
+    box.classList.remove('hidden');
+  }
+
+  if (!token || !window.__bmaAuth) { showLogin(); }
+  else {
+    window.__bmaAuth.me(token, function (err, res) {
+      if (err || res.status !== 200 || !res.json.ok) { showLogin(); return; } // offline/expired
+      showUser(res.json.user);
+    });
+  }
+
+  logoutBtn.addEventListener('click', function () {
+    if (token && window.__bmaAuth) window.__bmaAuth.logout(token, function () {});
+    try {
+      sessionStorage.removeItem('bma-session');
+      sessionStorage.removeItem('bma-user');
+    } catch (ignore) {}
+    showLogin();
+  });
+})();
+
 // Dashboard demo interactions: visual switches + API-key copy. No network, no timers-as-strings.
 (function () {
   // Demo toggles — purely visual, but focusable and keyboard-operable.
