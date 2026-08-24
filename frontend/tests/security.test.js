@@ -136,6 +136,34 @@ const i18n = read(path.join(WEB, 'assets', 'i18n.js'));
 ok("i18n localStorage stores only the 'bma-lang' code",
    /setItem\(\s*['"]bma-lang['"]\s*,\s*lang\s*\)/.test(i18n));
 
+// ---------- 8. build.js pickModel ↔ backend registry.json stay in sync ----------
+// (registry.json's own note: it mirrors the wizard's hardcoded tiers — this is
+//  the executable version of that reminder, so editing one side alone fails here.)
+const registry = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'backend', 'api', 'registry.json'), 'utf8'));
+const byVram = {};
+for (const m of registry.models) byVram[m.vram_min_gb] = m;
+const floorVram = Math.min(...registry.models.map((m) => m.vram_min_gb));
+const pickSrc = (build.match(/function pickModel[\s\S]*?\n  \}/) || [''])[0];
+const tiers = [];
+for (const line of pickSrc.split('\n')) {
+  const m = line.match(/(?:if \(v >= (\d+)\) )?return \{(.*)\};/);
+  if (!m) continue;
+  const get = (k) => (m[2].match(new RegExp(k + ":\\s*'([^']*)'")) || [])[1];
+  tiers.push({ vram: m[1] ? parseInt(m[1], 10) : floorVram, name: get('name'),
+               size: get('size'), file: get('file'), repo: get('repo'), quant: get('quant') });
+}
+ok('pickModel tiers parsed and match registry vram_min_gb tiers',
+   tiers.length === registry.models.length &&
+   tiers.every((t) => byVram[t.vram] !== undefined));
+for (const t of tiers) {
+  const want = byVram[t.vram] || {};
+  ok('registry in sync with pickModel tier ' + t.vram + ' GB (' + (t.file || '?') + ')',
+     want.file === t.file && want.repo === t.repo && want.quant === t.quant && want.name === t.name);
+}
+ok('pickModel size labels match registry size_gb',
+   tiers.every((t) => byVram[t.vram] &&
+     Math.abs(parseFloat((t.size || '').replace(/[^\d.]/g, '')) - byVram[t.vram].size_gb) < 0.05));
+
 // ---------- summary ----------
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

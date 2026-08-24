@@ -9,13 +9,13 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 19 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 26 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |
 |------|------|------|
 | `GET /v1/health` | ✅ v0 | 存活探测 |
-| `POST /v1/advise` | ✅ v0 规则版 | 关键词分类 + 显存档位选模型,镜像 frontend 规则;`need_text` 只在内存处理,不落日志/库/回显 |
+| `POST /v1/advise` | ✅ v0 规则版 + LLM opt-in | 关键词分类 + 显存档位选模型,镜像 frontend 规则;设 `BMA_ADVISOR_LLM=http://127.0.0.1:8080` 可换用本地 LLM 分类(**仅接受回环地址**,超时/垃圾输出/服务不在一律回退规则,响应带 `advisor: client\|llm\|rules`);`need_text` 只在内存处理,不落日志/库/回显 |
 | `GET /v1/registry/models` | ✅ v0 | 数据文件 `api/registry.json` 驱动(与 frontend `pickModel` 保持同步) |
 | `POST /v1/license/verify` | ✅ v0 | HMAC 签名 key、无状态、72h 离线宽限;密钥用 `BMA_LICENSE_SECRET` 注入 |
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
@@ -23,7 +23,7 @@ python3 backend/tests/api.test.py          # 19 项测试(起真实服务打真�
 
 **前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时)。离线自动回退纯前端。
 
-尚未做(按计划触发条件推进):Stripe/Clerk 对接、LLM 版顾问(替换关键词分类)、生产部署(Fly.io/Railway)、registry 的持续测录流程。
+尚未做(按计划触发条件推进):Stripe/Clerk 对接、生产部署(Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
 
 隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 

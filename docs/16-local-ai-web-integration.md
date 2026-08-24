@@ -55,7 +55,7 @@ open http://localhost:8931/chat.html
 
 **引用渲染**:`/api/rag` 的 `sources[{file, section}]` 经 `chat.js` 的 `addCite()` 渲染为与演示一致的引用卡;全部走 `textContent`,模型输出没有任何 HTML 注入路径。
 
-**安全边界(由测试强制)**:`frontend/tests/security.test.js`(84 项)规定——
+**安全边界(由测试强制)**:`frontend/tests/security.test.js`(89 项)规定——
 - 全站只有 `frontend/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
 - 其余文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 即测试失败;
 - 连接器内 `BASE`/`PORTAL`/`ADVISOR` 必须各只赋值一次、指向 `127.0.0.1`,每个 `fetch` 必须以三者之一开头,不允许出现其他 URL 字面量。
@@ -73,7 +73,7 @@ open http://localhost:8931/chat.html
 - 连续两次打断流式回答 → 无卡死、无孤儿流、历史不错序 ✓
 - 中文模式点建议问题 → 中文回答 ✓;预置会话追问 → 正确利用 seed 上下文 ✓
 - 服务停掉 → 回退演示答案 + "已断开"提示,15 秒自动重连 ✓(代码路径)
-- 安全套件 84 项全绿 ✓
+- 安全套件 89 项全绿 ✓
 
 ## 7. 边界与下一步
 
@@ -99,4 +99,4 @@ open http://localhost:8931/chat.html
 
 **方案统计(数据飞轮种子)**:点"生成我的文件"时,`build.js` 用 slug/档位/布尔构造载荷,经 `window.__buildAdvisor.reportPlan` 钩子 `POST /v1/telemetry/deploy`,带 `stage:'plan_generated'` 与真实安装结果区分;仅当方案本身来自 API(id 与 registry 对齐)且 API 在线时上报,fire-and-forget。
 
-**边界不变**:`API` 常量与 BASE/PORTAL/ADVISOR 同规矩——钉死 `127.0.0.1`、只赋值一次、每个 fetch 以固定常量开头(安全套件 84 项)。
+**边界不变**:`API` 常量与 BASE/PORTAL/ADVISOR 同规矩——钉死 `127.0.0.1`、只赋值一次、每个 fetch 以固定常量开头(安全套件 89 项)。

@@ -7,12 +7,14 @@ Run: python3 backend/tests/api.test.py
 """
 import json
 import os
+import socket
 import sys
 import tempfile
 import threading
 import unittest
 import urllib.error
 import urllib.request
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'api'))
 # isolate the db BEFORE importing the server module
@@ -41,6 +43,26 @@ def db_count(table):
     n = con.execute('SELECT COUNT(*) FROM %s' % table).fetchone()[0]
     con.close()
     return n
+
+
+def start_fake_llm(reply):
+    """Minimal OpenAI-compatible /v1/chat/completions stub on an ephemeral port."""
+    class H(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get('Content-Length', 0) or 0))
+            body = json.dumps({'choices': [{'message': {'content': reply}}]}).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    httpd = ThreadingHTTPServer(('127.0.0.1', 0), H)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd
 
 
 HW = {'gpu': 'nvidia', 'vram_gb': 12, 'ram_gb': 32}
@@ -73,6 +95,23 @@ class ApiTest(unittest.TestCase):
     def test_registry_rejects_bad_vram(self):
         s, j, _ = call(self.port, '/v1/registry/models?vram=abc')
         self.assertEqual(s, 400)
+
+    def test_registry_data_file_schema(self):
+        # the intake bar for new models: every entry complete and well-typed
+        models = server.load_registry()['models']
+        self.assertTrue(models)
+        ids = [m['id'] for m in models]
+        self.assertEqual(len(ids), len(set(ids)), 'duplicate model id')
+        for m in models:
+            for field, typ in (('id', str), ('name', str), ('quant', str), ('file', str),
+                               ('repo', str), ('size_gb', (int, float)), ('vram_min_gb', int),
+                               ('license', str), ('quality', int), ('speed', int)):
+                self.assertIn(field, m, m.get('id'))
+                self.assertIsInstance(m[field], typ, '%s.%s' % (m.get('id'), field))
+            self.assertGreater(m['vram_min_gb'], 0)
+            self.assertGreater(m['size_gb'], 0)
+            self.assertTrue(m['license'], '%s: license must be recorded' % m['id'])
+            self.assertTrue(server._short_id(m['id']), '%s: id must be shape-safe' % m['id'])
 
     # ---- advise: rule tiers mirror frontend pickModel ----
     def test_advise_tiers(self):
@@ -117,6 +156,57 @@ class ApiTest(unittest.TestCase):
     def test_advise_rejects_document_sized_text(self):
         s, j, _ = call(self.port, '/v1/advise', {'need_text': 'x' * 501, 'hardware': HW})
         self.assertEqual(s, 400)
+
+    def test_advise_advisor_field(self):
+        s, j, _ = call(self.port, '/v1/advise', {'template': 'legal', 'hardware': HW})
+        self.assertEqual((s, j['advisor']), (200, 'client'))
+        s, j, _ = call(self.port, '/v1/advise', {'need_text': 'review contracts', 'hardware': HW})
+        self.assertEqual((s, j['advisor']), (200, 'rules'))
+
+    # ---- advise: opt-in local LLM classifier (BMA_ADVISOR_LLM) ----
+    def _with_llm(self, url):
+        os.environ['BMA_ADVISOR_LLM'] = url
+        self.addCleanup(os.environ.pop, 'BMA_ADVISOR_LLM', None)
+
+    def test_advise_llm_classifies(self):
+        llm = start_fake_llm(' Legal.\n')  # slug survives whitespace/case/punctuation
+        self.addCleanup(llm.shutdown)
+        self._with_llm('http://127.0.0.1:%d' % llm.server_address[1])
+        s, j, _ = call(self.port, '/v1/advise', {'need_text': 'polish my emails', 'hardware': HW})
+        self.assertEqual((s, j['template'], j['advisor']), (200, 'legal', 'llm'))
+
+    def test_advise_llm_garbage_falls_back_to_rules(self):
+        llm = start_fake_llm('I would say this is about contracts')
+        self.addCleanup(llm.shutdown)
+        self._with_llm('http://127.0.0.1:%d' % llm.server_address[1])
+        s, j, _ = call(self.port, '/v1/advise', {'need_text': 'polish my emails', 'hardware': HW})
+        self.assertEqual((s, j['template'], j['advisor']), (200, 'writing', 'rules'))
+
+    def test_advise_llm_down_falls_back_to_rules(self):
+        s0 = socket.socket()
+        s0.bind(('127.0.0.1', 0))
+        dead = s0.getsockname()[1]
+        s0.close()
+        self._with_llm('http://127.0.0.1:%d' % dead)
+        s, j, _ = call(self.port, '/v1/advise', {'need_text': 'polish my emails', 'hardware': HW})
+        self.assertEqual((s, j['template'], j['advisor']), (200, 'writing', 'rules'))
+
+    def test_advise_llm_non_loopback_url_ignored(self):
+        # the red line: need_text may only ever be sent to this machine
+        self._with_llm('http://evil.example.com:8080')
+        s, j, _ = call(self.port, '/v1/advise', {'need_text': 'polish my emails', 'hardware': HW})
+        self.assertEqual((s, j['template'], j['advisor']), (200, 'writing', 'rules'))
+
+    def test_advise_llm_need_text_still_never_stored(self):
+        llm = start_fake_llm('legal')
+        self.addCleanup(llm.shutdown)
+        self._with_llm('http://127.0.0.1:%d' % llm.server_address[1])
+        s, j, _ = call(self.port, '/v1/advise',
+                       {'need_text': 'SECRET-MARKER-456 contracts', 'hardware': HW})
+        self.assertEqual((s, j['advisor']), (200, 'llm'))
+        self.assertNotIn('SECRET-MARKER-456', json.dumps(j))
+        with open(os.environ['BMA_DB'], 'rb') as f:
+            self.assertNotIn(b'SECRET-MARKER-456', f.read())
 
     # ---- license ----
     def test_license_roundtrip(self):

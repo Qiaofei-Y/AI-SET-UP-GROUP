@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(84 项)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(89 项,含 pickModel↔registry 同步校验)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931
@@ -27,7 +27,8 @@ open http://localhost:8931/chat.html
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
 python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(19 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(26 项,起真实服务)
+# 可选:BMA_ADVISOR_LLM=http://127.0.0.1:8080 让 /v1/advise 用本地 LLM 分类(仅回环,失败回退规则)
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
 ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户(8092 为预留顾问端口,用户可自行起服务)

@@ -22,7 +22,11 @@ Privacy red lines (docs/19 §4), enforced in code and by backend/tests:
 
 Run:   python3 backend/api/server.py [--port 8940]
 Mint:  python3 backend/api/server.py --mint pro   (demo license for testing)
-Env:   BMA_LICENSE_SECRET (default dev secret), BMA_DB (sqlite path), BMA_DEBUG
+Env:   BMA_LICENSE_SECRET (default dev secret), BMA_DB (sqlite path), BMA_DEBUG,
+       BMA_ADVISOR_LLM (opt-in: loopback URL of an OpenAI-compatible LLM, e.g.
+       http://127.0.0.1:8080 — upgrades /v1/advise classification from keyword
+       rules to the local model; non-loopback URLs are ignored, failures fall
+       back to rules)
 """
 import argparse
 import hashlib
@@ -33,6 +37,7 @@ import re
 import secrets
 import sqlite3
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -42,6 +47,10 @@ LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', 'dev-secret-change-me')
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
 MAX_NEED_TEXT = 500              # one sentence, not a document
+LLM_TIMEOUT_S = 4                # advisor LLM is local; anything slower falls back to rules
+
+# BMA_ADVISOR_LLM may only point at this machine: need_text never leaves it
+LOOPBACK_URL = re.compile(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$')
 
 # browser calls come only from our own dev/demo origins
 ALLOWED_ORIGIN = re.compile(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?$')
@@ -64,7 +73,7 @@ def pick_model(models, vram_gb):
     return max(pool, key=lambda m: m['vram_min_gb']) if fitting else min(pool, key=lambda m: m['vram_min_gb'])
 
 
-# ---------- advisor (rule version; an LLM can replace classify() later) ----------
+# ---------- advisor (keyword rules; local LLM upgrade is opt-in via BMA_ADVISOR_LLM) ----------
 
 KEYWORDS = (
     ('legal',    ('contract', 'legal', 'clause', 'lawyer', 'agreement', 'compliance',
@@ -88,11 +97,46 @@ def classify(need_text):
     return 'company'
 
 
+def classify_llm(need_text):
+    """Template slug from the local LLM (llm-lab :8080, OpenAI-compatible), or
+    None so the caller falls back to keyword rules. The need_text red line
+    holds: BMA_ADVISOR_LLM must be a loopback URL (checked before any request,
+    so the text never leaves this machine), and the reply is clamped to the
+    TEMPLATES enum — a prompt-injected need_text can at worst mispick a slug."""
+    url = os.environ.get('BMA_ADVISOR_LLM', '')
+    if not url or not LOOPBACK_URL.match(url):
+        return None
+    payload = json.dumps({
+        'messages': [
+            {'role': 'system',
+             'content': 'Classify the user need into exactly one word from this list: '
+                        + ', '.join(TEMPLATES) + '. Reply with that single word only.'},
+            {'role': 'user', 'content': need_text},
+        ],
+        'temperature': 0, 'max_tokens': 8, 'stream': False,
+    }).encode()
+    req = urllib.request.Request(url.rstrip('/') + '/v1/chat/completions', data=payload,
+                                 headers={'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=LLM_TIMEOUT_S) as r:
+            reply = json.loads(r.read())['choices'][0]['message']['content']
+    except Exception:
+        return None
+    word = (reply or '').strip().strip('."\'`').lower()
+    return word if word in TEMPLATES else None
+
+
 def advise(body, models):
     hw = body['hardware']
     gpu = hw['gpu']
     vram = 8 if gpu == 'none' else hw.get('vram_gb', 8)
-    template = body.get('template') or classify(body.get('need_text'))
+    template = body.get('template')
+    advisor = 'client'                      # caller already classified (docs/16 §8 path)
+    if not template:
+        need = body.get('need_text')
+        template = classify_llm(need) if need else None
+        advisor = 'llm' if template else 'rules'
+        template = template or classify(need)
     mode = body.get('mode') or ('cloud' if gpu == 'none' else 'local')
     model = pick_model(models, 24 if mode == 'cloud' else vram)  # cloud gets the big tier
     rag = template != 'writing'   # doc-grounded templates get RAG; writing works from style samples
@@ -101,7 +145,7 @@ def advise(body, models):
     why_zh = ('云端档位:这台电脑没有独立显卡。' if gpu == 'none'
               else '在 %d GB 显存内能装下的最大模型。' % vram)
     return {'template': template, 'mode': mode, 'rag': rag, 'model': model,
-            'why': {'en': why_en, 'zh': why_zh}}
+            'advisor': advisor, 'why': {'en': why_en, 'zh': why_zh}}
 
 
 # ---------- license (HMAC-signed, stateless, offline grace) ----------
@@ -364,7 +408,12 @@ def main():
         print(mint_license(args.mint))
         return
     httpd = create_server(args.port)
-    print('buildmyai-api v0 on http://127.0.0.1:%d  (db: %s)' % (args.port, DB_PATH))
+    llm = os.environ.get('BMA_ADVISOR_LLM', '')
+    if llm and not LOOPBACK_URL.match(llm):
+        print('BMA_ADVISOR_LLM ignored (not loopback) — need_text never leaves this machine')
+        llm = ''
+    print('buildmyai-api v0 on http://127.0.0.1:%d  (db: %s, advisor: %s)'
+          % (args.port, DB_PATH, llm or 'rules'))
     httpd.serve_forever()
 
 

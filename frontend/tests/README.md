@@ -20,7 +20,7 @@ bash frontend/tests/run.sh
 
 | 文件 | 内容 |
 |------|------|
-| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(84 项) |
+| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验(89 项) |
 | `xss.browser.html` | 无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当作纯文本 |
 | `run.sh` | 串起两者,输出汇总与退出码 |
 
@@ -32,6 +32,7 @@ bash frontend/tests/run.sh
 - **XSS 核心**:直接对 `chat.js` 里真实的 `esc()` 跑五组攻击载荷,确认 `<`、`"`、`&` 全被转义;并断言用户输入经 `esc()` 后只用 `textContent` 渲染,绝不进原始 `innerHTML`。
 - **生成器**:`build.js` 不把自由文本需求框读进安装包/手册内容。
 - **存储**:`i18n` 的 localStorage 只存语言码。
+- **数据一致性**:`build.js` `pickModel()` 的三个档位与 `backend/api/registry.json` 逐字段比对(name/file/repo/quant/体积),改一侧不改另一侧会直接挂测试。
 
 ## 为什么安全面这么小
 
