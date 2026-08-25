@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Build My AI — 品牌 ◆,科幻仪器风:teal 底 + 图纸网格 + 辉光描边 -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12695E"/>
+      <stop offset="1" stop-color="#0E514A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <path d="M16 0v64M32 0v64M48 0v64M0 16h64M0 32h64M0 48h64" stroke="#FFFFFF" stroke-opacity=".06" stroke-width="1"/>
+  <path d="M32 9 55 32 32 55 9 32Z" fill="none" stroke="#E4EFEC" stroke-opacity=".32" stroke-width="2"/>
+  <path d="M32 15 49 32 32 49 15 32Z" fill="#FBFAF6"/>
+  <path d="M32 25.5 38.5 32 32 38.5 25.5 32Z" fill="#12695E"/>
+</svg>

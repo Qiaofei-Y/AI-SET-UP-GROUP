@@ -6,6 +6,8 @@
 <title data-en="Build My AI — Control Center" data-zh="Build My AI — 控制中心">Build My AI — Control Center</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/dashboard.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
 </head>
 <body>
 
@@ -41,15 +43,15 @@
   <!-- main -->
   <main>
     <div class="statusbar">
-      <span class="dot"></span>
+      <span class="dot fx-ping"></span>
       <b data-en="Your AI is running" data-zh="你的 AI 正在运行">Your AI is running</b>
       <span data-en="· locally on this computer · no command line needed" data-zh="· 在本机运行 · 无需命令行">· locally on this computer · no command line needed</span>
       <span class="rt" data-en="Uptime 3d 6h" data-zh="已运行 3 天 6 小时">Uptime 3d 6h</span>
     </div>
 
-    <div class="dgrid">
+    <div class="dgrid fx-stagger">
       <!-- current model -->
-      <div class="dcard">
+      <div class="dcard fx-card">
         <div class="ch"><h3>🧩 <span data-en="Current model" data-zh="当前模型">Current model</span></h3><span class="badge teal" data-en="Balanced 14B" data-zh="均衡版 14B">Balanced 14B</span></div>
         <div class="drow"><span data-en="Answer quality" data-zh="回答质量">Answer quality</span><b data-en="Very good" data-zh="很好">Very good</b></div>
         <div class="drow"><span data-en="Response speed" data-zh="响应速度">Response speed</span><b data-en="Fast" data-zh="快">Fast</b></div>
@@ -57,14 +59,14 @@
       </div>
 
       <!-- run status -->
-      <div class="dcard">
+      <div class="dcard fx-card">
         <div class="ch"><h3>💚 <span data-en="Run status" data-zh="运行状态">Run status</span></h3><span class="badge teal" data-en="● Running" data-zh="● 运行中">● Running</span></div>
         <div class="meter"><div class="top"><span data-en="Graphics memory" data-zh="显存占用">Graphics memory</span><b>9.1 / 16 GB</b></div><div class="track"><div class="fill" style="width:57%;background:var(--accent)"></div></div></div>
         <div class="meter"><div class="top"><span data-en="Memory" data-zh="内存占用">Memory</span><b>11 / 32 GB</b></div><div class="track"><div class="fill" style="width:34%;background:var(--info)"></div></div></div>
       </div>
 
       <!-- knowledge base -->
-      <div class="dcard span2">
+      <div class="dcard span2 fx-card">
         <div class="ch"><h3>📚 <span data-en="Knowledge base" data-zh="知识库">Knowledge base</span></h3><span class="badge teal" data-en="12 files · ready" data-zh="12 份 · 已就绪">12 files · ready</span></div>
         <div class="frow"><span class="fi pdf">PDF</span><div class="meta"><h4 data-en="2024_Procurement_SupplierA.pdf" data-zh="2024采购合同_A供应商.pdf">2024_Procurement_SupplierA.pdf</h4><p data-en="2.4 MB · 18 pages" data-zh="2.4 MB · 18 页">2.4 MB · 18 pages</p></div><span class="badge teal" data-en="✓ Indexed" data-zh="✓ 已索引">✓ Indexed</span></div>
         <div class="frow"><span class="fi xls">XLS</span><div class="meta"><h4 data-en="Q2_Inventory.xlsx" data-zh="Q2库存报表.xlsx">Q2_Inventory.xlsx</h4><p data-en="860 KB · 6 sheets" data-zh="860 KB · 6 个工作表">860 KB · 6 sheets</p></div><span class="badge teal" data-en="✓ Indexed" data-zh="✓ 已索引">✓ Indexed</span></div>
@@ -74,7 +76,7 @@
       </div>
 
       <!-- API -->
-      <div class="dcard">
+      <div class="dcard fx-card">
         <div class="ch"><h3>🔌 <span id="apiAccessLbl" data-en="API access" data-zh="API 接入">API access</span></h3><div class="switch" role="switch" tabindex="0" aria-checked="true" aria-labelledby="apiAccessLbl"></div></div>
         <div class="drow"><span data-en="Local address" data-zh="本地地址">Local address</span><b>localhost:11434</b></div>
         <div class="keyrow">🔑 <span id="apiKey">sk-local-••••••••3a9f</span><button type="button" class="copybtn" id="copyKey" data-en="Copy" data-zh="复制">Copy</button></div>
@@ -82,7 +84,7 @@
       </div>
 
       <!-- teach my AI -->
-      <div class="dcard">
+      <div class="dcard fx-card">
         <div class="ch"><h3>🎓 <span data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</span></h3><span class="badge blue" data-en="Learning" data-zh="学习中">Learning</span></div>
         <p style="font-size:12.5px;color:var(--ink-2);margin-bottom:4px" data-en="Your corrections are collected. At 500, we'll fine-tune a smarter version." data-zh="正在收集你的纠正。攒够 500 条,就为你微调一个更聪明的版本。">Your corrections are collected. At 500, we'll fine-tune a smarter version.</p>
         <div class="teach-bar"><div class="f" style="width:63%"></div></div>
@@ -197,5 +199,6 @@
   }
 })();
 </script>
+<script src="assets/fx.js" defer></script>
 </body>
 </html>

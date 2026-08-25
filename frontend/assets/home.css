@@ -166,3 +166,7 @@
 .feat .go{font-family:var(--mono);font-size:12px;color:var(--accent);display:inline-block;margin-top:8px}
 a.feat{transition:.15s}
 a.feat:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+
+/* ---- fx 挂钩(index):hero 星网 canvas(fx.js 插入,z-index:0)之上必须是
+   已定位元素;h1/.sub/.cta/.offer 本就 position:relative,补上 eyebrow ---- */
+.hero .eyebrow{position:relative}

@@ -6,6 +6,8 @@
 <title data-en="Build My AI — Create your beta account" data-zh="Build My AI — 创建 Beta 账号">Build My AI — Create your beta account</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/signup.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
 </head>
 <body>
 
@@ -21,7 +23,7 @@
 </div></div></header>
 
 <div class="signup-wrap">
-  <div class="signup-card">
+  <div class="signup-card fx-reveal">
     <!-- form -->
     <div id="formView">
       <div class="eyebrow" id="suEyebrow" data-en="CREATE ACCOUNT" data-zh="创建账号">CREATE ACCOUNT</div>
@@ -53,7 +55,7 @@
           <div class="form-err" id="errPassword" role="alert"></div>
         </div>
         <div class="privacy-line" id="privacyLine" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
-        <button class="btn primary lg" type="submit" id="suSubmit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
+        <button class="btn primary lg fx-btn-sweep" type="submit" id="suSubmit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
       </form>
 
       <div class="alt-link" id="altSignup">
@@ -71,7 +73,7 @@
         <div class="ic">✓</div>
         <h1 id="successGreet" data-en="You're on the beta list!" data-zh="你已加入 Beta 名单!">You're on the beta list!</h1>
         <p data-en="Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime." data-zh="Beta 期间已上线的功能全部解锁且免费。新功能上线后会陆续开放——欢迎随时回来体验。">Everything that's live is unlocked and free during beta. New features appear here as they launch — check back anytime.</p>
-        <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+        <a class="btn primary lg fx-btn-sweep" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
         <a class="btn ghost lg" href="dashboard.html" style="margin-top:8px" data-en="Open your Control Center →" data-zh="打开你的控制中心 →">Open your Control Center →</a>
       </div>
     </div>
@@ -84,5 +86,6 @@
 <script src="assets/i18n.js"></script>
 <script src="assets/local-llm.js"></script>
 <script src="assets/signup.js"></script>
+<script src="assets/fx.js" defer></script>
 </body>
 </html>

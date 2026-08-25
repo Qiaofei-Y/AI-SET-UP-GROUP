@@ -1,0 +1,115 @@
+/* Build My AI — shared FX layer (assets/fx.css). Pairs with assets/fx.js.
+   科幻感 = 米白纸面 + teal 辉光/网格/扫描线的"实验室仪器感",不是暗黑霓虹。
+   规则:循环动画只动 transform/opacity;一次性 hover 过渡允许 box-shadow /
+   border-color(与 .tcard 既有惯例一致)。会先隐藏内容的规则一律以 html.fx
+   前缀书写(fx.js 第一行加该类),无 JS 时页面完整可见。
+   加载顺序:每页在页面 CSS 之后 <link>,故同特异性下 fx 规则覆盖页面规则。
+   页尾是 prefers-reduced-motion 总闸:循环动画全关、入场直接置终态。 */
+:root{
+  --glow: 18,105,94;                    /* accent 的 RGB 三元组,rgba(var(--glow),a) 合成辉光 */
+  --glow-soft: rgba(18,105,94,.14);     /* 卡片悬停外晕 */
+  --glow-strong: rgba(18,105,94,.30);   /* 边框辉光峰值 */
+  --glow-info: 59,111,212;              /* "处理中"蓝辉光(仅 thinking/运行中) */
+  --grid-color: rgba(27,26,23,.045);    /* 暖墨网格线 */
+  --grid-size: 44px;
+  --scan-color: rgba(18,105,94,.06);    /* 扫描线,极淡 */
+  --particle-color: rgba(18,105,94,.55);/* 星网粒子 */
+  --particle-link: rgba(18,105,94,.14); /* 星网连线 */
+  --fx-ease: cubic-bezier(.22,.61,.2,1);
+  --fx-dur: .45s;                       /* 入场 */
+  --fx-sweep: .9s;                      /* 按钮流光 */
+  --fx-stagger: 70ms;                   /* 交错步长 */
+  --fx-tilt: 1.2deg;                    /* 3D 微倾上限,商务克制 */
+}
+
+/* ---- fx-reveal / fx-stagger:滚动交错入场(fx.js 观察到即加 .in,只播一次)
+   用 animation + backwards 填充而不是 transition:延迟期保持隐藏,播完后不
+   钉住 transform,卡片自身的 hover 过渡(.tcard / .fx-card)不受影响。 ---- */
+html.fx .fx-reveal,
+html.fx .fx-stagger>*{opacity:0}
+html.fx .fx-reveal.in,
+html.fx .fx-stagger.in>*{opacity:1;animation:fxRevealIn var(--fx-dur) var(--fx-ease) backwards}
+html.fx .fx-stagger.in>*:nth-child(2){animation-delay:calc(var(--fx-stagger)*1)}
+html.fx .fx-stagger.in>*:nth-child(3){animation-delay:calc(var(--fx-stagger)*2)}
+html.fx .fx-stagger.in>*:nth-child(4){animation-delay:calc(var(--fx-stagger)*3)}
+html.fx .fx-stagger.in>*:nth-child(5){animation-delay:calc(var(--fx-stagger)*4)}
+html.fx .fx-stagger.in>*:nth-child(6){animation-delay:calc(var(--fx-stagger)*5)}
+html.fx .fx-stagger.in>*:nth-child(7){animation-delay:calc(var(--fx-stagger)*6)}
+html.fx .fx-stagger.in>*:nth-child(8){animation-delay:calc(var(--fx-stagger)*7)}
+html.fx .fx-stagger.in>*:nth-child(9){animation-delay:calc(var(--fx-stagger)*8)}
+html.fx .fx-stagger.in>*:nth-child(10){animation-delay:calc(var(--fx-stagger)*9)}
+html.fx .fx-stagger.in>*:nth-child(11){animation-delay:calc(var(--fx-stagger)*10)}
+html.fx .fx-stagger.in>*:nth-child(12){animation-delay:calc(var(--fx-stagger)*11)}
+@keyframes fxRevealIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---- fx-card / fx-tilt:卡片悬停辉光 + 3D 微倾(--rx/--ry 由 fx.js 写入,
+   默认 0 即无倾斜;html.fx 前缀保证特异性盖过 a.feat:hover / .tcard:hover) ---- */
+html.fx .fx-card,
+html.fx .fx-tilt{transition:transform .18s var(--fx-ease),box-shadow .18s var(--fx-ease),border-color .18s var(--fx-ease)}
+html.fx .fx-tilt{transform:perspective(800px) rotateX(calc(var(--ry,0)*var(--fx-tilt))) rotateY(calc(var(--rx,0)*var(--fx-tilt)*-1))}
+html.fx .fx-card:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(var(--glow),.22),0 14px 36px var(--glow-soft)}
+html.fx .fx-card.fx-tilt:hover{transform:perspective(800px) translateY(-2px) rotateX(calc(var(--ry,0)*var(--fx-tilt))) rotateY(calc(var(--rx,0)*var(--fx-tilt)*-1))}
+
+/* ---- fx-btn-sweep:主按钮能量流光(hover 扫一次);
+        fx-btn-idle:6s 循环闲时流光,全站最多一处(首页 hero 主 CTA) ---- */
+.fx-btn-sweep{position:relative;overflow:hidden;isolation:isolate}
+.fx-btn-sweep::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.30) 50%,transparent 68%);transform:translateX(-130%) skewX(-16deg)}
+.fx-btn-idle::before{animation:fxSweepIdle 6s linear infinite}
+.fx-btn-sweep:hover::before{animation:fxSweep var(--fx-sweep) var(--fx-ease)}
+@keyframes fxSweep{to{transform:translateX(130%) skewX(-16deg)}}
+@keyframes fxSweepIdle{0%,84%{transform:translateX(-130%) skewX(-16deg)}100%{transform:translateX(130%) skewX(-16deg)}}
+
+/* ---- fx-ping:状态点扩散环(叠加在 livePulse 上,livePulse 保留原元素,
+   环只动 transform/opacity;.info 变体给"进行中"蓝) ---- */
+.fx-ping{position:relative}
+.fx-ping::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:1.5px solid rgba(var(--glow),.5);pointer-events:none;animation:fxPing 1.8s var(--fx-ease) infinite}
+.fx-ping.info::after{border-color:rgba(var(--glow-info),.5)}
+@keyframes fxPing{from{transform:scale(1);opacity:.7}to{transform:scale(2.3);opacity:0}}
+
+/* ---- fx-grid:静态图纸网格(用 ::after,不与 .hero/.pagehero 的 ::before
+   辉光冲突;z-index:-1 沉到辉光与内容之下,radial mask 让它只在上半部隐现) ---- */
+.fx-grid{position:relative}
+.fx-grid::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
+  background-size:var(--grid-size) var(--grid-size);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 32%,#000 40%,transparent 75%);
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 32%,#000 40%,transparent 75%)}
+
+/* ---- fx-scan:扫描线(容器需 overflow:hidden;行程写死像素,用于固定高窗口) ---- */
+.fx-scan{position:relative;overflow:hidden}
+.fx-scan::after{content:"";position:absolute;left:0;right:0;top:0;height:64px;z-index:5;pointer-events:none;
+  background:linear-gradient(180deg,transparent,var(--scan-color) 45%,rgba(var(--glow),.10) 50%,var(--scan-color) 55%,transparent);
+  transform:translateY(-80px);animation:fxScanY 7s linear infinite}
+@keyframes fxScanY{to{transform:translateY(480px)}}
+
+/* ---- fx-ring:转圈能量描边("仪器呼吸",转速慢、亮弧短)。宿主需自带
+   border-radius 且原 border 建议改透明;渐变底卡需把 ::after 背景复刻同款渐变 ---- */
+.fx-ring{position:relative;isolation:isolate}
+.fx-ring::before{content:"";position:absolute;z-index:-2;left:-50%;top:-50%;width:200%;height:200%;
+  background:conic-gradient(from 0deg,transparent 0 68%,rgba(var(--glow),.45) 84%,rgba(var(--glow),.12) 92%,transparent 100%);
+  animation:fxSpin 5s linear infinite}
+.fx-ring::after{content:"";position:absolute;z-index:-1;inset:1.5px;border-radius:inherit;background:var(--surface)}
+@keyframes fxSpin{to{transform:rotate(1turn)}}
+
+/* ---- FX.decode:文字解码打字机运行期光标(caret keyframes 来自 base.css) ---- */
+.fx-decoding::after{content:"▍";color:var(--accent);margin-left:2px;animation:caret .9s step-end infinite}
+
+/* ---- reduced-motion 总闸:循环动画全关,入场直接置终态,扫描线隐藏;
+   星网 canvas 由 fx.js 在 reduced 下完全不启动 ---- */
+@media (prefers-reduced-motion: reduce){
+  html.fx .fx-reveal,
+  html.fx .fx-stagger>*{opacity:1;animation:none}
+  html.fx .fx-reveal.in,
+  html.fx .fx-stagger.in>*{animation:none}
+  html.fx .fx-card,
+  html.fx .fx-tilt{transition:none}
+  html.fx .fx-tilt,
+  html.fx .fx-card.fx-tilt:hover{transform:none}
+  .fx-btn-sweep::before,
+  .fx-btn-idle::before,
+  .fx-btn-sweep:hover::before,
+  .fx-ping::after,
+  .fx-ring::before,
+  .fx-decoding::after{animation:none}
+  .fx-scan::after{display:none}
+}

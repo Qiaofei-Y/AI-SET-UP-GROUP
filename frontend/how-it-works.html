@@ -6,6 +6,8 @@
 <title data-en="How it works — Build My AI" data-zh="怎么运作 — Build My AI">How it works — Build My AI</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/home.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
 </head>
 <body>
 
@@ -24,17 +26,17 @@
       <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
     </div>
     <a class="btn ghost" href="signup.html?mode=login" data-en="Log in" data-zh="登录">Log in</a>
-    <a class="btn primary" href="build.html" data-en="Build My AI" data-zh="开始搭建">Build My AI</a>
+    <a class="btn primary fx-btn-sweep" href="build.html" data-en="Build My AI" data-zh="开始搭建">Build My AI</a>
   </div>
 </div></div></header>
 
 <!-- PAGE HERO -->
-<section class="pagehero">
+<section class="pagehero fx-grid">
   <div class="eyebrow" data-en="HOW IT WORKS" data-zh="怎么运作">HOW IT WORKS</div>
   <h1 data-en="Four steps, about 20 minutes" data-zh="四步,约 20 分钟">Four steps, about 20 minutes</h1>
   <p class="sub" data-en="You never open a terminal or choose a model. Just answer in plain words." data-zh="全程不用打开终端、不用选模型,只需用人话回答。">You never open a terminal or choose a model. Just answer in plain words.</p>
   <div class="cta">
-    <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+    <a class="btn primary lg fx-btn-sweep" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
     <a class="btn ghost lg" href="chat.html" data-en="Try the live demo" data-zh="试用在线演示">Try the live demo</a>
   </div>
 </section>
@@ -46,7 +48,7 @@
     <h2 data-en="What actually happens" data-zh="每一步都发生什么">What actually happens</h2>
     <p data-en="Here's each step in detail — what you do, and what you see on screen." data-zh="每一步的细节——你做什么,屏幕上看到什么。">Here's each step in detail — what you do, and what you see on screen.</p>
   </div>
-  <div class="steps4">
+  <div class="steps4 fx-stagger">
     <div class="stepcard"><div class="n">01</div><h3 data-en="Describe your need" data-zh="描述你的需求">Describe your need</h3><p data-en="Open the build wizard and type one sentence about what you want — or pick a ready-made template. That's all we need to get started." data-zh="打开搭建向导,用一句话说出你想要什么——或选个现成模板。这就够我们开始了。">Open the build wizard and type one sentence about what you want — or pick a ready-made template. That's all we need to get started.</p></div>
     <div class="stepcard"><div class="n">02</div><h3 data-en="Check your computer" data-zh="检测你的电脑">Check your computer</h3><p data-en="We detect your hardware automatically — GPU, RAM and disk space. You just watch it happen; there's nothing to look up or type in." data-zh="我们自动检测你的硬件——显卡、内存和磁盘空间。你只需看着,不用查参数、不用手动填。">We detect your hardware automatically — GPU, RAM and disk space. You just watch it happen; there's nothing to look up or type in.</p></div>
     <div class="stepcard"><div class="n">03</div><h3 data-en="Get a recommendation" data-zh="得到推荐方案">Get a recommendation</h3><p data-en="Your plan appears as simple quality / speed / space meters. No model names to decipher — we pick the best open model for you." data-zh="推荐方案用质量/速度/占用三个指标直观展示。不用去研究模型名字——我们自动挑选最合适的开源模型。">Your plan appears as simple quality / speed / space meters. No model names to decipher — we pick the best open model for you.</p></div>
@@ -61,10 +63,10 @@
     <h2 data-en="What you never have to touch" data-zh="你永远不用碰的东西">What you never have to touch</h2>
     <p data-en="These are the parts that stop most people. They're our job, not yours." data-zh="拦住大多数人的,正是这些环节。这些活由我们来干,不用你操心。">These are the parts that stop most people. They're our job, not yours.</p>
   </div>
-  <div class="grid3">
-    <div class="feat"><div class="ic">🧭</div><h3 data-en="Models &amp; fine-tuning" data-zh="模型与微调">Models &amp; fine-tuning</h3><p data-en="Which model, what size, whether to fine-tune — the AI Advisor decides from your need and your hardware. You just see the result." data-zh="选哪个模型、多大尺寸、要不要微调——AI 方案顾问根据你的需求和硬件来定。你只看结果。">Which model, what size, whether to fine-tune — the AI Advisor decides from your need and your hardware. You just see the result.</p></div>
-    <div class="feat"><div class="ic">⚙️</div><h3 data-en="Environments" data-zh="运行环境">Environments</h3><p data-en="Docker, drivers, runtimes — the words that scare people off. The installer sets them all up automatically; you never see a command line." data-zh="Docker、驱动、运行时——这些吓退很多人的词,安装包全部自动装好,你永远不用碰命令行。">Docker, drivers, runtimes — the words that scare people off. The installer sets them all up automatically; you never see a command line.</p></div>
-    <div class="feat"><div class="ic">📚</div><h3 data-en="RAG plumbing" data-zh="RAG 底层管线">RAG plumbing</h3><p data-en="Chunking, embeddings, vector stores — the machinery behind asking your files questions. We wire it all up; you just drag your documents in." data-zh="切块、向量化、向量库——“问你的文件”背后的那套机制,我们替你接好,你只管把文档拖进来。">Chunking, embeddings, vector stores — the machinery behind asking your files questions. We wire it all up; you just drag your documents in.</p></div>
+  <div class="grid3 fx-stagger">
+    <div class="feat fx-card fx-tilt"><div class="ic">🧭</div><h3 data-en="Models &amp; fine-tuning" data-zh="模型与微调">Models &amp; fine-tuning</h3><p data-en="Which model, what size, whether to fine-tune — the AI Advisor decides from your need and your hardware. You just see the result." data-zh="选哪个模型、多大尺寸、要不要微调——AI 方案顾问根据你的需求和硬件来定。你只看结果。">Which model, what size, whether to fine-tune — the AI Advisor decides from your need and your hardware. You just see the result.</p></div>
+    <div class="feat fx-card fx-tilt"><div class="ic">⚙️</div><h3 data-en="Environments" data-zh="运行环境">Environments</h3><p data-en="Docker, drivers, runtimes — the words that scare people off. The installer sets them all up automatically; you never see a command line." data-zh="Docker、驱动、运行时——这些吓退很多人的词,安装包全部自动装好,你永远不用碰命令行。">Docker, drivers, runtimes — the words that scare people off. The installer sets them all up automatically; you never see a command line.</p></div>
+    <div class="feat fx-card fx-tilt"><div class="ic">📚</div><h3 data-en="RAG plumbing" data-zh="RAG 底层管线">RAG plumbing</h3><p data-en="Chunking, embeddings, vector stores — the machinery behind asking your files questions. We wire it all up; you just drag your documents in." data-zh="切块、向量化、向量库——“问你的文件”背后的那套机制,我们替你接好,你只管把文档拖进来。">Chunking, embeddings, vector stores — the machinery behind asking your files questions. We wire it all up; you just drag your documents in.</p></div>
   </div>
 </div></section>
 
@@ -75,10 +77,10 @@
     <h2 data-en="Common questions" data-zh="你可能想问">Common questions</h2>
     <p data-en="Short answers, in plain words." data-zh="简短回答,只说人话。">Short answers, in plain words.</p>
   </div>
-  <div class="grid3">
-    <div class="feat"><h3 data-en="Do I need a GPU?" data-zh="需要显卡吗?">Do I need a GPU?</h3><p data-en="Local mode needs an NVIDIA GPU. If you don't have one, you still get a full recommendation — plus a cloud deployment guide instead of an installer." data-zh="本地模式需要 NVIDIA 显卡。没有显卡也没关系——你同样会得到完整推荐,只是安装包换成云端部署手册。">Local mode needs an NVIDIA GPU. If you don't have one, you still get a full recommendation — plus a cloud deployment guide instead of an installer.</p></div>
-    <div class="feat"><h3 data-en="Is my data private?" data-zh="我的数据私密吗?">Is my data private?</h3><p data-en="In local mode, your files and questions never leave your device — it even works offline." data-zh="本地模式下,你的文件和提问都不出设备,离线也能用。">In local mode, your files and questions never leave your device — it even works offline.</p></div>
-    <div class="feat"><h3 data-en="What if I get stuck?" data-zh="卡住了怎么办?">What if I get stuck?</h3><p data-en="The wizard explains every step in plain words before anything happens. And during beta you can reach out to us anytime — we read everything." data-zh="向导会在每一步之前用人话解释清楚。Beta 期间你也可以随时联系我们——我们每条都会看。">The wizard explains every step in plain words before anything happens. And during beta you can reach out to us anytime — we read everything.</p><a class="go" href="signup.html?plan=business" data-en="Reach out anytime →" data-zh="随时沟通 →">Reach out anytime →</a></div>
+  <div class="grid3 fx-stagger">
+    <div class="feat fx-card fx-tilt"><h3 data-en="Do I need a GPU?" data-zh="需要显卡吗?">Do I need a GPU?</h3><p data-en="Local mode needs an NVIDIA GPU. If you don't have one, you still get a full recommendation — plus a cloud deployment guide instead of an installer." data-zh="本地模式需要 NVIDIA 显卡。没有显卡也没关系——你同样会得到完整推荐,只是安装包换成云端部署手册。">Local mode needs an NVIDIA GPU. If you don't have one, you still get a full recommendation — plus a cloud deployment guide instead of an installer.</p></div>
+    <div class="feat fx-card fx-tilt"><h3 data-en="Is my data private?" data-zh="我的数据私密吗?">Is my data private?</h3><p data-en="In local mode, your files and questions never leave your device — it even works offline." data-zh="本地模式下,你的文件和提问都不出设备,离线也能用。">In local mode, your files and questions never leave your device — it even works offline.</p></div>
+    <div class="feat fx-card fx-tilt"><h3 data-en="What if I get stuck?" data-zh="卡住了怎么办?">What if I get stuck?</h3><p data-en="The wizard explains every step in plain words before anything happens. And during beta you can reach out to us anytime — we read everything." data-zh="向导会在每一步之前用人话解释清楚。Beta 期间你也可以随时联系我们——我们每条都会看。">The wizard explains every step in plain words before anything happens. And during beta you can reach out to us anytime — we read everything.</p><a class="go" href="signup.html?plan=business" data-en="Reach out anytime →" data-zh="随时沟通 →">Reach out anytime →</a></div>
   </div>
 </div></section>
 
@@ -87,7 +89,7 @@
   <h2 data-en="Own your AI. Start today." data-zh="拥有你的 AI。今天就开始。">Own your AI. Start today.</h2>
   <p data-en="Answer a few questions and get your installer or deployment guide." data-zh="回答几个问题,拿到你的安装包或部署手册。">Answer a few questions and get your installer or deployment guide.</p>
   <div class="cta">
-    <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+    <a class="btn primary lg fx-btn-sweep" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
     <a class="btn ghost lg" href="chat.html" data-en="Try the live demo" data-zh="试用在线演示">Try the live demo</a>
   </div>
 </div></section>
@@ -104,5 +106,6 @@
 </div></div></footer>
 
 <script src="assets/i18n.js"></script>
+<script src="assets/fx.js" defer></script>
 </body>
 </html>

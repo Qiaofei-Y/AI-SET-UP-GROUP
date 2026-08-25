@@ -6,6 +6,8 @@
 <title data-en="Build My AI — Your own private AI, in one click" data-zh="Build My AI — 一键拥有你的私有 AI">Build My AI — Your own private AI, in one click</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/home.css">
+<link rel="stylesheet" href="assets/fx.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 </head>
 <body>
 
@@ -29,18 +31,18 @@
 </div></div></header>
 
 <!-- HERO -->
-<section class="hero">
+<section class="hero fx-grid" data-fx-net>
   <div class="eyebrow" data-en="OWN YOUR AI · NO JARGON" data-zh="拥有你的 AI · 零术语">OWN YOUR AI · NO JARGON</div>
-  <h1 data-en="Your own private AI. Built, deployed and managed — all in one." data-zh="属于你的私有 AI。搭建、部署、管理,一站搞定。">Your own private AI. Built, deployed and managed — all in one.</h1>
+  <h1 data-fx-decode data-en="Your own private AI. Built, deployed and managed — all in one." data-zh="属于你的私有 AI。搭建、部署、管理,一站搞定。">Your own private AI. Built, deployed and managed — all in one.</h1>
   <p class="sub" data-en="Tell us what you want your AI to do. We detect your computer, pick the best open model, and generate a one-click installer or a cloud deployment guide. No models, GPUs, RAG or Docker to learn." data-zh="告诉我们你想让 AI 做什么。我们检测你的电脑、挑选最合适的开源模型,并生成一键安装包或云端部署手册。不用懂模型、GPU、RAG、Docker。">Tell us what you want your AI to do. We detect your computer, pick the best open model, and generate a one-click installer or a cloud deployment guide. No models, GPUs, RAG or Docker to learn.</p>
   <div class="cta">
-    <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+    <a class="btn primary lg fx-btn-sweep fx-btn-idle" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
     <a class="btn ghost lg" href="chat.html" data-en="Try the live demo" data-zh="试用在线演示">Try the live demo</a>
   </div>
   <div class="offer" data-en="Free to start · your first AI in ~20 minutes · runs fully on your computer · Windows today, macOS coming" data-zh="免费开始 · 约 20 分钟拥有第一个 AI · 全程在你电脑上运行 · 现支持 Windows,macOS 即将支持">Free to start · your first AI in ~20 minutes · runs fully on your computer · Windows today, macOS coming</div>
 
   <!-- live product screenshot -->
-  <div class="hero-shot"><div class="shotwin">
+  <div class="hero-shot"><div class="shotwin fx-scan">
     <div class="shotbar">
       <span class="d r"></span><span class="d y"></span><span class="d g"></span>
       <span class="t" data-en="My Company Knowledge AI" data-zh="我的公司知识 AI">My Company Knowledge AI</span>
@@ -72,10 +74,10 @@
 
 <!-- STAT BAND -->
 <section class="statband"><div class="wrap"><div class="row">
-  <div class="stat"><div class="num">~20 min</div><div class="lbl" data-en="from download to first answer" data-zh="从下载到第一次回答">from download to first answer</div></div>
-  <div class="stat"><div class="num">100%</div><div class="lbl" data-en="local option — data stays on device" data-zh="可全本地 · 数据不出设备">local option — data stays on device</div></div>
-  <div class="stat"><div class="num">0</div><div class="lbl" data-en="lines of command line" data-zh="行命令行">lines of command line</div></div>
-  <div class="stat"><div class="num">$0</div><div class="lbl" data-en="to get started" data-zh="即可开始">to get started</div></div>
+  <div class="stat"><div class="num"><span class="fx-count" data-count="20" data-prefix="~" data-suffix=" min">~20 min</span></div><div class="lbl" data-en="from download to first answer" data-zh="从下载到第一次回答">from download to first answer</div></div>
+  <div class="stat"><div class="num"><span class="fx-count" data-count="100" data-suffix="%">100%</span></div><div class="lbl" data-en="local option — data stays on device" data-zh="可全本地 · 数据不出设备">local option — data stays on device</div></div>
+  <div class="stat"><div class="num"><span class="fx-count" data-count="0">0</span></div><div class="lbl" data-en="lines of command line" data-zh="行命令行">lines of command line</div></div>
+  <div class="stat"><div class="num"><span class="fx-count" data-count="0" data-prefix="$">$0</span></div><div class="lbl" data-en="to get started" data-zh="即可开始">to get started</div></div>
 </div></div></section>
 
 <!-- HOW IT WORKS -->
@@ -85,7 +87,7 @@
     <h2 data-en="Four steps, about 20 minutes" data-zh="四步,约 20 分钟">Four steps, about 20 minutes</h2>
     <p data-en="You never open a terminal or choose a model. Just answer in plain words." data-zh="全程不用打开终端、不用选模型,只需用人话回答。">You never open a terminal or choose a model. Just answer in plain words.</p>
   </div>
-  <div class="steps4">
+  <div class="steps4 fx-stagger">
     <div class="stepcard"><div class="n">01</div><h3 data-en="Describe your need" data-zh="描述你的需求">Describe your need</h3><p data-en="One sentence, or pick a template." data-zh="一句话,或选个模板。">One sentence, or pick a template.</p></div>
     <div class="stepcard"><div class="n">02</div><h3 data-en="Check your computer" data-zh="检测你的电脑">Check your computer</h3><p data-en="We read your hardware and what it can run." data-zh="我们读取你的硬件,判断能跑什么。">We read your hardware and what it can run.</p></div>
     <div class="stepcard"><div class="n">03</div><h3 data-en="Get a recommendation" data-zh="得到推荐方案">Get a recommendation</h3><p data-en="Shown as quality / speed / space." data-zh="用质量/速度/占用展示。">Shown as quality / speed / space.</p></div>
@@ -100,13 +102,13 @@
     <h2 data-en="Everything an AI setup needs — handled for you" data-zh="搭一个 AI 需要的一切,都替你搞定">Everything an AI setup needs — handled for you</h2>
     <p data-en="Six modules turn the open-source AI world into a product you can actually use." data-zh="六大模块,把开源 AI 世界变成你真正用得上的产品。">Six modules turn the open-source AI world into a product you can actually use.</p>
   </div>
-  <div class="grid3">
-    <a class="feat" href="build.html" style="display:block"><div class="ic">🧭</div><h3 data-en="AI Advisor" data-zh="AI 方案顾问">AI Advisor</h3><p data-en="Turns your need + your hardware into the best model and setup — no guesswork." data-zh="把你的需求和硬件,变成最合适的模型与方案,不用猜。">Turns your need + your hardware into the best model and setup — no guesswork.</p><span class="go" data-en="Set up your AI →" data-zh="搭建你的 AI →">Set up your AI →</span></a>
-    <a class="feat" href="build.html" style="display:block"><div class="ic">⚙️</div><h3 data-en="Auto-Deploy" data-zh="自动部署">Auto-Deploy</h3><p data-en="Installs the runtime, model, RAG and UI automatically — no command line." data-zh="自动装好运行时、模型、RAG 和界面,无需命令行。">Installs the runtime, model, RAG and UI automatically — no command line.</p><span class="go" data-en="See the installer →" data-zh="查看安装流程 →">See the installer →</span></a>
-    <a class="feat" href="dashboard.html" style="display:block"><div class="ic">🎛️</div><h3 data-en="Control Center" data-zh="控制中心">Control Center</h3><p data-en="Manage models, knowledge, API and status in one screen." data-zh="一屏管理模型、知识库、API 和运行状态。">Manage models, knowledge, API and status in one screen.</p><span class="go" data-en="Open Control Center →" data-zh="打开控制中心 →">Open Control Center →</span></a>
-    <a class="feat" href="chat.html" style="display:block"><div class="ic">📚</div><h3 data-en="Knowledge / RAG" data-zh="知识库 / RAG">Knowledge / RAG</h3><p data-en="Drag in PDF, Word, Excel — answers cite the exact source." data-zh="拖入 PDF、Word、Excel——回答标注确切来源。">Drag in PDF, Word, Excel — answers cite the exact source.</p><span class="go" data-en="Try it live →" data-zh="在线试用 →">Try it live →</span></a>
-    <a class="feat" href="chat.html" style="display:block"><div class="ic">🎓</div><h3 data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</h3><p data-en="Your corrections train it over time — it gets more accurate the more you use it." data-zh="你的纠正会持续训练它,越用越准。">Your corrections train it over time — it gets more accurate the more you use it.</p><span class="go" data-en="Try 👍/👎 feedback →" data-zh="试试 👍/👎 反馈 →">Try 👍/👎 feedback →</span></a>
-    <a class="feat" href="build.html" style="display:block"><div class="ic">🗂️</div><h3 data-en="Model Registry" data-zh="模型库">Model Registry</h3><p data-en="Tracks open models, licenses, hardware needs and compatibility." data-zh="持续跟踪开源模型的 License、硬件要求与兼容性。">Tracks open models, licenses, hardware needs and compatibility.</p><span class="go" data-en="See recommendations →" data-zh="查看推荐 →">See recommendations →</span></a>
+  <div class="grid3 fx-stagger">
+    <a class="feat fx-card fx-tilt" href="build.html" style="display:block"><div class="ic">🧭</div><h3 data-en="AI Advisor" data-zh="AI 方案顾问">AI Advisor</h3><p data-en="Turns your need + your hardware into the best model and setup — no guesswork." data-zh="把你的需求和硬件,变成最合适的模型与方案,不用猜。">Turns your need + your hardware into the best model and setup — no guesswork.</p><span class="go" data-en="Set up your AI →" data-zh="搭建你的 AI →">Set up your AI →</span></a>
+    <a class="feat fx-card fx-tilt" href="build.html" style="display:block"><div class="ic">⚙️</div><h3 data-en="Auto-Deploy" data-zh="自动部署">Auto-Deploy</h3><p data-en="Installs the runtime, model, RAG and UI automatically — no command line." data-zh="自动装好运行时、模型、RAG 和界面,无需命令行。">Installs the runtime, model, RAG and UI automatically — no command line.</p><span class="go" data-en="See the installer →" data-zh="查看安装流程 →">See the installer →</span></a>
+    <a class="feat fx-card fx-tilt" href="dashboard.html" style="display:block"><div class="ic">🎛️</div><h3 data-en="Control Center" data-zh="控制中心">Control Center</h3><p data-en="Manage models, knowledge, API and status in one screen." data-zh="一屏管理模型、知识库、API 和运行状态。">Manage models, knowledge, API and status in one screen.</p><span class="go" data-en="Open Control Center →" data-zh="打开控制中心 →">Open Control Center →</span></a>
+    <a class="feat fx-card fx-tilt" href="chat.html" style="display:block"><div class="ic">📚</div><h3 data-en="Knowledge / RAG" data-zh="知识库 / RAG">Knowledge / RAG</h3><p data-en="Drag in PDF, Word, Excel — answers cite the exact source." data-zh="拖入 PDF、Word、Excel——回答标注确切来源。">Drag in PDF, Word, Excel — answers cite the exact source.</p><span class="go" data-en="Try it live →" data-zh="在线试用 →">Try it live →</span></a>
+    <a class="feat fx-card fx-tilt" href="chat.html" style="display:block"><div class="ic">🎓</div><h3 data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</h3><p data-en="Your corrections train it over time — it gets more accurate the more you use it." data-zh="你的纠正会持续训练它,越用越准。">Your corrections train it over time — it gets more accurate the more you use it.</p><span class="go" data-en="Try 👍/👎 feedback →" data-zh="试试 👍/👎 反馈 →">Try 👍/👎 feedback →</span></a>
+    <a class="feat fx-card fx-tilt" href="build.html" style="display:block"><div class="ic">🗂️</div><h3 data-en="Model Registry" data-zh="模型库">Model Registry</h3><p data-en="Tracks open models, licenses, hardware needs and compatibility." data-zh="持续跟踪开源模型的 License、硬件要求与兼容性。">Tracks open models, licenses, hardware needs and compatibility.</p><span class="go" data-en="See recommendations →" data-zh="查看推荐 →">See recommendations →</span></a>
   </div>
 </div></section>
 
@@ -117,13 +119,13 @@
     <h2 data-en="Start from a ready-made AI" data-zh="从现成的 AI 开始">Start from a ready-made AI</h2>
     <p data-en="Pick a template and we tailor the model, knowledge and settings for that job." data-zh="选个模板,我们就为那份工作定制模型、知识库和设置。">Pick a template and we tailor the model, knowledge and settings for that job.</p>
   </div>
-  <div class="tgrid">
-    <a class="tcard" href="build.html?template=company"><div class="ic">🏢</div><h3 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h3><p data-en="Answers from your internal PDFs, Excel and docs." data-zh="基于你的内部 PDF、Excel 和文档回答。">Answers from your internal PDFs, Excel and docs.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
-    <a class="tcard" href="build.html?template=legal"><div class="ic">⚖️</div><h3 data-en="Contract & Legal Review" data-zh="合同 / 法务审阅">Contract & Legal Review</h3><p data-en="Find clauses, terms and risks across contracts." data-zh="在合同里查条款、找风险。">Find clauses, terms and risks across contracts.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
-    <a class="tcard" href="build.html?template=writing"><div class="ic">✍️</div><h3 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h3><p data-en="Draft, polish and rewrite in your voice." data-zh="用你的风格起草、润色、改写。">Draft, polish and rewrite in your voice.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
-    <a class="tcard" href="build.html?template=research"><div class="ic">🔬</div><h3 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h3><p data-en="Read papers and reports, summarize with sources." data-zh="读论文和报告,带来源归纳。">Read papers and reports, summarize with sources.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
-    <a class="tcard" href="build.html?template=support"><div class="ic">💬</div><h3 data-en="Customer Support AI" data-zh="客服 AI">Customer Support AI</h3><p data-en="Answers from your product docs and FAQs." data-zh="基于你的产品文档和 FAQ 回答。">Answers from your product docs and FAQs.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
-    <a class="tcard" href="build.html?template=data"><div class="ic">📊</div><h3 data-en="Data Analyst AI" data-zh="数据分析 AI">Data Analyst AI</h3><p data-en="Ask questions about your spreadsheets in plain words." data-zh="用人话问你的表格。">Ask questions about your spreadsheets in plain words.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+  <div class="tgrid fx-stagger">
+    <a class="tcard fx-card fx-tilt" href="build.html?template=company"><div class="ic">🏢</div><h3 data-en="Company Knowledge AI" data-zh="公司知识 AI">Company Knowledge AI</h3><p data-en="Answers from your internal PDFs, Excel and docs." data-zh="基于你的内部 PDF、Excel 和文档回答。">Answers from your internal PDFs, Excel and docs.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+    <a class="tcard fx-card fx-tilt" href="build.html?template=legal"><div class="ic">⚖️</div><h3 data-en="Contract & Legal Review" data-zh="合同 / 法务审阅">Contract & Legal Review</h3><p data-en="Find clauses, terms and risks across contracts." data-zh="在合同里查条款、找风险。">Find clauses, terms and risks across contracts.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+    <a class="tcard fx-card fx-tilt" href="build.html?template=writing"><div class="ic">✍️</div><h3 data-en="Writing Assistant" data-zh="写作助手">Writing Assistant</h3><p data-en="Draft, polish and rewrite in your voice." data-zh="用你的风格起草、润色、改写。">Draft, polish and rewrite in your voice.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+    <a class="tcard fx-card fx-tilt" href="build.html?template=research"><div class="ic">🔬</div><h3 data-en="Research Assistant" data-zh="研究助手">Research Assistant</h3><p data-en="Read papers and reports, summarize with sources." data-zh="读论文和报告,带来源归纳。">Read papers and reports, summarize with sources.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+    <a class="tcard fx-card fx-tilt" href="build.html?template=support"><div class="ic">💬</div><h3 data-en="Customer Support AI" data-zh="客服 AI">Customer Support AI</h3><p data-en="Answers from your product docs and FAQs." data-zh="基于你的产品文档和 FAQ 回答。">Answers from your product docs and FAQs.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
+    <a class="tcard fx-card fx-tilt" href="build.html?template=data"><div class="ic">📊</div><h3 data-en="Data Analyst AI" data-zh="数据分析 AI">Data Analyst AI</h3><p data-en="Ask questions about your spreadsheets in plain words." data-zh="用人话问你的表格。">Ask questions about your spreadsheets in plain words.</p><span class="go" data-en="Build this →" data-zh="搭建它 →">Build this →</span></a>
   </div>
 </div></section>
 
@@ -134,7 +136,7 @@
     <h2 data-en="Run it where it makes sense" data-zh="按需选择运行方式">Run it where it makes sense</h2>
     <p data-en="Private by default. Cloud when your computer isn't enough. Hybrid for the best of both." data-zh="默认私密。电脑不够时用云端。混合模式两者兼得。">Private by default. Cloud when your computer isn't enough. Hybrid for the best of both.</p>
   </div>
-  <div class="dep3">
+  <div class="dep3 fx-stagger">
     <div class="depcard rec">
       <h3><span>💻</span> <span data-en="Local" data-zh="本地">Local</span></h3>
       <div class="tag" data-en="Recommended for private data" data-zh="私密数据推荐">Recommended for private data</div>
@@ -171,7 +173,7 @@
     <div class="eyebrow" data-en="WHO IT'S FOR" data-zh="适合谁">WHO IT'S FOR</div>
     <h2 data-en="Built for people, not ML engineers" data-zh="为普通人而做,不是为算法工程师">Built for people, not ML engineers</h2>
   </div>
-  <div class="who4">
+  <div class="who4 fx-stagger">
     <div class="whocard"><div class="ic">🏪</div><h3 data-en="Small businesses" data-zh="中小企业">Small businesses</h3><p data-en="A private AI over your own files, without hiring IT." data-zh="基于自家资料的私有 AI,无需雇 IT。">A private AI over your own files, without hiring IT.</p></div>
     <div class="whocard"><div class="ic">⚖️</div><h3 data-en="Professionals" data-zh="专业人士">Professionals</h3><p data-en="Lawyers, accountants, consultants — keep client data on your machine." data-zh="律师、会计、顾问——客户数据留在自己电脑上。">Lawyers, accountants, consultants — keep client data on your machine.</p></div>
     <div class="whocard"><div class="ic">🔬</div><h3 data-en="Researchers" data-zh="研究者">Researchers</h3><p data-en="Read and question large document sets, fully offline." data-zh="读并追问大量文档,全程离线。">Read and question large document sets, fully offline.</p></div>
@@ -186,7 +188,7 @@
     <h2 data-en="Real jobs, done privately" data-zh="真实的活,私密地完成">Real jobs, done privately</h2>
     <p data-en="Illustrative examples of what a personal AI makes possible." data-zh="以下为示例,展示个人 AI 能带来什么。">Illustrative examples of what a personal AI makes possible.</p>
   </div>
-  <div class="st3">
+  <div class="st3 fx-stagger">
     <div class="stcard"><div class="metric" data-en="Seconds" data-zh="几秒">Seconds</div><div class="mlbl" data-en="to find any clause" data-zh="查到任意条款">to find any clause</div><p data-en="A small firm loaded 400 contracts into a private AI. Questions that took an afternoon now take seconds — and nothing left the office." data-zh="一家小公司把 400 份合同装进私有 AI。过去要一下午的问题,现在几秒出结果——而且一份都没离开办公室。">A small firm loaded 400 contracts into a private AI. Questions that took an afternoon now take seconds — and nothing left the office.</p><div class="tag" data-en="Example · Legal · Local" data-zh="示例 · 法务 · 本地">Example · Legal · Local</div></div>
     <div class="stcard"><div class="metric" data-en="20 min" data-zh="20 分钟">20 min</div><div class="mlbl" data-en="from zero to working" data-zh="从零到可用">from zero to working</div><p data-en="A shop owner set up an inventory Q&amp;A AI over lunch — no IT help, no command line. It answers straight from the spreadsheets." data-zh="一位店主午休时搭好了库存问答 AI——没找 IT、没碰命令行。它直接从表格里回答。">A shop owner set up an inventory Q&amp;A AI over lunch — no IT help, no command line. It answers straight from the spreadsheets.</p><div class="tag" data-en="Example · Retail · Local" data-zh="示例 · 零售 · 本地">Example · Retail · Local</div></div>
     <div class="stcard"><div class="metric" data-en="$0 / mo" data-zh="$0 / 月">$0 / mo</div><div class="mlbl" data-en="ongoing cost" data-zh="长期成本">ongoing cost</div><p data-en="A researcher runs a paper-reading AI fully on her laptop. No per-query fees, no data uploaded — she just keeps asking." data-zh="一位研究者在自己笔记本上跑论文阅读 AI。没有按次收费、没有上传数据——她只管一直问。">A researcher runs a paper-reading AI fully on her laptop. No per-query fees, no data uploaded — she just keeps asking.</p><div class="tag" data-en="Example · Research · Local" data-zh="示例 · 研究 · 本地">Example · Research · Local</div></div>
@@ -206,7 +208,7 @@
     <span data-en=" We're building this in the open — got a need or a feature request? " data-zh=" 我们正在开放共建——有需求或功能想法? "> We're building this in the open — got a need or a feature request? </span>
     <a href="signup.html?plan=business" data-en="Reach out anytime →" data-zh="随时沟通 →">Reach out anytime →</a>
   </div>
-  <div class="price3">
+  <div class="price3 fx-stagger">
     <div class="tier">
       <div class="plabel" data-en="FREE · NO SIGNUP" data-zh="免费 · 免注册">FREE · NO SIGNUP</div>
       <h3 data-en="Free" data-zh="免费">Free</h3>
@@ -274,5 +276,6 @@
 
 <script src="assets/i18n.js"></script>
 <script src="assets/hero.js"></script>
+<script src="assets/fx.js" defer></script>
 </body>
 </html>

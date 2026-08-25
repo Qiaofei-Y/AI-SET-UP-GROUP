@@ -6,6 +6,8 @@
 <title data-en="Pricing — Build My AI" data-zh="价格 — Build My AI">Pricing — Build My AI</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/home.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
 </head>
 <body>
 
@@ -24,12 +26,12 @@
       <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
     </div>
     <a class="btn ghost" href="signup.html?mode=login" data-en="Log in" data-zh="登录">Log in</a>
-    <a class="btn primary" href="build.html" data-en="Build My AI" data-zh="开始搭建">Build My AI</a>
+    <a class="btn primary fx-btn-sweep" href="build.html" data-en="Build My AI" data-zh="开始搭建">Build My AI</a>
   </div>
 </div></div></header>
 
 <!-- PAGE HERO -->
-<section class="pagehero">
+<section class="pagehero fx-grid">
   <div class="eyebrow" data-en="PRICING" data-zh="价格">PRICING</div>
   <h1 data-en="Free while we're in beta" data-zh="Beta 期间,全部免费">Free while we're in beta</h1>
   <p class="sub" data-en="Prices below are what plans will cost later. During beta, everything that's live is free — and more is rolling out." data-zh="下方价格是将来的收费标准。Beta 期间已上线的功能全部免费,更多功能陆续开放。">Prices below are what plans will cost later. During beta, everything that's live is free — and more is rolling out.</p>
@@ -68,7 +70,7 @@
         <li data-en="Hybrid local + cloud" data-zh="本地 + 云端混合">Hybrid local + cloud</li>
       </ul>
       <div class="note" data-en="Plan features — rolling out during beta" data-zh="套餐功能,Beta 期间陆续开放">Plan features — rolling out during beta</div>
-      <a class="btn primary" href="signup.html?plan=pro" style="width:100%;justify-content:center" data-en="Create free account" data-zh="创建免费账号">Create free account</a>
+      <a class="btn primary fx-btn-sweep" href="signup.html?plan=pro" style="width:100%;justify-content:center" data-en="Create free account" data-zh="创建免费账号">Create free account</a>
       <div class="signup-note" data-en="Free account required to unlock all features (name + email)." data-zh="需创建免费账号解锁全部功能(填写姓名 + 邮箱)。">Free account required to unlock all features (name + email).</div>
     </div>
     <div class="tier">
@@ -94,16 +96,16 @@
     <div class="eyebrow" data-en="FAQ" data-zh="常见问题">FAQ</div>
     <h2 data-en="Pricing questions" data-zh="价格常见问题">Pricing questions</h2>
   </div>
-  <div class="grid3">
-    <div class="feat">
+  <div class="grid3 fx-stagger">
+    <div class="feat fx-card fx-tilt">
       <h3 data-en="What happens when beta ends?" data-zh="Beta 结束后会怎样?">What happens when beta ends?</h3>
       <p data-en="We will announce it ahead of time — the prices above are what plans will cost later. An AI you installed locally keeps running on your computer, free after setup." data-zh="我们会提前公告——上方价格就是将来的收费标准。已装好的本地 AI 会继续在你电脑上运行,装好后免费。">We will announce it ahead of time — the prices above are what plans will cost later. An AI you installed locally keeps running on your computer, free after setup.</p>
     </div>
-    <div class="feat">
+    <div class="feat fx-card fx-tilt">
       <h3 data-en="Do I need a credit card?" data-zh="需要信用卡吗?">Do I need a credit card?</h3>
       <p data-en="No. We collect no payment information during the beta — no card, no billing." data-zh="不需要。Beta 期间我们不收集任何支付信息——没有卡号,也没有账单。">No. We collect no payment information during the beta — no card, no billing.</p>
     </div>
-    <div class="feat">
+    <div class="feat fx-card fx-tilt">
       <h3 data-en="What data do you collect on Free?" data-zh="免费版收集什么数据?">What data do you collect on Free?</h3>
       <p data-en="Anonymous usage data only, collected to improve recommendations. No signup, no account needed." data-zh="只收集匿名使用数据,用于改进推荐。免注册,无需账号。">Anonymous usage data only, collected to improve recommendations. No signup, no account needed.</p>
     </div>
@@ -115,7 +117,7 @@
   <h2 data-en="Own your AI. Start today." data-zh="拥有你的 AI。今天就开始。">Own your AI. Start today.</h2>
   <p data-en="Answer a few questions and get your installer or deployment guide." data-zh="回答几个问题,拿到你的安装包或部署手册。">Answer a few questions and get your installer or deployment guide.</p>
   <div class="cta">
-    <a class="btn primary lg" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
+    <a class="btn primary lg fx-btn-sweep" href="build.html" data-en="Build My AI →" data-zh="开始搭建 →">Build My AI →</a>
     <a class="btn ghost lg" href="chat.html" data-en="Try the live demo" data-zh="试用在线演示">Try the live demo</a>
   </div>
 </div></section>
@@ -132,5 +134,6 @@
 </div></div></footer>
 
 <script src="assets/i18n.js"></script>
+<script src="assets/fx.js" defer></script>
 </body>
 </html>

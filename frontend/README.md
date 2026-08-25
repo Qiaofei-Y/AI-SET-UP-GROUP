@@ -28,6 +28,9 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/build.css` | 向导专属:步骤条、表单、推荐卡、生成输出 | build |
 | `assets/dashboard.css` | 控制中心专属:导航栏、状态条、卡片网格 | dashboard |
 | `assets/chat.css` | 聊天页专属:消息气泡、输入栏、建议问题 | chat |
+| `assets/fx.css` | 共享动效层:辉光/网格/扫描线变量 + 工具类(reveal/卡片微倾/按钮流光/描边环),页尾 reduced-motion 总闸 | index(其余页面陆续接入) |
+| `assets/fx.js` | 共享动效引擎:滚动 reveal、指针微倾、数字滚动、粒子星网 canvas、`FX.decode` 文字解码;初始化后设 `data-fx="on"` | index(其余页面陆续接入) |
+| `assets/favicon.svg` | 品牌 ◆ 图标(本地 SVG,`<link rel="icon">`) | index(其余页面陆续接入) |
 | `assets/i18n.js` | 中英文切换(默认英文,跨页面记忆) | 所有页面 |
 | `assets/hero.js` | 首页 Hero 截图的流式打字动画 | index |
 | `assets/build.js` | 向导逻辑 + 安装包/云端手册生成器 | build |

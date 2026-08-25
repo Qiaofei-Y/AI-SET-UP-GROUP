@@ -22,7 +22,8 @@ bash frontend/tests/run.sh
 |------|------|
 | `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验(89 项) |
 | `xss.browser.html` | 无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当作纯文本 |
-| `run.sh` | 串起两者,输出汇总与退出码 |
+| `ui.smoke.sh` | 无头浏览器逐页加载全部 11 个页面(自起随机端口 http.server):动效层初始化(`data-fx="on"`)、顶栏存在、console 零错误 |
+| `run.sh` | 串起三者,输出汇总与退出码 |
 
 具体断言:
 

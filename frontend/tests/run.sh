@@ -35,7 +35,12 @@ else
 fi
 
 echo
-if [ "$NODE_RC" -eq 0 ] && [ "$BROWSER_RC" -eq 0 ]; then
+echo "== UI smoke test (headless browser, all pages) =="
+bash "$DIR/ui.smoke.sh"
+UI_RC=$?
+
+echo
+if [ "$NODE_RC" -eq 0 ] && [ "$BROWSER_RC" -eq 0 ] && [ "$UI_RC" -eq 0 ]; then
   echo "All security tests passed."
   exit 0
 else
