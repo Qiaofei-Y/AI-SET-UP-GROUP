@@ -50,6 +50,7 @@
 | [19 安全与隐私模型](docs/19-security-model.md) | 威胁模型、不变量→断言映射、需求框数据流、隐私红线、部署 CSP 加固 |
 | [20 后端结构与技术文档](docs/20-backend-architecture-and-api.md) | API v0 完整参考:目录结构、分库设计、全部端点规格、schema 白名单、auth/license 实现、红线→断言映射 |
 | [21 Lambda 云一键部署集成设计](docs/21-lambda-cloud-integration.md) | Lambda API 调研事实、一键部署 UX/架构/key 安全/bootstrap、端点清单、费用透明、分期与实测清单 |
+| [22 商用化差距审计与路线图](docs/22-commercial-readiness-audit.md) | 演示版→商用版全项目审计:17 条 P0 确认清单、P1/P2、资产与演示壳盘点、按依赖排批的执行路线 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 | [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示(可接本机 llm-lab 模型,项目知识库 RAG 带出处回答) |
 | [backend/ 后端演进计划 + API v0](backend/) | 分阶段计划、SaaS 选型与自建边界、隐私红线;已含零依赖 API v0(advise/registry/license/telemetry/feedback/auth) |
