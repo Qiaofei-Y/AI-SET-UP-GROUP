@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(89 项,含 pickModel↔registry 同步校验)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(90 项,含 pickModel↔registry 同步校验)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931
@@ -43,7 +43,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 `frontend/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
 - **全站只有 `frontend/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
-- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)/`API`(8940,自建后端)必须各只赋值一次、指向 `127.0.0.1`;每个 `fetch` 必须以四者之一开头;不允许出现其他 URL 字面量。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)必须各只赋值一次、指向 `127.0.0.1`;`API` 是被测试锁形的条件式——localhost 页面为 `127.0.0.1:8940`,部署页面为 `''`(同源相对,反代转 `/v1/*`,P0-13);每个 `fetch` 必须以四常量之一开头;不允许出现其他 URL 字面量。
 - `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
 - 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。

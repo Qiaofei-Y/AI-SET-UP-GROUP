@@ -20,7 +20,7 @@ bash frontend/tests/run.sh
 
 | 文件 | 内容 |
 |------|------|
-| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验(89 项) |
+| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验(90 项) |
 | `xss.browser.html` | 无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当作纯文本 |
 | `ui.smoke.sh` | 无头浏览器逐页加载全部 11 个页面(自起随机端口 http.server):动效层初始化(`data-fx="on"`)、顶栏存在、console 零错误 |
 | `run.sh` | 串起三者,输出汇总与退出码 |
@@ -28,7 +28,7 @@ bash frontend/tests/run.sh
 具体断言:
 
 - **危险 API**:无 `eval` / `new Function` / `document.write` / 字符串定时器 / `outerHTML` / `insertAdjacentHTML`。
-- **零外部依赖面**:除按精确路径豁免的 `assets/local-llm.js` 外,任何文件出现 `fetch/XHR/WebSocket` 即失败;连接器内每个 fetch 必须以四个 `127.0.0.1` 常量(`BASE`/`PORTAL`/`ADVISOR`/`API`)之一开头;所有 `<script>`/`<link>`/图片均为本地相对路径,无远程资源。
+- **零外部依赖面**:除按精确路径豁免的 `assets/local-llm.js` 外,任何文件出现 `fetch/XHR/WebSocket` 即失败;连接器内每个 fetch 必须以四常量(`BASE`/`PORTAL`/`ADVISOR` 钉死 `127.0.0.1`;`API` 为锁形条件式:本地页回环、部署页同源 `''`)之一开头;所有 `<script>`/`<link>`/图片均为本地相对路径,无远程资源。
 - **注入向量**:无 `javascript:` URL;无 `target=_blank` 缺 `rel=noopener`;无硬编码密钥/私钥/令牌(界面里的 `sk-local-••••` 是打码占位,非真实 key)。
 - **XSS 核心**:直接对 `chat.js` 里真实的 `esc()` 跑五组攻击载荷,确认 `<`、`"`、`&` 全被转义;并断言用户输入经 `esc()` 后只用 `textContent` 渲染,绝不进原始 `innerHTML`。
 - **生成器**:`build.js` 不把自由文本需求框读进安装包/手册内容。

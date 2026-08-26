@@ -5,9 +5,12 @@
 //   ADVISOR :8092  RESERVED — run your own OpenAI-compatible server here and the
 //                  build wizard's need-classifier switches to it automatically
 //                  (until then it falls back to the chat model on :8080)
-//   API     :8940  Build My AI backend v0 — /v1/advise powers the wizard's plan
-//                  step when up; chat 👍/👎 ratings post to /v1/feedback
-//                  (rating + template + model id only, never any content)
+//   API     Build My AI backend — /v1/advise powers the wizard's plan step
+//           when up; chat 👍/👎 ratings post to /v1/feedback (rating +
+//           template + model id only, never any content); /v1/auth/* for
+//           accounts. On a local page it's :8940 on this machine; on a real
+//           domain it's SAME-ORIGIN relative (reverse proxy forwards /v1/*,
+//           docs/22 P0-13) — no other host is ever constructible.
 // chat.html ladder: RAG (portal up) > general chat (8080 up) > canned demo.
 // build.html: the need box is classified into a template slug by ADVISOR/BASE.
 // All model output is rendered via textContent — no HTML injection path.
@@ -15,7 +18,8 @@
   var BASE = 'http://127.0.0.1:8080';
   var PORTAL = 'http://127.0.0.1:8090';
   var ADVISOR = 'http://127.0.0.1:8092';
-  var API = 'http://127.0.0.1:8940';
+  var LOCAL_PAGE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var API = LOCAL_PAGE ? 'http://127.0.0.1:8940' : '';
   var SYSTEM =
     'You are "Build My AI", a private AI assistant running fully on this computer. ' +
     'Be concise and helpful. Always reply in the same language as the user\'s last message ' +
@@ -346,7 +350,7 @@
     });
   }
 
-  // ---- backend API (:8940): advise for the wizard, feedback from chat ----
+  // ---- backend API (:8940 local / same-origin deployed): advise + feedback ----
   var apiUp = false;
   function probeApi() {
     var pc = new AbortController();
@@ -395,9 +399,10 @@
     }).catch(function () { apiUp = false; });
   });
 
-  // ---- auth (:8940): real signup/login for signup.html ----
-  // Identity fields go ONLY to the self-hosted API on this machine (users.db);
-  // signup.js falls back to the pure-frontend demo flow when the API is offline.
+  // ---- auth (API): real signup/login for signup.html ----
+  // Identity fields go ONLY to the self-hosted API (users.db) — local :8940
+  // in dev, same-origin behind the reverse proxy when deployed;
+  // signup.js shows an explicit error when the API is unreachable (P0-14).
   function authCall(path, body, token, cb) {
     var pc = new AbortController();
     var timer = setTimeout(function () { pc.abort(); }, 4000);

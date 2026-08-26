@@ -106,7 +106,7 @@
       '<h3>' + p.title + '</h3>' +
       '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) + ' · ' + runsWhere +
         (p.fromApi ? ' · <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">' +
-          t('✦ live · model registry @ :8940', '✦ 实时推荐 · 模型库 @ :8940') + '</span>' : '') + '</div>' +
+          t('✦ live · model registry', '✦ 实时推荐 · 模型库') + '</span>' : '') + '</div>' +
       meter(t('Answer quality', '回答质量'), t('Very good', '很好'), p.quality, 'var(--accent)') +
       meter(t('Response speed', '响应速度'), t('Fast', '快'), p.speed, 'var(--info)') +
       meter(t('Space used', '占用空间'), p.space, p.spacePct, 'var(--clay)') +

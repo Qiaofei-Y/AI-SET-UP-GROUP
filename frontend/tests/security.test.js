@@ -63,8 +63,16 @@ ok('local-llm.js: PORTAL pinned to 127.0.0.1 and assigned exactly once',
   /var PORTAL = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bPORTAL\s*=/g) || []).length === 1);
 ok('local-llm.js: ADVISOR pinned to 127.0.0.1 and assigned exactly once',
   /var ADVISOR = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bADVISOR\s*=/g) || []).length === 1);
-ok('local-llm.js: API pinned to 127.0.0.1 and assigned exactly once',
-  /var API = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bAPI\s*=/g) || []).length === 1);
+// P0-13 same-origin topology (docs/22): API may be EITHER the local loopback
+// literal (page served from localhost — dev/demo) OR the empty string (deployed
+// page — every call stays same-origin via the reverse proxy). The conditional
+// is locked to this exact shape so no third host is ever constructible.
+ok('local-llm.js: LOCAL_PAGE predicate tests location.hostname against localhost/127.0.0.1 only',
+  /var LOCAL_PAGE = \/\^\(localhost\|127\\\.0\\\.0\\\.1\)\$\/\.test\(location\.hostname\);/.test(conn)
+  && (conn.match(/\bLOCAL_PAGE\s*=/g) || []).length === 1);
+ok('local-llm.js: API is loopback (local page) or same-origin \'\' (deployed), assigned exactly once',
+  /var API = LOCAL_PAGE \? 'http:\/\/127\.0\.0\.1:\d+' : '';/.test(conn)
+  && (conn.match(/\bAPI\s*=/g) || []).length === 1);
 const fetches = conn.match(/\bfetch\s*\(/g) || [];
 const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL|ADVISOR|API)\s*\+/g) || [];
 ok('local-llm.js: every fetch() targets BASE, PORTAL, ADVISOR or API (' + pinnedFetches.length + '/' + fetches.length + ')',

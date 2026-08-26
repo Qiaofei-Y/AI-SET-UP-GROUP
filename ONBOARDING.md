@@ -18,7 +18,7 @@ open http://localhost:8931/index.html
 python3 backend/api/server.py            # 127.0.0.1:8940
 
 # 两套测试(提交前的硬门槛,详见 §3)
-bash frontend/tests/run.sh               # 前端:89 静态/单元 + XSS 实测 + 11 页冒烟(无 Chrome 自动跳过后两项)
+bash frontend/tests/run.sh               # 前端:90 静态/单元 + XSS 实测 + 11 页冒烟(无 Chrome 自动跳过后两项)
 python3 backend/tests/api.test.py        # 后端:35 项,起真实服务打真实 HTTP
 ```
 
@@ -49,7 +49,7 @@ python3 backend/tests/api.test.py        # 后端:35 项,起真实服务打真�
 
 ## 4. 别踩的雷(测试会替你挡,但先知道为什么)
 
-- **全站只有 `frontend/assets/local-llm.js` 允许联网**,且只能打 `127.0.0.1` 的四个固定常量(8080/8090/8092/8940)。在别处写 `fetch` 会直接挂测试——这是「数据不出本机」承诺的可机器验证形式([docs/19](docs/19-security-model.md))。
+- **全站只有 `frontend/assets/local-llm.js` 允许联网**,且只能打四个受锁常量:llm-lab 三端口(8080/8090/8092)钉死 `127.0.0.1`,后端 `API` 本地页为 `127.0.0.1:8940`、部署页为同源相对路径(反代转 `/v1/*`)。在别处写 `fetch` 会直接挂测试——这是「数据不出本机」承诺的可机器验证形式([docs/19](docs/19-security-model.md))。
 - **向导需求框是 write-only**:`build.js` 永不读框值;自由文本只由连接器发往本机做分类,绝不进入生成的安装包/手册。
 - **用户输入/模型输出只走 `esc()` + `textContent`**,禁 `innerHTML`/`eval`/`document.write`/字符串定时器。
 - **身份与遥测分库**:账号在 `users.db`、匿名事件在 `events.db`,互不沾染;遥测端点是 schema 白名单,自由文本一律 400。
@@ -59,7 +59,7 @@ python3 backend/tests/api.test.py        # 后端:35 项,起真实服务打真�
 ## 5. 现在做到哪了 / 下一步
 
 - **已完成**:演示站全站(10 页,双语 + FX 动效层)、后端六组端点 v0(advise/registry/license/telemetry/feedback/auth)、前后端打通、生产化地基(限速/fail-closed 密钥/`--host`)、89+35 项测试体系。
-- **路线图**:[docs/22 §6](docs/22-commercial-readiness-audit.md) 按依赖排批——批次 0 剩余项(公司主体/Stripe 开户、生产拓扑 P0-13、托管/CI/备份)依赖外部动作;批次 1 = 能合法收钱;批次 2 = 付费交付物(真实安装器 + RAG 组件)。
+- **路线图**:[docs/22 §6](docs/22-commercial-readiness-audit.md) 按依赖排批——批次 0 剩余项(公司主体/Stripe 开户、域名/托管/反代落地、CI/备份)依赖外部动作;批次 1 = 能合法收钱;批次 2 = 付费交付物(真实安装器 + RAG 组件)。
 - 工程任务拆解与验收标准:[docs/09](docs/09-mvp-engineering-tasks.md)。
 
 ## 6. 协作约定

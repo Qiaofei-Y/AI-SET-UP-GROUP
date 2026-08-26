@@ -45,7 +45,31 @@ python3 backend/tests/api.test.py          # 测试(自起服务于随机端口,
 | `BMA_ADVISOR_LLM` | 空(关闭) | 顾问 LLM 分类的本地端点,如 `http://127.0.0.1:8080`;**只接受回环地址**,非回环一律忽略 |
 | `BMA_DEBUG` | 空(关闭) | 打开访问日志(只记路径,永不记请求体) |
 
-默认绑 `127.0.0.1`,`--host` 可改(生产:TLS 反代在前,见 §11);CORS 只放行 `localhost` / `127.0.0.1` 任意端口的 Origin(浏览器侧再由前端安全测试保证只有 `local-llm.js` 能发请求)。传输加固:请求体上限 16 KB(超出 413),负数/非数字 `Content-Length` 直接 400(不再触发吞 socket 的负数 read),连接级 10 秒超时(slowloris 面),超限速端点返回 429。
+默认绑 `127.0.0.1`,`--host` 可改(生产:TLS 反代在前,见下);CORS 只放行 `localhost` / `127.0.0.1` 任意端口的 Origin(浏览器侧再由前端安全测试保证只有 `local-llm.js` 能发请求)。传输加固:请求体上限 16 KB(超出 413),负数/非数字 `Content-Length` 直接 400(不再触发吞 socket 的负数 read),连接级 10 秒超时(slowloris 面),超限速端点返回 429。
+
+### 3.1 生产部署拓扑(同源,docs/22 P0-13)
+
+**定案:同源部署**——一个域名同时服务静态前端与 `/v1/*` API,反代终结 TLS 并把 `/v1/*` 转给后端。前端 `local-llm.js` 的 `API` 常量是锁形条件式:页面在 `localhost`/`127.0.0.1` 时为 `http://127.0.0.1:8940`(本机开发/演示),其余任何域名下为 `''`(同源相对路径)——**前端零配置,同一份静态文件本地和生产都直接可用**。
+
+要点:
+- **后端在反代后仍只绑 `127.0.0.1`**(同机部署),不需要 `--host`;TLS、HTTP/2、连接排队全部由反代承担。`--host` + fail-closed 密钥检查只服务于「后端单独暴露」的少数场景。
+- 同源请求不涉及 CORS,现有 localhost 白名单无需放宽。
+- **真实密钥仍必须注入**(`BMA_LICENSE_SECRET`):同源拓扑下 fail-closed 启动检查不触发(回环绑定),密钥纪律靠部署清单保证。
+- Caddy 参考(自动 HTTPS):
+
+```
+buildmyai.example.com {
+    handle /v1/* {
+        reverse_proxy 127.0.0.1:8940
+    }
+    handle {
+        root * /srv/buildmyai/frontend
+        file_server
+    }
+}
+```
+
+nginx 等价:`location /v1/ { proxy_pass http://127.0.0.1:8940; }` + 静态 `root`。CSP 响应头建议见 [frontend/tests/README.md](../frontend/tests/README.md)(同源拓扑用 `connect-src 'self'`)。
 
 ## 4. 数据存储:为什么分两个库
 
