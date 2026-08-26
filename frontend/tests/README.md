@@ -20,7 +20,7 @@ bash frontend/tests/run.sh
 
 | 文件 | 内容 |
 |------|------|
-| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验(113 项) |
+| `security.test.js` | 静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言 + `pickModel`↔`registry.json` 同步校验 + 生成物实跑断言(130 项) |
 | `xss.browser.html` | 无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当作纯文本 |
 | `ui.smoke.sh` | 无头浏览器逐页加载全部 14 个页面(自起随机端口 http.server):动效层初始化(`data-fx="on"`)、顶栏存在、console 零错误 |
 | `run.sh` | 串起三者,输出汇总与退出码 |
@@ -31,7 +31,7 @@ bash frontend/tests/run.sh
 - **零外部依赖面**:除按精确路径豁免的 `assets/local-llm.js` 外,任何文件出现 `fetch/XHR/WebSocket` 即失败;连接器内每个 fetch 必须以四常量(`BASE`/`PORTAL`/`ADVISOR` 钉死 `127.0.0.1`;`API` 为锁形条件式:本地页回环、部署页同源 `''`)之一开头;所有 `<script>`/`<link>`/图片均为本地相对路径,无远程资源。
 - **注入向量**:无 `javascript:` URL;无 `target=_blank` 缺 `rel=noopener`;无硬编码密钥/私钥/令牌(界面里的 `sk-local-••••` 是打码占位,非真实 key)。
 - **XSS 核心**:直接对 `chat.js` 里真实的 `esc()` 跑五组攻击载荷,确认 `<`、`"`、`&` 全被转义;并断言用户输入经 `esc()` 后只用 `textContent` 渲染,绝不进原始 `innerHTML`。
-- **生成器**:`build.js` 不把自由文本需求框读进安装包/手册内容。
+- **生成器**:`build.js` 不把自由文本需求框读进安装包/手册内容;新增 §8b——在沙箱里**真实执行** Ollama 安装包/指南生成器,断言:拉取的是钉版全量化标签、产物内 URL 全部落在官方白名单(ollama.com/nvidia.com/llama.com/localhost)、Llama 模型必附许可注记、PowerShell 安装器机制(旧演示的 bug 源)不得复活。
 - **存储**:`i18n` 的 localStorage 只存语言码。
 - **数据一致性**:`build.js` 的 `MODELS` 表与 `backend/api/registry.json` 全量逐字段比对(含 `best_for` 与显存/体积),并在沙箱里真实执行 `pickModel` 跑「需求→模型」矩阵(与后端 `test_advise_matches_template_to_model` 同一矩阵)——改一侧不改另一侧、或两侧选择规则漂移,都会直接挂测试。
 

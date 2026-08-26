@@ -288,6 +288,8 @@ TELEMETRY_SCHEMA = {
     'success':    (True,  _bool),
     'duration_s': (False, _int(0, 86400)),
     'error_code': (False, _enum('gpu_check_failed', 'download_failed', 'runtime_failed', 'other')),
+    # segments install success by delivery path (docs/22: prices the Tauri build)
+    'install_method': (False, _enum('ollama_guided', 'cloud_manual')),
 }
 
 FEEDBACK_SCHEMA = {
@@ -371,11 +373,13 @@ def init_db(path=DB_PATH):
     con.execute('''CREATE TABLE IF NOT EXISTS telemetry (
         id INTEGER PRIMARY KEY, ts INTEGER, stage TEXT, template TEXT, model TEXT, os TEXT,
         gpu TEXT, vram_gb INTEGER, ram_gb INTEGER, mode TEXT, success INTEGER,
-        duration_s INTEGER, error_code TEXT)''')
-    try:  # migrate pre-stage databases
-        con.execute('ALTER TABLE telemetry ADD COLUMN stage TEXT')
-    except sqlite3.OperationalError:
-        pass
+        duration_s INTEGER, error_code TEXT, install_method TEXT)''')
+    for migration in ('ALTER TABLE telemetry ADD COLUMN stage TEXT',
+                      'ALTER TABLE telemetry ADD COLUMN install_method TEXT'):
+        try:  # migrate databases created before these columns existed
+            con.execute(migration)
+        except sqlite3.OperationalError:
+            pass
     con.execute('''CREATE TABLE IF NOT EXISTS feedback (
         id INTEGER PRIMARY KEY, ts INTEGER, rating TEXT, template TEXT, model TEXT)''')
     con.commit()
@@ -534,10 +538,11 @@ class Api(BaseHTTPRequestHandler):
             return self._json(400, {'error': err})
         insert('telemetry',
                ('ts', 'stage', 'template', 'model', 'os', 'gpu', 'vram_gb', 'ram_gb', 'mode',
-                'success', 'duration_s', 'error_code'),
+                'success', 'duration_s', 'error_code', 'install_method'),
                (int(time.time()), body.get('stage', 'install'), body['template'], body['model'],
                 body['os'], body['gpu'], body['vram_gb'], body['ram_gb'], body['mode'],
-                int(body['success']), body.get('duration_s'), body.get('error_code')))
+                int(body['success']), body.get('duration_s'), body.get('error_code'),
+                body.get('install_method')))
         return self._json(200, {'ok': True})
 
     def _feedback(self, body):

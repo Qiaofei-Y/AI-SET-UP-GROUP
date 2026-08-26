@@ -12,7 +12,7 @@
 | `templates.html` | **模板库(独立页)**:六个模板卡(示例问题)+ 模板内含说明 + 空白需求入口 |
 | `deploy.html` | **部署方式(独立页)**:本地/云端/混合详解 + 场景选型对照 |
 | `pricing.html` | **价格(独立页)**:Beta 免费横幅 + 三档价格 + 价格常见问题 |
-| `build.html` | **引导流程**:需求(6 个模板,与模板页一致)→ 设备 → 推荐方案 → 本地/云端/混合 → 自动生成安装包/云端手册(混合两者都给) |
+| `build.html` | **引导流程**:需求(6 个模板,与模板页一致)→ 设备 → 推荐方案 → 本地/云端/混合 → 生成**真实可用**的 Ollama 引导安装包 + 分步指南 / 云端手册(混合两者都给);SmartScreen 提示、人话版预览(可切原始脚本)、「即将推出」诚实徽标 |
 | `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI);未登录出登录墙,`/v1/auth/me` 验证通过才放行(P0-14) |
 | `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库) |
 | `signup.html` | **注册/登录页**:Pro/Business 创建免费账号解锁全部功能;`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;注册需勾选条款(clickwrap,服务端留痕);账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
@@ -36,7 +36,7 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/favicon.svg` | 品牌 ◆ 图标(本地 SVG,`<link rel="icon">`) | 所有页面 |
 | `assets/i18n.js` | 中英文切换(默认英文,跨页面记忆) | 所有页面 |
 | `assets/hero.js` | 首页 Hero 截图的流式打字动画 | index |
-| `assets/build.js` | 向导逻辑 + 安装包/云端手册生成器;内置 registry 镜像 `MODELS` 表,`pickModel(vram, need)` 按需求加权选模型(与后端同规则,测试锁同步) | build |
+| `assets/build.js` | 向导逻辑 + **真实 Ollama 安装包/指南/云端手册生成器**(纯 cmd batch,零 PowerShell;Llama 模型自动附 "Built with Llama" 许可注记);内置 registry 镜像 `MODELS` 表(含 `ollama` 钉版标签),`pickModel(vram, need)` 按需求加权选模型(与后端同规则,测试锁同步) | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
 | `assets/signup.js` | 注册/登录逻辑:本地校验 + `__bmaAuth` 真实注册/登录;API 不可达时显式报错(无假通行,P0-14) | signup |
 | `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(llm-lab 只连 `127.0.0.1`,后端 API 本地页连 `127.0.0.1:8940`、部署页走同源 `/v1/*`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态) | chat + build + signup + dashboard |
@@ -65,7 +65,7 @@ open http://localhost:8931/chat.html
 - **build.html 的需求框也接了本地 AI**:输入一句话,由本地模型分类到六个模板之一并自动选卡。分类优先走**预留顾问端口 `127.0.0.1:8092`**(在这个端口起任意 OpenAI 兼容服务即可接管,如 `llama-server --port 8092`),没有则回退 8080 聊天模型;两个都不在就保持纯演示(手动选卡)。
 - **后端 API(可选,`python3 backend/api/server.py`,127.0.0.1:8940)**:在线时向导"推荐方案"改由 `/v1/advise` + 模型库 registry 给出(方案卡带"✦ 实时推荐 · 模型库"标识,生成文件与其一致);点"生成文件"匿名上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`);聊天页 👍/👎 上报 `/v1/feedback`(只传 评分+模板+模型 id,**绝不传内容**,且仅在真实本地模型回答时上报);注册/登录/登录态走 `/v1/auth/*`(账号落本机 `users.db`)。向导/遥测/反馈离线自动回退纯前端、页面功能不变;**auth 例外**——离线显式报错、dashboard 出登录墙,不假通行(docs/22 P0-14)。
 - 文档改动后更新知识库:`ai ingest ~/AI-SET-UP-GROUP`;彻底重建:`ai reindex ~/AI-SET-UP-GROUP`。
-- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,113 项)。需求框文本只会发往 `127.0.0.1`,且永远不会进入生成的安装包/手册(`build.js` 不读框值,由测试强制)。
+- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,130 项)。需求框文本只会发往 `127.0.0.1`,且永远不会进入生成的安装包/手册(`build.js` 不读框值,由测试强制)。
 
 ## 说明
 

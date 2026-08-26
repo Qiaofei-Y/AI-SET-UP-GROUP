@@ -117,6 +117,9 @@ class ApiTest(unittest.TestCase):
             self.assertTrue(m.get('best_for'), '%s: best_for must be recorded' % m['id'])
             self.assertTrue(set(m['best_for']) <= set(server.TEMPLATES),
                             '%s: best_for must use template slugs' % m['id'])
+            # guided-installer tag: full quant pin, never a re-pointable short tag
+            self.assertRegex(m.get('ollama', ''), r'^[a-z0-9.]+:[a-z0-9.\-]+-q\d[a-zA-Z0-9_]*$',
+                             '%s: ollama must be a full pinned quant tag' % m['id'])
         # every template has at least one specialist somewhere in the registry
         covered = set(t for m in models for t in m['best_for'])
         self.assertEqual(covered, set(server.TEMPLATES))
@@ -270,6 +273,15 @@ class ApiTest(unittest.TestCase):
         self.assertIn('plan_generated', stages)
         s, j, _ = call(self.port, '/v1/telemetry/deploy', dict(base, stage='whatever'))
         self.assertEqual((s, j['error']), (400, 'invalid_field:stage'))
+
+    def test_telemetry_install_method_field(self):
+        base = {'template': 'company', 'model': 'qwen2.5-14b-instruct', 'os': 'win11',
+                'gpu': 'nvidia', 'vram_gb': 12, 'ram_gb': 32, 'mode': 'local', 'success': True,
+                'stage': 'plan_generated'}
+        s, j, _ = call(self.port, '/v1/telemetry/deploy', dict(base, install_method='ollama_guided'))
+        self.assertEqual((s, j['ok']), (200, True))
+        s, j, _ = call(self.port, '/v1/telemetry/deploy', dict(base, install_method='sneaky free text'))
+        self.assertEqual((s, j['error']), (400, 'invalid_field:install_method'))
 
     def test_telemetry_rejects_unknown_and_freetext_fields(self):
         base = {'template': 'company', 'model': 'qwen2.5-14b-instruct', 'os': 'win11',

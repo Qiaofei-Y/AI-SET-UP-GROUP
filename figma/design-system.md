@@ -45,6 +45,7 @@
 - **状态标签(Badge)**:已索引/通过(teal)· 处理中/运行中(blue)· 排队(中性)· 失败(clay)
 - **产品窗口(Frame)**:暖白面 + 柔和光晕 + 顶部窗口栏
 - **来源引用(Citation)**:回答下方可点击来源卡
+- **真实状态徽标(Status chip)**:`● Works today`(teal 底)/ `◷ Coming soon`(灰字虚线框)——诚实红线的视觉形式,任何功能按今天的真实状态标注,严禁假进度
 
 ## 动效(FX 层,`frontend/assets/fx.css` + `fx.js`)
 

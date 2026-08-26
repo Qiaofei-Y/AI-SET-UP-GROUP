@@ -1,6 +1,6 @@
 {
   "updated": "2026-08-25",
-  "note": "Model registry data file (docs/09 M2-2: rules are data, not code). Mirrors frontend/assets/build.js MODELS — kept in sync by frontend/tests/security.test.js §8. best_for lists the wizard templates each model is strongest at; selection rule (both sides): among models that fit the VRAM, quality + 10 bonus when best_for matches the need — the in-tier specialist wins, a much bigger general model still takes over.",
+  "note": "Model registry data file (docs/09 M2-2: rules are data, not code). Mirrors frontend/assets/build.js MODELS — kept in sync by frontend/tests/security.test.js §8. best_for lists the wizard templates each model is strongest at; selection rule (both sides): among models that fit the VRAM, quality + 10 bonus when best_for matches the need — the in-tier specialist wins, a much bigger general model still takes over. ollama = full pinned quant tag for the guided Ollama installer (short tags get re-pointed upstream — pin exactly what the plan card promised).",
   "models": [
     {
       "id": "qwen2.5-32b-instruct",
@@ -13,7 +13,13 @@
       "license": "Apache-2.0",
       "quality": 92,
       "speed": 62,
-      "best_for": ["company", "legal", "research", "data"]
+      "best_for": [
+        "company",
+        "legal",
+        "research",
+        "data"
+      ],
+      "ollama": "qwen2.5:32b-instruct-q4_K_M"
     },
     {
       "id": "qwen2.5-14b-instruct",
@@ -26,7 +32,13 @@
       "license": "Apache-2.0",
       "quality": 85,
       "speed": 78,
-      "best_for": ["company", "legal", "research", "data"]
+      "best_for": [
+        "company",
+        "legal",
+        "research",
+        "data"
+      ],
+      "ollama": "qwen2.5:14b-instruct-q4_K_M"
     },
     {
       "id": "llama-3.1-8b-instruct",
@@ -39,7 +51,12 @@
       "license": "Llama 3.1 Community License",
       "quality": 78,
       "speed": 88,
-      "best_for": ["company", "writing", "research"]
+      "best_for": [
+        "company",
+        "writing",
+        "research"
+      ],
+      "ollama": "llama3.1:8b-instruct-q4_K_M"
     },
     {
       "id": "qwen2.5-7b-instruct",
@@ -52,7 +69,11 @@
       "license": "Apache-2.0",
       "quality": 76,
       "speed": 88,
-      "best_for": ["data", "support"]
+      "best_for": [
+        "data",
+        "support"
+      ],
+      "ollama": "qwen2.5:7b-instruct-q4_K_M"
     },
     {
       "id": "mistral-7b-instruct-v0.3",
@@ -65,7 +86,11 @@
       "license": "Apache-2.0",
       "quality": 72,
       "speed": 90,
-      "best_for": ["writing", "support"]
+      "best_for": [
+        "writing",
+        "support"
+      ],
+      "ollama": "mistral:7b-instruct-v0.3-q4_K_M"
     }
   ]
 }

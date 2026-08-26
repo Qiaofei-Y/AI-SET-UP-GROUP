@@ -170,3 +170,12 @@ a.feat:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:va
 /* ---- fx 挂钩(index):hero 星网 canvas(fx.js 插入,z-index:0)之上必须是
    已定位元素;h1/.sub/.cta/.offer 本就 position:relative,补上 eyebrow ---- */
 .hero .eyebrow{position:relative}
+
+/* deploy.html install-methods honesty strip + status chips */
+.chip-ok{font-family:var(--mono);font-size:11px;color:var(--accent-2);background:var(--accent-soft);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.chip-soon{font-family:var(--mono);font-size:11px;color:var(--ink-2);border:1px dashed var(--line-2);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.methods{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.methods .mrow{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 18px}
+.methods .mrow b{font-size:14px;font-weight:600}
+.methods .mrow .mono{font-size:11.5px;color:var(--ink-2);text-align:right}
+@media (max-width:820px){ .methods .mrow{grid-template-columns:1fr;gap:6px} .methods .mrow .mono{text-align:left} }

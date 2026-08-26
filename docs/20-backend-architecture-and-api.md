@@ -21,7 +21,7 @@ backend/
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
 │       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
 └── tests/
-    └── api.test.py        # 37 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 38 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
@@ -102,7 +102,7 @@ sessions (token_hash PRIMARY KEY, user_id, ts, expires)
 存活探测 → `200 {"ok": true, "service": "buildmyai-api", "version": "0.1"}`
 
 ### GET /v1/registry/models?vram=N
-模型库(`registry.json` 驱动,每个模型带 `best_for` 擅长模板列表)。`vram` 可选、必须为非负整数(否则 400);过滤出 `vram_min_gb ≤ N` 的模型。
+模型库(`registry.json` 驱动,每个模型带 `best_for` 擅长模板列表与 `ollama` 全量化钉版标签——短标签会被上游改指,引导安装器必须拉到方案卡承诺的那个模型)。`vram` 可选、必须为非负整数(否则 400);过滤出 `vram_min_gb ≤ N` 的模型。
 → `200 {"models": [...], "recommended": "<首个模型 id 或 null>"}`
 
 ### POST /v1/advise
@@ -124,7 +124,7 @@ sessions (token_hash PRIMARY KEY, user_id, ts, expires)
 key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secret, "TIER:token") 截断;**无状态**(不查库),验证用 `hmac.compare_digest`。72 小时离线宽限:断网用户不被锁。
 
 ### POST /v1/telemetry/deploy
-字段白名单见 `TELEMETRY_SCHEMA`(stage/template/model/os/gpu/vram_gb/ram_gb/mode/success/duration_s/error_code,全部枚举/整数/布尔;`stage` 区分 `plan_generated` 与 `install`,把向导数据和真实装机分开)。未知字段与自由文本一律 400。→ `200 {"ok": true}`,落 `events.db`。
+字段白名单见 `TELEMETRY_SCHEMA`(stage/template/model/os/gpu/vram_gb/ram_gb/mode/success/duration_s/error_code/install_method,全部枚举/整数/布尔;`stage` 区分 `plan_generated` 与 `install`;`install_method` 枚举 `ollama_guided|cloud_manual`,让安装成功率可按交付路径分段——为 Tauri 安装器的投入决策定价)。未知字段与自由文本一律 400。→ `200 {"ok": true}`,落 `events.db`。
 
 ### POST /v1/feedback
 `{"rating": "up|down", "template": "枚举", "model": "4-64 位受限字符"}`——`model` 是形状受限 id 而非枚举(聊天可能跑库外模型),**结构上没有任何 content 字段**。→ `200 {"ok": true}`。
@@ -198,7 +198,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。37 项覆盖:五组业务端点(含需求→模型匹配矩阵)、auth 全流程(含 clickwrap 留痕)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。38 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 

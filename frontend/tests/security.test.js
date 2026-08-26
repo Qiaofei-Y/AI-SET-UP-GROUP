@@ -164,6 +164,7 @@ for (const m of MODELS) {
      want.file === m.file && want.repo === m.repo && want.quant === m.quant &&
      want.name === m.name && want.vram_min_gb === m.vram &&
      want.quality === m.quality && want.speed === m.speed &&
+     want.ollama === m.ollama &&
      JSON.stringify(want.best_for) === JSON.stringify(m.best_for) &&
      Math.abs(parseFloat((m.size || '').replace(/[^\d.]/g, '')) - want.size_gb) < 0.05);
 }
@@ -187,6 +188,33 @@ for (const [vram, need, want] of MATRIX) {
   let got = null;
   try { got = pick(String(vram), need).id; } catch (e) { /* fails below */ }
   ok('pickModel need-aware matrix: ' + need + '@' + vram + 'GB -> ' + want, got === want);
+}
+
+// ---------- 8b. generated install artifacts are REAL and content-safe ----------
+// The old PowerShell demo installer is retired for good: its bug class (PS 5.1
+// parameter traps behind -EncodedCommand) must not come back.
+ok('build.js contains no PowerShell installer machinery (retired demo, docs/22 P0-6)',
+   !/Invoke-WebRequest|EncodedCommand|powershell(\.exe)?\s+-/i.test(build));
+// Execute the real builders and assert on the actual artifact text.
+const buildersSrc = (build.match(/function isLlama[\s\S]*?function ollamaGuide[\s\S]*?\n  \}/) || [''])[0];
+let art = null;
+try {
+  art = vm.runInNewContext('(function(){' + modelsSrc + buildersSrc +
+    '; return MODELS.map(function(m){ return {id: m.id, ollama: m.ollama, bat: ollamaInstaller(m), guide: ollamaGuide(m)}; });})()');
+} catch (e) { /* fails below */ }
+ok('ollama builders execute and cover every model (' + (art ? art.length : 0) + '/' + registry.models.length + ')',
+   Array.isArray(art) && art.length === registry.models.length);
+const HOST_OK = /^(https?:\/\/)(ollama\.com|www\.nvidia\.com|www\.llama\.com|localhost(:\d+)?)([/?]|$)/;
+for (const a of art || []) {
+  ok('installer pulls the exact pinned tag for ' + a.id,
+     a.bat.indexOf('ollama pull ' + a.ollama) >= 0 && a.guide.indexOf(a.ollama) >= 0);
+  const urls = (a.bat + '\n' + a.guide).match(/https?:\/\/[^\s"')`]+/g) || [];
+  ok('artifact URLs for ' + a.id + ' stay on the official whitelist (' + urls.length + ' urls)',
+     urls.length > 0 && urls.every((u) => HOST_OK.test(u)));
+  const isLl = a.ollama.indexOf('llama') === 0;
+  ok('Llama license notice ' + (isLl ? 'present' : 'absent') + ' for ' + a.id + ' (docs/22 P0-10)',
+     isLl === (a.bat.indexOf('Built with Llama') >= 0) &&
+     isLl === (a.guide.indexOf('Llama 3.1 Community License') >= 0));
 }
 
 // ---------- summary ----------

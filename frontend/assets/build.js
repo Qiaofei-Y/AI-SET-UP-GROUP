@@ -12,12 +12,14 @@
   // (sync enforced by tests/security.test.js §8). best_for lists the needs a
   // model is strongest at; pickModel adds NEED_BONUS quality points on a match,
   // so the in-tier specialist wins while a much bigger generalist still takes over.
+  // ollama = FULL pinned quant tag (short tags get re-pointed upstream; docs/22 P0-6 honesty
+  // demands the generated installer pull exactly the model the plan card promised)
   var MODELS = [
-    { id: 'qwen2.5-32b-instruct', name: 'Qwen2.5 32B Instruct', size: '~20 GB', file: 'qwen2.5-32b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF', quant: 'Q4_K_M', vram: 24, quality: 92, speed: 62, best_for: ['company', 'legal', 'research', 'data'] },
-    { id: 'qwen2.5-14b-instruct', name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', vram: 12, quality: 85, speed: 78, best_for: ['company', 'legal', 'research', 'data'] },
-    { id: 'llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', size: '~4.9 GB', file: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', repo: 'bartowski/Meta-Llama-3.1-8B-Instruct-GGUF', quant: 'Q4_K_M', vram: 8, quality: 78, speed: 88, best_for: ['company', 'writing', 'research'] },
-    { id: 'qwen2.5-7b-instruct', name: 'Qwen2.5 7B Instruct', size: '~4.7 GB', file: 'qwen2.5-7b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-7B-Instruct-GGUF', quant: 'Q4_K_M', vram: 8, quality: 76, speed: 88, best_for: ['data', 'support'] },
-    { id: 'mistral-7b-instruct-v0.3', name: 'Mistral 7B Instruct v0.3', size: '~4.4 GB', file: 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf', repo: 'bartowski/Mistral-7B-Instruct-v0.3-GGUF', quant: 'Q4_K_M', vram: 6, quality: 72, speed: 90, best_for: ['writing', 'support'] }
+    { id: 'qwen2.5-32b-instruct', name: 'Qwen2.5 32B Instruct', size: '~20 GB', file: 'qwen2.5-32b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'qwen2.5:32b-instruct-q4_K_M', vram: 24, quality: 92, speed: 62, best_for: ['company', 'legal', 'research', 'data'] },
+    { id: 'qwen2.5-14b-instruct', name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'qwen2.5:14b-instruct-q4_K_M', vram: 12, quality: 85, speed: 78, best_for: ['company', 'legal', 'research', 'data'] },
+    { id: 'llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', size: '~4.9 GB', file: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', repo: 'bartowski/Meta-Llama-3.1-8B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'llama3.1:8b-instruct-q4_K_M', vram: 8, quality: 78, speed: 88, best_for: ['company', 'writing', 'research'] },
+    { id: 'qwen2.5-7b-instruct', name: 'Qwen2.5 7B Instruct', size: '~4.7 GB', file: 'qwen2.5-7b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-7B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'qwen2.5:7b-instruct-q4_K_M', vram: 8, quality: 76, speed: 88, best_for: ['data', 'support'] },
+    { id: 'mistral-7b-instruct-v0.3', name: 'Mistral 7B Instruct v0.3', size: '~4.4 GB', file: 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf', repo: 'bartowski/Mistral-7B-Instruct-v0.3-GGUF', quant: 'Q4_K_M', ollama: 'mistral:7b-instruct-v0.3-q4_K_M', vram: 6, quality: 72, speed: 90, best_for: ['writing', 'support'] }
   ];
   var NEED_BONUS = 10;
   function pickModel(vram, need) {
@@ -82,11 +84,16 @@
   // for the current render; planGen invalidates stale responses when the user
   // switches mode or navigates back and forth.
   var apiPlan = null, planGen = 0;
+  function offlineTag(id) { // resilience: an older API build may not carry the ollama tag yet
+    var hit = MODELS.filter(function (x) { return x.id === id; })[0];
+    return hit ? hit.ollama : '';
+  }
   function planFromApi(j) {
     var m = j.model;
     return {
       title: t('Private Knowledge Assistant · Balanced', '私有知识助手 · 均衡版'),
-      model: { name: m.name, quant: m.quant, repo: m.repo, file: m.file, size: '~' + m.size_gb + ' GB' },
+      model: { name: m.name, quant: m.quant, repo: m.repo, file: m.file,
+               size: '~' + m.size_gb + ' GB', ollama: m.ollama || offlineTag(m.id) },
       rag: j.rag, space: '~' + m.size_gb + ' GB',
       matched: (m.best_for || []).indexOf(STATE.need) >= 0,
       quality: m.quality, speed: m.speed,
@@ -163,65 +170,138 @@
   function row(k, v) { return '<tr><td>' + k + '</td><td>' + v + '</td></tr>'; }
 
   // ---- generators ----
-  function localInstaller(p) {
-    var rag = p.rag;
-    return '# Build My AI — one-click local installer (generated)\n' +
-      '# Target: Windows + NVIDIA · Model: ' + p.model.name + '\n' +
-      '# This PowerShell payload runs automatically when you double-click build-my-ai-setup.bat.\n' +
-      '# Windows may show a UAC or SmartScreen prompt — choose "Run" / "Yes" to continue.\n\n' +
-      '$ErrorActionPreference = "Stop"\n' +
-      '$Root  = "$env:LOCALAPPDATA\\BuildMyAI"\n' +
-      '$Model = "' + p.model.file + '"\n' +
-      '$Repo  = "' + p.model.repo + '"\n\n' +
-      'Write-Host "[1/5] Checking NVIDIA GPU..."\n' +
-      'if (-not (Get-Command nvidia-smi -ErrorAction SilentlyContinue)) {\n' +
-      '  Write-Host "No NVIDIA driver found. Get it at https://www.nvidia.com/en-us/drivers/ then re-run."; exit 1 }\n' +
-      'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader\n\n' +
-      'Write-Host "[2/5] Preparing runtime (llama.cpp server, CUDA build)..."\n' +
-      'New-Item -ItemType Directory -Force -Path "$Root\\runtime","$Root\\models","$Root\\knowledge" | Out-Null\n' +
-      '# (installer bundles a prebuilt llama-server.exe; download step omitted in this demo script)\n\n' +
-      'Write-Host "[3/5] Downloading AI model (' + p.model.size + ') from Hugging Face (US CDN)..."\n' +
-      '$Url = "https://huggingface.co/$Repo/resolve/main/$Model"\n' +
-      'Invoke-WebRequest -Uri $Url -OutFile "$Root\\models\\$Model" -Resume\n\n' +
-      (rag ?
-      'Write-Host "[4/5] Configuring knowledge engine (RAG: bge-base-en + local vector store)..."\n' +
-      '# embeds files you drop into $Root\\knowledge and builds a local index\n\n' :
-      'Write-Host "[4/5] Skipping RAG (not needed for this setup)..."\n\n') +
-      'Write-Host "[5/5] Starting your AI (OpenAI-compatible API on http://localhost:11434)..."\n' +
-      'Start-Process "$Root\\runtime\\llama-server.exe" -ArgumentList "-m `"$Root\\models\\$Model`" --port 11434 --host 127.0.0.1"\n' +
-      'Start-Sleep -Seconds 3\n' +
-      'Start-Process "http://localhost:11434"\n' +
-      'Write-Host "Done. Your AI is running locally. Open the Control Center from the tray icon."\n';
+  // The old PowerShell demo installer is retired (docs/22 P0-6): it could never
+  // complete on a real machine. The Ollama path below is REAL — every command
+  // works today. Builders are pure (model object in, text out) so the security
+  // suite can execute them and assert on the actual artifacts.
+  function isLlama(m) { return m.ollama.indexOf('llama') === 0; }
+  function llamaNoticeMd(m) {
+    return isLlama(m)
+      ? '\n## License note — Built with Llama\n' +
+        'This setup uses Llama 3.1, made available by Meta under the Llama 3.1 Community License:\n' +
+        'https://www.llama.com/llama3_1/license/ · Acceptable Use Policy: https://www.llama.com/llama3_1/use-policy/\n'
+      : '';
   }
-
-  // PowerShell -EncodedCommand expects base64 of UTF-16LE text
-  function toUtf16leBase64(s) {
-    var bytes = '';
-    for (var i = 0; i < s.length; i++) {
-      var c = s.charCodeAt(i);
-      bytes += String.fromCharCode(c & 0xff, (c >> 8) & 0xff);
-    }
-    return btoa(bytes);
-  }
-  // double-clickable wrapper: a .bat that runs the PowerShell payload itself
-  function batInstaller(script) {
+  // Real guided installer: plain cmd batch — no PowerShell (that is what broke the
+  // old demo), no admin rights, idempotent (safe to re-run, finished steps skip).
+  function ollamaInstaller(m) {
+    var lic = isLlama(m)
+      ? 'echo  Built with Llama - Llama 3.1 Community License: https://www.llama.com/llama3_1/license/\r\n'
+      : '';
     return '@echo off\r\n' +
-      'title Build My AI - Installer\r\n' +
-      'echo Installing your AI. Progress will appear below - keep this window open.\r\n' +
-      'powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ' + toUtf16leBase64(script) + '\r\n' +
+      'setlocal EnableExtensions\r\n' +
+      'title Build My AI - Guided Setup\r\n' +
+      'echo ============================================================\r\n' +
+      'echo  Build My AI - guided local setup (this install is real)\r\n' +
+      'echo  Model:  ' + m.name + '  (' + m.size + ' download)\r\n' +
+      'echo  Engine: Ollama - free and open-source, official installer\r\n' +
+      'echo  Safe to re-run: finished steps are skipped automatically.\r\n' +
+      'echo ============================================================\r\n' +
+      'echo.\r\n' +
+      'echo [1/4] Checking your NVIDIA graphics card...\r\n' +
+      'where nvidia-smi >nul 2>nul\r\n' +
+      'if errorlevel 1 (\r\n' +
+      '  echo   No NVIDIA driver found. Your AI will run on the processor instead - it works, but noticeably slower.\r\n' +
+      '  echo   Drivers: https://www.nvidia.com/en-us/drivers/\r\n' +
+      '  echo   Press any key to continue anyway, or close this window to stop.\r\n' +
+      '  pause >nul\r\n' +
+      ') else (\r\n' +
+      '  nvidia-smi --query-gpu=name,memory.total --format=csv,noheader\r\n' +
+      ')\r\n' +
+      'echo.\r\n' +
+      'echo [2/4] Checking the Ollama engine...\r\n' +
+      'where ollama >nul 2>nul\r\n' +
+      'if errorlevel 1 (\r\n' +
+      '  echo   Ollama is not installed yet. Opening the official download page...\r\n' +
+      '  start https://ollama.com/download/windows\r\n' +
+      '  echo   Run OllamaSetup.exe from your Downloads folder and click through it.\r\n' +
+      '  echo   No admin rights needed. When it finishes, come back here and press any key.\r\n' +
+      '  pause >nul\r\n' +
+      ')\r\n' +
+      'where ollama >nul 2>nul\r\n' +
+      'if errorlevel 1 (\r\n' +
+      '  echo   Still no Ollama found. Finish the Ollama install, then double-click this file again.\r\n' +
+      '  echo   Nothing is lost - this setup continues where it left off.\r\n' +
+      '  pause\r\n' +
+      '  exit /b 1\r\n' +
+      ')\r\n' +
+      'echo   Ollama is ready.\r\n' +
+      'echo.\r\n' +
+      'echo [3/4] Downloading your AI model (' + m.size + '). This is the long step.\r\n' +
+      'echo   If the download is interrupted, just run this file again - it resumes.\r\n' +
+      'ollama pull ' + m.ollama + '\r\n' +
+      'if errorlevel 1 (\r\n' +
+      '  echo   The download did not finish. Check your internet connection and free disk space,\r\n' +
+      '  echo   then double-click this file again.\r\n' +
+      '  pause\r\n' +
+      '  exit /b 1\r\n' +
+      ')\r\n' +
+      'echo.\r\n' +
+      'echo [4/4] Asking your AI to say hello...\r\n' +
+      'ollama run ' + m.ollama + ' "Say hello in one short sentence."\r\n' +
+      'if errorlevel 1 (\r\n' +
+      '  echo   The model did not answer. Restart your computer - Ollama starts automatically -\r\n' +
+      '  echo   then double-click this file again.\r\n' +
+      '  pause\r\n' +
+      '  exit /b 1\r\n' +
+      ')\r\n' +
+      'echo.\r\n' +
+      'echo ============================================================\r\n' +
+      'echo  Done. Your AI is running on this computer.\r\n' +
+      'echo  Any OpenAI-compatible app can talk to it at:  http://localhost:11434/v1\r\n' +
+      'echo  Chat in this window anytime with:  ollama run ' + m.ollama + '\r\n' +
+      'echo  Knowledge base (drop your documents) ships with our desktop app.\r\n' +
+      lic +
+      'echo ============================================================\r\n' +
       'pause\r\n';
   }
 
+  // Step-by-step companion: same install done by hand — the SmartScreen /
+  // locked-down-machine escape hatch, and the transparency artifact.
+  function ollamaGuide(m) {
+    return '# Set up your AI by hand — ' + m.name + '\n' +
+      'Generated by Build My AI. Same result as the .bat installer, done step by step.\n' +
+      'Time: mostly the model download (' + m.size + ').\n\n' +
+      '## 1. Install the Ollama engine (free, open-source)\n' +
+      'Download and run the official installer — no admin rights needed:\n' +
+      'https://ollama.com/download/windows\n' +
+      'Requires Windows 10 22H2 or newer. For NVIDIA acceleration, driver 551.61+ (https://www.nvidia.com/en-us/drivers/).\n\n' +
+      '## 2. Download your model (' + m.size + ')\n' +
+      'Open the Start menu, type `cmd`, press Enter, then paste:\n' +
+      '```\nollama pull ' + m.ollama + '\n```\n' +
+      'If the download is interrupted, run the same command again — it resumes.\n\n' +
+      '## 3. Check it answers\n' +
+      '```\nollama run ' + m.ollama + ' "Say hello in one short sentence."\n```\n' +
+      'You can keep chatting right there, or type /bye to exit.\n\n' +
+      '## 4. Connect apps (optional)\n' +
+      'Your AI now serves an OpenAI-compatible API on this computer only:\n' +
+      '```\nhttp://localhost:11434/v1\n```\n' +
+      'Any app that accepts a custom OpenAI endpoint can use it (any API key value works).\n\n' +
+      '## Troubleshooting\n' +
+      '- "ollama is not recognized": close and reopen the cmd window (PATH updates after install).\n' +
+      '- Download fails: check free disk space (need ' + m.size + ' plus headroom) and re-run the pull.\n' +
+      '- Slow answers without an NVIDIA card: the model is running on your processor — expected.\n' +
+      '- Model answers but apps can\'t connect: Ollama listens on 127.0.0.1:11434 by default (local only, by design).\n' +
+      llamaNoticeMd(m) +
+      '\n## What\'s next\n' +
+      'The knowledge base (drop your documents, get sourced answers) ships with our desktop app.\n' +
+      'Preview the Control Center on the website meanwhile.\n';
+  }
+
   function installManifest(p) {
+    var cloud = STATE.mode === 'cloud';
     return JSON.stringify({
-      product: 'Build My AI', generated: 'client-demo',
+      product: 'Build My AI', generated: 'client',
       need: STATE.need, mode: STATE.mode,
+      install_method: cloud ? 'cloud_manual' : 'ollama_guided',
       target: { os: STATE.os, gpu: STATE.gpu, vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram) },
       plan: {
         model: p.model.name, quant: p.model.quant, model_file: p.model.file,
         source: 'huggingface.co/' + p.model.repo, approx_size: p.model.size,
-        runtime: 'llama.cpp server (CUDA)', api: 'openai-compatible @ localhost:11434',
-        rag: p.rag ? { enabled: true, embedding: 'bge-base-en-v1.5', vector_store: 'chroma-local' } : { enabled: false }
+        runtime: cloud ? 'llama.cpp server (CUDA)' : 'ollama',
+        ollama_tag: cloud ? null : p.model.ollama,
+        api: 'openai-compatible @ localhost:11434',
+        rag: { enabled: false, planned: p.rag, note: 'knowledge base ships with the desktop app' }
       }
     }, null, 2);
   }
@@ -231,6 +311,7 @@
     return '# Cloud Deployment Guide — ' + m.name + '\n' +
       'Generated by Build My AI for: **' + needLabel(STATE.need) + '**\n\n' +
       '> Use this when your own computer can\'t run the model, or you want it accessible from anywhere.\n' +
+      '> This guide assumes basic comfort with a terminal — or a helper who has it (30–60 min).\n' +
       '> All providers below are US-based. Your documents will leave your computer when you use cloud inference.\n\n' +
       '## 1. Rent a GPU server (US region)\n' +
       'Pick one and launch an instance with a GPU that has at least ' + (m.name.indexOf('32B') >= 0 ? '24 GB' : m.name.indexOf('14B') >= 0 ? '16 GB' : '12 GB') + ' of graphics card memory:\n' +
@@ -256,17 +337,14 @@
       '```\n' +
       'Open port 11434 in the provider\'s firewall/security group (restrict to your IP).\n\n' +
       (p.rag ?
-      '## 5. Add your knowledge (RAG)\n' +
-      '```bash\n' +
-      'pip install chromadb sentence-transformers\n' +
-      '# embed with bge-base-en-v1.5, index into a local Chroma store,\n' +
-      '# retrieve top-k and prepend to the prompt at query time.\n' +
-      '```\n\n' +
-      '## 6. Point the web app here\n' :
-      '## 5. Point the web app here\n') +
-      'In Build My AI → Control Center → API, set the base URL to:\n' +
+      '## 5. Add your knowledge (RAG) — outline\n' +
+      'The indexing pipeline (embed with bge-base-en-v1.5 → local Chroma store → retrieve top-k\n' +
+      'into the prompt) ships with our desktop app. Until then this is an outline, not runnable code.\n\n' +
+      '## 6. Connect your apps\n' :
+      '## 5. Connect your apps\n') +
+      'Point any OpenAI-compatible app at:\n' +
       '```\nhttp://<your-server-ip>:11434/v1\n```\n' +
-      'and paste the API key from step 4.\n\n' +
+      'with the API key from step 4. (Our Control Center integration is in preview on the website.)\n\n' +
       '## Cost note\n' +
       'A GPU left running 24/7 costs roughly $145–540 / month. If usage is light and bursty,\n' +
       'stop the instance when idle, or use a per-request API instead — cheaper unless traffic is high and steady.\n';
@@ -281,53 +359,95 @@
     setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
   }
 
+  function timeEstimate(sizeLabel) { // minutes, dominated by the model download
+    var gb = parseFloat((String(sizeLabel).match(/[\d.]+/) || ['5'])[0]);
+    return gb <= 5 ? '10–25' : gb <= 10 ? '15–35' : '25–60';
+  }
+  // plain-language "what the installer does" — shown instead of raw script by default
+  function installerSteps(m) {
+    return t('What the installer does when you double-click it:',
+             '双击安装包后,它会做这些事:') + '\n\n' +
+      '1. ' + t('Checks your NVIDIA graphics card (continues on the processor if there is none — slower).',
+                '检查你的 NVIDIA 显卡(没有也能继续,用处理器运行——会慢一些)。') + '\n' +
+      '2. ' + t('Installs Ollama, a free open-source AI engine — the official installer opens and you click through it.',
+                '安装 Ollama——免费开源的 AI 引擎,官方安装程序会弹出,按提示点击即可。') + '\n' +
+      '3. ' + t('Downloads your model (', '下载你的模型(') + m.name + ', ' + m.size +
+                t('). Interrupted? Run the file again — it resumes.', ')。中断了?再次运行即可续传。') + '\n' +
+      '4. ' + t('Asks your AI to say hello, to prove it works.', '让你的 AI 说声 hello,验证一切正常。') + '\n\n' +
+      t('Everything runs and stays on this computer.', '一切都在这台电脑上运行和保存。');
+  }
+  var rawView = false; // preview toggle state (reset on re-render)
   function renderOutput() {
     // generated files must match what the plan step showed: prefer the API plan
     var p = apiPlan ? planFromApi(apiPlan) : buildPlan();
-    var isLocal = STATE.mode === 'local', isHybrid = STATE.mode === 'hybrid';
-    $('outTitle').textContent = isLocal ? t('Your local installer is ready', '你的本地安装包已生成')
-                              : isHybrid ? t('Your hybrid setup files are ready', '你的混合部署文件已生成')
+    var isLocal = STATE.mode === 'local', isHybrid = STATE.mode === 'hybrid', isCloud = STATE.mode === 'cloud';
+    STATE.installMethod = isCloud ? 'cloud_manual' : 'ollama_guided'; // one real method per mode (docs/22 P0-6/13)
+    $('outTitle').textContent = isLocal ? t('Your installer is ready — this install is real', '你的安装包已生成——这是真实可用的安装')
+                              : isHybrid ? t('Your hybrid files are ready — the local install is real', '你的混合部署文件已生成——本地安装真实可用')
                                          : t('Your cloud deployment guide is ready', '你的云端部署手册已生成');
-    $('outLead').textContent = isLocal
-      ? t('Download it and double-click it on your Windows machine. It installs everything — no command line needed.', '下载后在你的 Windows 电脑上双击运行,自动装好一切,无需命令行。')
-      : isHybrid
-      ? t('The installer sets up the private half on your Windows machine; the guide sets up a cloud model for heavy tasks. Hybrid is a Pro feature — free during beta.', '安装包在你的 Windows 电脑上装好私密的本地部分;手册用于搭建处理繁重任务的云端模型。混合模式为 Pro 功能——Beta 期免费。')
-      : t('A step-by-step guide customized to your model, for a US GPU server.', '为你的模型定制的分步手册,面向美国 GPU 服务器。');
-    if ((isLocal || isHybrid) && STATE.gpu === 'none') {
-      $('outLead').textContent += ' ' + t('Note: the on-device part needs an NVIDIA graphics card and you told us this computer doesn\'t have one — the installer will stop at the graphics card check. We recommend the cloud option instead.',
-                                          '注意:本机运行的部分需要 NVIDIA 显卡,而你填写的电脑没有——安装程序会在显卡检查处停止。我们推荐改用云端方案。');
+    $('outLead').textContent = isCloud
+      ? t('A step-by-step guide customized to your model, for a US GPU server. It assumes basic terminal comfort — or a helper who has it (30–60 min).',
+          '为你的模型定制的分步手册,面向美国 GPU 服务器。需要基础命令行经验——或请人帮忙(30–60 分钟)。')
+      : t('Double-click the .bat on your Windows machine. It installs Ollama — a free, open-source AI engine (the official installer opens; click through it) — downloads your model (' + p.model.size + '), and checks your AI is answering. About ' + timeEstimate(p.model.size) + ' minutes, mostly the download.',
+          '在 Windows 电脑上双击这个 .bat。它会安装 Ollama——免费开源的 AI 引擎(官方安装程序会弹出,按提示点击)——下载你的模型(' + p.model.size + '),并检查 AI 已正常应答。大约 ' + timeEstimate(p.model.size) + ' 分钟,主要是下载时间。') +
+        (isHybrid ? ' ' + t('The cloud guide sets up the heavy-task half. Hybrid is a Pro feature — free during beta; automatic routing arrives with Pro.',
+                            '云端手册用于搭建处理繁重任务的那一半。混合为 Pro 功能——Beta 期免费;自动分流将随 Pro 推出。') : '');
+    if (!isCloud && STATE.gpu === 'none') {
+      $('outLead').textContent += ' ' + t('This computer has no NVIDIA graphics card: we recommend the cloud option. If you continue locally, your AI runs on the processor — it works, but noticeably slow.',
+                                          '这台电脑没有 NVIDIA 显卡:我们推荐云端方案。如果坚持本地安装,AI 会用处理器运行——能用,但明显偏慢。');
     }
     // summary
     $('outSummary').innerHTML =
       kv(t('Purpose', '用途'), needLabel(STATE.need)) +
       kv(t('Model', '模型'), p.model.name + ' (' + p.model.quant + ')' +
-        (isHybrid ? ' + ' + pickModel('24').name + t(' (cloud)', '(云端)') : '')) +
+        (isHybrid ? ' + ' + pickModel('24', STATE.need).name + t(' (cloud)', '(云端)') : '')) +
+      kv(t('Install method', '安装方式'), isCloud
+        ? t('Manual guide (cloud GPU) · works today', '手动手册(云 GPU)· 现已可用')
+        : t('Guided (Ollama — free, open-source) · works today', '引导式(Ollama——免费开源)· 现已可用')) +
       kv(t('Runs', '运行方式'), isLocal ? t('On your computer', '本机')
                               : isHybrid ? t('Your computer + cloud for heavy tasks', '本机 + 繁重任务走云端')
                                          : t('Cloud GPU server', '云 GPU 服务器')) +
-      kv(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('On', '开启') : t('Off', '关闭'));
+      kv(t('Knowledge / RAG', '知识库 / RAG'), p.rag
+        ? t('Planned — ships with the desktop app', '规划中——随桌面应用推出')
+        : t('Off', '关闭'));
     // downloads + preview
     var dl = $('outDownloads'), pv = $('outPreview'), fm = $('outFileMeta');
     dl.innerHTML = '';
-    if (isLocal || isHybrid) {
-      var script = localInstaller(p), manifest = installManifest(p);
-      var bat = batInstaller(script);
-      addBtn(dl, t('⬇ Download installer (.bat) — double-click to install', '⬇ 下载安装包 (.bat)——双击即可安装'), 'primary', function () { download('build-my-ai-setup.bat', bat, 'text/plain'); });
-      addBtn(dl, t('⬇ Download plan (.json)', '⬇ 下载方案清单 (.json)'), 'ghost', function () { download('install-plan.json', manifest, 'application/json'); });
+    rawView = false;
+    var manifest = installManifest(p);
+    var toggle = $('pvToggle'), smart = $('smartNote');
+    if (!isCloud) {
+      var bat = ollamaInstaller(p.model), guide = ollamaGuide(p.model);
+      addBtn(dl, t('⬇ Download installer (.bat) — double-click to run', '⬇ 下载安装包 (.bat)——双击即可运行'), 'primary', function () { download('install-my-ai.bat', bat, 'text/plain'); });
+      addBtn(dl, t('Prefer step-by-step? Get the guide (.md)', '想一步一步来?下载图文指南 (.md)'), 'ghost', function () { download('ollama-setup-guide.md', guide, 'text/markdown'); });
       if (isHybrid) {
         var hybridManual = cloudManual(buildPlan('cloud'));
         addBtn(dl, t('⬇ Download cloud guide (.md)', '⬇ 下载云端手册 (.md)'), 'ghost', function () { download('cloud-deployment-guide.md', hybridManual, 'text/markdown'); });
-        fm.textContent = 'build-my-ai-setup.bat + cloud-deployment-guide.md · ' + t('preview shows the installer', '预览为安装包内容');
-      } else {
-        fm.textContent = 'build-my-ai-setup.bat · ' + t('preview of the install steps it runs', '内含安装步骤预览');
       }
-      pv.textContent = script;
+      addBtn(dl, t('Download the plan file (.json)', '下载方案清单 (.json)'), 'linkbtn', function () { download('install-plan.json', manifest, 'application/json'); });
+      smart.classList.remove('hidden');
+      fm.textContent = 'install-my-ai.bat + ollama-setup-guide.md' + (isHybrid ? ' + cloud-deployment-guide.md' : '');
+      pv.textContent = installerSteps(p.model);
+      toggle.classList.remove('hidden');
+      toggle.onclick = function () {
+        rawView = !rawView;
+        pv.textContent = rawView ? bat : installerSteps(p.model);
+        toggle.textContent = rawView ? t('Back to the plain-language view', '返回人话版说明')
+                                     : t('View raw script', '查看原始脚本');
+      };
+      toggle.textContent = t('View raw script', '查看原始脚本');
     } else {
       var manual = cloudManual(p);
       addBtn(dl, t('⬇ Download guide (.md)', '⬇ 下载手册 (.md)'), 'primary', function () { download('cloud-deployment-guide.md', manual, 'text/markdown'); });
+      addBtn(dl, t('Download the plan file (.json)', '下载方案清单 (.json)'), 'linkbtn', function () { download('install-plan.json', manifest, 'application/json'); });
+      smart.classList.add('hidden');
+      toggle.classList.add('hidden');
       fm.textContent = 'cloud-deployment-guide.md · ' + t('preview', '预览');
       pv.textContent = manual;
     }
+    // coming-soon chips: visibility follows the mode (never selectable — honesty by design)
+    $('chipDesktop').classList.toggle('hidden', isCloud);
+    $('chipLambda').classList.toggle('hidden', isLocal);
   }
   function kv(k, v) { return '<div class="kv"><span>' + k + '</span><b>' + v + '</b></div>'; }
   function addBtn(parent, label, cls, fn) {
@@ -473,7 +593,9 @@
           stage: 'plan_generated', template: STATE.need, model: apiPlan.model.id,
           os: STATE.os, gpu: STATE.gpu,
           vram_gb: STATE.gpu === 'none' ? 0 : Number(STATE.vram), ram_gb: Number(STATE.ram),
-          mode: STATE.mode, success: true
+          mode: STATE.mode, success: true,
+          // closed enum, whitelisted server-side — segments install success by method
+          install_method: STATE.mode === 'cloud' ? 'cloud_manual' : 'ollama_guided'
         });
       }
       showStep(3);
