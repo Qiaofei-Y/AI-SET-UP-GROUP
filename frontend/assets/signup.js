@@ -1,7 +1,8 @@
-// Build My AI — signup + login (beta). Reads ?plan=pro|business and ?mode=login.
-// Static demo: no backend, no data echoed into innerHTML (XSS-safe by construction).
-// Login is demo-only: validates the email shape locally, then opens the Control
-// Center — nothing is sent or stored (real auth is P2, see backend/README).
+// Build My AI — signup + login. Reads ?plan=pro|business and ?mode=login.
+// Real auth via window.__bmaAuth (local-llm.js -> self-hosted API, users.db).
+// When the API is unreachable both flows show an explicit error instead of
+// pretending to succeed (P0-14: a silently dropped signup is data loss, a
+// login that always passes is a fake). No user input into innerHTML, ever.
 (function () {
   function plan() {
     var p = (location.search.match(/[?&]plan=([a-z]+)/) || [])[1];
@@ -61,11 +62,12 @@
     var errEmail = document.getElementById('errEmail');
     var errCompany = document.getElementById('errCompany');
     var errPassword = document.getElementById('errPassword');
+    var errForm = document.getElementById('errForm');
     if (LOGIN && fPassword) fPassword.setAttribute('autocomplete', 'current-password');
 
     // Current validation state, so visible errors re-render on language toggle.
     var errs = { name: false, email: false, company: false, password: false,
-                 emailTaken: false, badCred: false };
+                 emailTaken: false, badCred: false, api: false, throttled: false };
     function renderErrs() {
       errName.textContent = errs.name ? t('Please enter your name.', '请填写姓名。') : '';
       errEmail.textContent = errs.email ? t('Please enter a valid email.', '请填写有效邮箱。')
@@ -73,6 +75,11 @@
       errCompany.textContent = errs.company ? t('Company name is required for Business.', '企业版需填写公司名称。') : '';
       errPassword.textContent = errs.password ? t('Password must be at least 8 characters.', '密码至少 8 位。')
         : (errs.badCred ? t('Email or password is incorrect.', '邮箱或密码不正确。') : '');
+      errForm.textContent = errs.api
+        ? t("Can't reach the account service right now — please try again in a moment.",
+            '暂时连不上账号服务,请稍后重试。')
+        : (errs.throttled ? t('Too many attempts — please wait a minute and try again.',
+                              '尝试次数过多,请稍等一分钟再试。') : '');
     }
     function mark(input, bad) {
       if (bad) input.setAttribute('aria-invalid', 'true');
@@ -125,6 +132,8 @@
       errs.password = password.length < 8;
       errs.emailTaken = false;
       errs.badCred = false;
+      errs.api = false;
+      errs.throttled = false;
       renderErrs();
       mark(fName, errs.name);
       mark(fEmail, errs.email);
@@ -136,17 +145,21 @@
 
       var auth = window.__bmaAuth;
 
+      // No fake pass in either direction (P0-14): if the API can't confirm it,
+      // the UI reports it — a login must never "succeed" offline, a signup must
+      // never claim success while the data was dropped.
       if (LOGIN) {
-        if (!auth) { location.href = 'dashboard.html'; return; } // demo fallback
+        if (!auth) { errs.api = true; renderErrs(); return; }
         busy = true;
         auth.login({ email: email, password: password }, function (err, res) {
           busy = false;
-          if (err) { location.href = 'dashboard.html'; return; } // API offline: demo fallback
+          if (err) { errs.api = true; renderErrs(); return; }
           if (res.status === 200 && res.json.ok) {
             rememberSession(res);
             location.href = 'dashboard.html';
             return;
           }
+          if (res.status === 429) { errs.throttled = true; renderErrs(); return; }
           errs.badCred = true;
           renderErrs();
           fPassword.focus();
@@ -154,14 +167,14 @@
         return;
       }
 
-      if (!auth) { showSuccess(name); return; } // demo fallback
+      if (!auth) { errs.api = true; renderErrs(); return; }
       var body = { name: name, email: email, password: password,
                    plan: isBiz ? 'business' : 'pro' };
       if (isBiz) body.company = company;
       busy = true;
       auth.signup(body, function (err, res) {
         busy = false;
-        if (err) { showSuccess(name); return; } // API offline: demo fallback
+        if (err) { errs.api = true; renderErrs(); return; }
         if (res.status === 200 && res.json.ok) {
           rememberSession(res);
           showSuccess(name);
@@ -174,7 +187,9 @@
           fEmail.focus();
           return;
         }
-        showSuccess(name); // unexpected server shape: don't strand the user
+        if (res.status === 429) { errs.throttled = true; renderErrs(); return; }
+        errs.api = true; // unexpected server shape: error out honestly
+        renderErrs();
       });
     });
   });

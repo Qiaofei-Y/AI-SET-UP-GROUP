@@ -30,9 +30,14 @@ Privacy red lines (docs/19 §4), enforced in code and by backend/tests:
   - nothing in this service ever accepts document content, chat content,
     filenames or directory structures
 
-Run:   python3 backend/api/server.py [--port 8940]
+Run:   python3 backend/api/server.py [--port 8940] [--host 127.0.0.1]
 Mint:  python3 backend/api/server.py --mint pro   (demo license for testing)
-Env:   BMA_LICENSE_SECRET (default dev secret), BMA_DB (sqlite path), BMA_DEBUG,
+Env:   BMA_LICENSE_SECRET (default dev secret; binding a non-loopback --host
+       with the default secret refuses to start — anyone could mint licenses),
+       BMA_DB (sqlite path), BMA_DEBUG,
+       BMA_RATE_AUTH / BMA_RATE_EVENTS ('requests/seconds' per client IP,
+       defaults 30/60 and 120/60 — login runs 100k PBKDF2 rounds, telemetry
+       and feedback write to disk anonymously; both need a brute-force lid),
        BMA_ADVISOR_LLM (opt-in: loopback URL of an OpenAI-compatible LLM, e.g.
        http://127.0.0.1:8080 — upgrades /v1/advise classification from keyword
        rules to the local model; non-loopback URLs are ignored, failures fall
@@ -46,6 +51,7 @@ import os
 import re
 import secrets
 import sqlite3
+import threading
 import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -54,7 +60,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(ROOT, 'registry.json')
 DB_PATH = os.environ.get('BMA_DB', os.path.join(ROOT, 'data', 'events.db'))
 USERS_DB = os.environ.get('BMA_USERS_DB', os.path.join(ROOT, 'data', 'users.db'))
-LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', 'dev-secret-change-me')
+DEFAULT_SECRET = 'dev-secret-change-me'  # fine on loopback, fatal on a public bind
+LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
 SESSION_DAYS = 30
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
@@ -365,10 +372,41 @@ def insert(table, cols, vals, path=DB_PATH):
     con.close()
 
 
+# ---------- rate limiting (P0-16: PBKDF2 CPU + anonymous-write disk are DoS faces) ----------
+
+RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated (events)
+    '/v1/auth/signup': 'auth', '/v1/auth/login': 'auth', '/v1/auth/logout': 'auth',
+    '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
+}
+RATE_DEFAULTS = {'auth': '30/60', 'events': '120/60'}
+_RATE = {}                       # (bucket, ip) -> [window_start, count]
+_RATE_LOCK = threading.Lock()
+
+
+def rate_limited(bucket, ip):
+    """Fixed-window counter per (bucket, client IP). Limits come from
+    BMA_RATE_AUTH / BMA_RATE_EVENTS as 'requests/seconds' (read per call so
+    tests and operators can tune without restarting)."""
+    spec = os.environ.get('BMA_RATE_' + bucket.upper(), RATE_DEFAULTS[bucket])
+    limit, window = (int(x) for x in spec.split('/'))
+    now = time.time()
+    with _RATE_LOCK:
+        if len(_RATE) > 4096:    # bound memory: drop windows that already expired
+            for k in [k for k, v in _RATE.items() if now - v[0] >= window]:
+                del _RATE[k]
+        slot = _RATE.get((bucket, ip))
+        if not slot or now - slot[0] >= window:
+            _RATE[(bucket, ip)] = [now, 1]
+            return False
+        slot[1] += 1
+        return slot[1] > limit
+
+
 # ---------- HTTP ----------
 
 class Api(BaseHTTPRequestHandler):
     server_version = 'BuildMyAI-API/0.1'
+    timeout = 10                 # slowloris lid: stalled sockets drop, threads free up
 
     # -- plumbing --
     def _cors(self):
@@ -388,7 +426,13 @@ class Api(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _body(self):
-        n = int(self.headers.get('Content-Length', 0) or 0)
+        try:
+            n = int(self.headers.get('Content-Length', 0) or 0)
+        except ValueError:
+            n = -1               # non-numeric header falls through to the same 400
+        if n < 0:                # a negative read() would swallow the socket till EOF
+            self._json(400, {'error': 'bad_content_length'})
+            return None
         if n > MAX_BODY:
             self._json(413, {'error': 'body_too_large'})
             return None
@@ -440,6 +484,9 @@ class Api(BaseHTTPRequestHandler):
         h = handlers.get(self.path)
         if not h:
             return self._json(404, {'error': 'not_found'})
+        bucket = RATE_BUCKETS.get(self.path)
+        if bucket and rate_limited(bucket, self.client_address[0]):
+            return self._json(429, {'error': 'rate_limited'})
         body = self._body()
         if body is None:
             return
@@ -560,6 +607,11 @@ class Api(BaseHTTPRequestHandler):
 
 
 def create_server(port=8940, host='127.0.0.1'):
+    if host not in ('127.0.0.1', 'localhost', '::1') and LICENSE_SECRET == DEFAULT_SECRET:
+        # P0-17 fail-closed: with the shipped secret anyone could mint pro licenses,
+        # so a public bind must prove a real secret was injected — before any socket opens
+        raise SystemExit('refusing to bind %s with the default BMA_LICENSE_SECRET — '
+                         'inject a real secret first' % host)
     init_db()
     init_users_db()
     return ThreadingHTTPServer((host, port), Api)
@@ -568,19 +620,22 @@ def create_server(port=8940, host='127.0.0.1'):
 def main():
     ap = argparse.ArgumentParser(description='Build My AI backend API v0')
     ap.add_argument('--port', type=int, default=8940)
+    ap.add_argument('--host', default='127.0.0.1',
+                    help='bind address (default loopback; non-loopback requires '
+                         'a non-default BMA_LICENSE_SECRET and a TLS reverse proxy in front)')
     ap.add_argument('--mint', metavar='TIER', choices=['pro', 'business'],
                     help='print a demo license key and exit')
     args = ap.parse_args()
     if args.mint:
         print(mint_license(args.mint))
         return
-    httpd = create_server(args.port)
+    httpd = create_server(args.port, args.host)
     llm = os.environ.get('BMA_ADVISOR_LLM', '')
     if llm and not LOOPBACK_URL.match(llm):
         print('BMA_ADVISOR_LLM ignored (not loopback) — need_text never leaves this machine')
         llm = ''
-    print('buildmyai-api v0 on http://127.0.0.1:%d  (db: %s, advisor: %s)'
-          % (args.port, DB_PATH, llm or 'rules'))
+    print('buildmyai-api v0 on http://%s:%d  (db: %s, advisor: %s)'
+          % (args.host, args.port, DB_PATH, llm or 'rules'))
     httpd.serve_forever()
 
 

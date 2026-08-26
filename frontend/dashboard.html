@@ -94,23 +94,40 @@
   </main>
 </div></div>
 
+<!-- login gate (P0-14): no verified session -> the Control Center stays covered.
+     Shown by default (fail closed); the account script below removes it only
+     after /v1/auth/me confirms the token. -->
+<div class="login-gate" id="loginGate">
+  <div class="gate-card">
+    <div class="ic">🔒</div>
+    <h2 data-en="Log in to open your Control Center" data-zh="登录后进入控制中心">Log in to open your Control Center</h2>
+    <p data-en="This page shows your account — models, knowledge and API keys — so it needs a verified login. Everything stays on this machine." data-zh="此页展示你的账号内容(模型、知识库与 API 密钥),需要登录后查看。一切都留在这台电脑上。">This page shows your account — models, knowledge and API keys — so it needs a verified login. Everything stays on this machine.</p>
+    <a class="btn primary" href="signup.html?mode=login" data-en="Log in →" data-zh="登录 →">Log in →</a>
+    <a class="btn ghost" href="signup.html?plan=pro" data-en="Create a free account" data-zh="创建免费账号">Create a free account</a>
+  </div>
+</div>
+
 <script src="assets/i18n.js"></script>
 <script src="assets/local-llm.js"></script>
 <script>
 // Account state: sessionStorage token -> /v1/auth/me via __bmaAuth (the only
-// network path is local-llm.js). Offline or logged out -> show the Log in link.
+// network path is local-llm.js). The login gate is visible by default and is
+// removed only on a verified session — no session, expired token or offline
+// API all stay gated (P0-14: no fake pass into account UI).
 // All rendering via textContent + data attributes — never innerHTML.
 (function () {
   var box = document.getElementById('acctBox');
   var loginLink = document.getElementById('acctLogin');
   var hello = document.getElementById('acctHello');
   var logoutBtn = document.getElementById('acctLogout');
+  var gate = document.getElementById('loginGate');
   var token = null;
   try { token = sessionStorage.getItem('bma-session'); } catch (ignore) {}
 
   function showLogin() {
     box.classList.add('hidden');
     loginLink.classList.remove('hidden');
+    gate.classList.remove('hidden');
   }
   function showUser(u) {
     var name = String(u.name || '').slice(0, 40);
@@ -121,6 +138,7 @@
     hello.setAttribute('data-zh', zh);
     loginLink.classList.add('hidden');
     box.classList.remove('hidden');
+    gate.classList.add('hidden');
   }
 
   if (!token || !window.__bmaAuth) { showLogin(); }

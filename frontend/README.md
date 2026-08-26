@@ -13,9 +13,9 @@
 | `deploy.html` | **部署方式(独立页)**:本地/云端/混合详解 + 场景选型对照 |
 | `pricing.html` | **价格(独立页)**:Beta 免费横幅 + 三档价格 + 价格常见问题 |
 | `build.html` | **引导流程**:需求(6 个模板,与模板页一致)→ 设备 → 推荐方案 → 本地/云端/混合 → 自动生成安装包/云端手册(混合两者都给) |
-| `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI) |
+| `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI);未登录出登录墙,`/v1/auth/me` 验证通过才放行(P0-14) |
 | `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库) |
-| `signup.html` | **注册页(Beta)**:Pro/Business 创建免费账号解锁全部功能;`?plan=business` 时多一个公司名字段 |
+| `signup.html` | **注册/登录页**:Pro/Business 创建免费账号解锁全部功能;`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
 
 ## 代码分割(CSS / JS 各司其职)
 
@@ -28,14 +28,16 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/build.css` | 向导专属:步骤条、表单、推荐卡、生成输出 | build |
 | `assets/dashboard.css` | 控制中心专属:导航栏、状态条、卡片网格 | dashboard |
 | `assets/chat.css` | 聊天页专属:消息气泡、输入栏、建议问题 | chat |
-| `assets/fx.css` | 共享动效层:辉光/网格/扫描线变量 + 工具类(reveal/卡片微倾/按钮流光/描边环),页尾 reduced-motion 总闸 | index(其余页面陆续接入) |
-| `assets/fx.js` | 共享动效引擎:滚动 reveal、指针微倾、数字滚动、粒子星网 canvas、`FX.decode` 文字解码;初始化后设 `data-fx="on"` | index(其余页面陆续接入) |
-| `assets/favicon.svg` | 品牌 ◆ 图标(本地 SVG,`<link rel="icon">`) | index(其余页面陆续接入) |
+| `assets/signup.css` | 注册/登录页专属:表单卡、错误提示、成功视图 | signup |
+| `assets/fx.css` | 共享动效层:辉光/网格/扫描线变量 + 工具类(reveal/卡片微倾/按钮流光/描边环),页尾 reduced-motion 总闸 | **所有页面** |
+| `assets/fx.js` | 共享动效引擎:滚动 reveal、指针微倾、数字滚动、粒子星网 canvas、`FX.decode` 文字解码;初始化后设 `data-fx="on"` | **所有页面** |
+| `assets/favicon.svg` | 品牌 ◆ 图标(本地 SVG,`<link rel="icon">`) | 所有页面 |
 | `assets/i18n.js` | 中英文切换(默认英文,跨页面记忆) | 所有页面 |
 | `assets/hero.js` | 首页 Hero 截图的流式打字动画 | index |
 | `assets/build.js` | 向导逻辑 + 安装包/云端手册生成器 | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
-| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(只连 `127.0.0.1`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`) | chat + build |
+| `assets/signup.js` | 注册/登录逻辑:本地校验 + `__bmaAuth` 真实注册/登录;API 不可达时显式报错(无假通行,P0-14) | signup |
+| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(只连 `127.0.0.1`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态) | chat + build + signup + dashboard |
 
 原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。完整工程约定(i18n 规则、全局钩子清单、文档镜像规则)见 [docs/17](../docs/17-repo-architecture-and-conventions.md)。
 

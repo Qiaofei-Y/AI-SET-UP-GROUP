@@ -21,7 +21,7 @@ backend/
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
 │       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
 └── tests/
-    └── api.test.py        # 31 项测试:起真实服务打真实 HTTP,含隐私红线断言
+    └── api.test.py        # 35 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
@@ -30,19 +30,22 @@ backend/
 
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
+python3 backend/api/server.py --host 0.0.0.0   # 非回环绑定:必须先注入真实 BMA_LICENSE_SECRET,否则拒绝启动
 python3 backend/api/server.py --mint pro   # 铸造演示 license 后退出(pro|business)
 python3 backend/tests/api.test.py          # 测试(自起服务于随机端口,不占 8940)
 ```
 
 | 环境变量 | 默认值 | 作用 |
 |---|---|---|
-| `BMA_LICENSE_SECRET` | `dev-secret-change-me` | license HMAC 签名密钥;**真实部署必须注入,且值绝不进仓库** |
+| `BMA_LICENSE_SECRET` | `dev-secret-change-me` | license HMAC 签名密钥;**真实部署必须注入,且值绝不进仓库**。fail-closed:`--host` 为非回环且密钥仍是默认值时,启动前直接退出(P0-17) |
 | `BMA_DB` | `api/data/events.db` | 匿名遥测库路径(测试用它隔离) |
 | `BMA_USERS_DB` | `api/data/users.db` | 身份库路径(测试用它隔离) |
+| `BMA_RATE_AUTH` | `30/60` | auth 三端点(signup/login/logout)每客户端 IP 的限速,格式 `次数/秒`(login 每次跑 10 万轮 PBKDF2,是 CPU DoS 面,P0-16) |
+| `BMA_RATE_EVENTS` | `120/60` | telemetry + feedback 每客户端 IP 的限速(匿名可写盘,防刷爆磁盘/投毒数据飞轮) |
 | `BMA_ADVISOR_LLM` | 空(关闭) | 顾问 LLM 分类的本地端点,如 `http://127.0.0.1:8080`;**只接受回环地址**,非回环一律忽略 |
 | `BMA_DEBUG` | 空(关闭) | 打开访问日志(只记路径,永不记请求体) |
 
-服务器只绑 `127.0.0.1`;CORS 只放行 `localhost` / `127.0.0.1` 任意端口的 Origin(浏览器侧再由前端安全测试保证只有 `local-llm.js` 能发请求)。请求体上限 16 KB(超出 413)。
+默认绑 `127.0.0.1`,`--host` 可改(生产:TLS 反代在前,见 §11);CORS 只放行 `localhost` / `127.0.0.1` 任意端口的 Origin(浏览器侧再由前端安全测试保证只有 `local-llm.js` 能发请求)。传输加固:请求体上限 16 KB(超出 413),负数/非数字 `Content-Length` 直接 400(不再触发吞 socket 的负数 read),连接级 10 秒超时(slowloris 面),超限速端点返回 429。
 
 ## 4. 数据存储:为什么分两个库
 
@@ -69,7 +72,7 @@ sessions (token_hash PRIMARY KEY, user_id, ts, expires)
 
 ## 5. API 参考
 
-统一约定:请求/响应均 JSON;校验失败返回 `400 {"error": "unknown_field:x | missing_field:x | invalid_field:x | body_not_object | bad_json"}`;未知路由 404;体积超限 413。
+统一约定:请求/响应均 JSON;校验失败返回 `400 {"error": "unknown_field:x | missing_field:x | invalid_field:x | body_not_object | bad_json | bad_content_length"}`;未知路由 404;体积超限 413;限速端点(auth 三个 + telemetry + feedback)超限返回 `429 {"error": "rate_limited"}`。
 
 ### GET /v1/health
 存活探测 → `200 {"ok": true, "service": "buildmyai-api", "version": "0.1"}`
@@ -161,15 +164,15 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 | 向导第 3 步方案卡 | `POST /v1/advise` | `local-llm.js` `advisePlan()` ← `build.js` 钩子 | 只传 slug+硬件,不传需求框文本 |
 | 「生成文件」埋点 | `POST /v1/telemetry/deploy` | `local-llm.js` `reportPlan()` | `stage:'plan_generated'` |
 | 聊天 👍/👎 | `POST /v1/feedback` | `local-llm.js` 监听 `chat-feedback` 事件 | 仅真实本地模型回答时 |
-| 注册/登录 | `POST /v1/auth/*` | `local-llm.js` `__bmaAuth` ← `signup.js` | 离线回退纯前端演示 |
-| 登录态展示/退出 | `GET /v1/auth/me`、`logout` | `__bmaAuth` ← `dashboard.html` | sessionStorage token |
+| 注册/登录 | `POST /v1/auth/*` | `local-llm.js` `__bmaAuth` ← `signup.js` | **离线显式报错,不假通行**(P0-14) |
+| 登录态展示/退出 | `GET /v1/auth/me`、`logout` | `__bmaAuth` ← `dashboard.html` | sessionStorage token;无有效 session 时登录墙拦截 |
 
-全部调用离线自动降级——**API 永远是增强,不是依赖**(设计原则 1,backend/README §0)。
+向导/遥测/反馈离线自动降级——**API 是增强,不是依赖**(设计原则 1,backend/README §0)。**唯一例外是 auth**:账号是真实状态,离线时注册/登录显式报错、dashboard 出登录墙,绝不假装成功(docs/22 P0-14,商用前提)。
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。31 项覆盖:五组业务端点、auth 全流程、隐私红线、传输加固(CORS 白名单、413、bad JSON、404)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。35 项覆盖:五组业务端点、auth 全流程、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 
-当前实现对应 backend/README 的「P2/P3 提前动工的 v0」:auth/license/telemetry/feedback/advise 都已是真实现,但**上线时机仍按触发条件**(P1 投放、P2 漏斗 ≥50、P3 付费 ≥10)。到 P2 正式化时的已知升级点:HTTPS/反代、Stripe webhook 写 `users.plan`、license 与 user 关联、(如需社交登录/邮箱验证)评估 Clerk/Supabase 替换自建 auth;到 P3:顾问换云端大模型、registry 持续测录管道。
+当前实现对应 backend/README 的「P2/P3 提前动工的 v0」:auth/license/telemetry/feedback/advise 都已是真实现,但**上线时机仍按触发条件**(P1 投放、P2 漏斗 ≥50、P3 付费 ≥10)。生产化地基已就位(docs/22 批次 0 的代码部分):`--host` 绑定、分桶限速、密钥 fail-closed、Content-Length/超时加固。到 P2 正式化时的剩余升级点:TLS 反代 + 进程管理(systemd)、CORS 放行生产域名(与 P0-13 同源部署一起定)、SQLite WAL/备份、Stripe webhook 写 `users.plan`、license 与 user 关联、(如需社交登录/邮箱验证)评估 Clerk/Supabase 替换自建 auth;到 P3:顾问换云端大模型、registry 持续测录管道。

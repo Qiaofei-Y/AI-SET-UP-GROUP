@@ -361,6 +361,50 @@ class ApiTest(unittest.TestCase):
                        {'need_text': 'x' * 400, 'hardware': HW, 'pad': 'y' * 20000})
         self.assertEqual(s, 413)
 
+    def test_bad_content_length_rejected(self):
+        # a negative value used to reach rfile.read(-n) and swallow the socket
+        import http.client
+        for cl in ('-5', 'abc'):
+            c = http.client.HTTPConnection('127.0.0.1', self.port, timeout=5)
+            c.putrequest('POST', '/v1/advise')
+            c.putheader('Content-Type', 'application/json')
+            c.putheader('Content-Length', cl)
+            c.endheaders()
+            r = c.getresponse()
+            self.assertEqual(r.status, 400, cl)
+            self.assertEqual(json.loads(r.read())['error'], 'bad_content_length')
+            c.close()
+
+    def test_rate_limit_auth_bucket(self):
+        # tiny window via env (read per request), isolated counters before/after
+        server._RATE.clear()
+        os.environ['BMA_RATE_AUTH'] = '3/60'
+        self.addCleanup(os.environ.pop, 'BMA_RATE_AUTH', None)
+        self.addCleanup(server._RATE.clear)
+        body = {'email': 'rate@example.com', 'password': 'wrong-password!'}
+        codes = [self._call_auth('/v1/auth/login', body)[0] for _ in range(4)]
+        self.assertEqual(codes[:3], [401, 401, 401])
+        self.assertEqual(codes[3], 429)
+        # buckets are independent: events endpoints still answer
+        s, j, _ = call(self.port, '/v1/feedback',
+                       {'rating': 'up', 'template': 'company', 'model': 'llama-3.1-8b-instruct'})
+        self.assertEqual((s, j['ok']), (200, True))
+
+    def test_rate_limit_events_bucket(self):
+        server._RATE.clear()
+        os.environ['BMA_RATE_EVENTS'] = '2/60'
+        self.addCleanup(os.environ.pop, 'BMA_RATE_EVENTS', None)
+        self.addCleanup(server._RATE.clear)
+        body = {'rating': 'down', 'template': 'company', 'model': 'llama-3.1-8b-instruct'}
+        codes = [call(self.port, '/v1/feedback', body)[0] for _ in range(3)]
+        self.assertEqual(codes, [200, 200, 429])
+
+    def test_default_secret_refuses_public_bind(self):
+        # P0-17 fail-closed: the check fires before any socket is opened
+        self.assertEqual(server.LICENSE_SECRET, 'dev-secret-change-me')
+        with self.assertRaises(SystemExit):
+            server.create_server(port=0, host='0.0.0.0')
+
     def test_bad_json_rejected(self):
         req = urllib.request.Request('http://127.0.0.1:%d/v1/advise' % self.port,
                                      data=b'{not json', method='POST')
