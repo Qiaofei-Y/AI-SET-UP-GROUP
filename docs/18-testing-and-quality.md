@@ -9,8 +9,9 @@
 | 静态断言 | 扫描全部 HTML/JS,把安全模型写成可执行规则(见 [19](19-security-model.md)) | `frontend/tests/security.test.js` | `node frontend/tests/security.test.js` |
 | 单元测试 | 对 chat.js 里真实的 `esc()` 投喂 XSS 载荷 | 同上(同一文件内) | 同上 |
 | 浏览器实测 | 无头 Chrome 加载真实 chat.js,验证恶意输入被当纯文本 | `frontend/tests/xss.browser.html` | `bash frontend/tests/run.sh`(无 Chrome 自动跳过) |
+| UI 冒烟 | 无头 Chrome 逐页加载全部页面:动效层锚点 `data-fx="on"`、顶栏存在、console 零错误 | `frontend/tests/ui.smoke.sh` | `run.sh` 自动串起(无 Chrome 自动跳过) |
 | 端到端驱动 | 临时 harness 页驱动真实页面流程(见 §4) | 用完即删,不入库 | 手动/AI 执行 |
-| 后端 API 测试 | 起真实服务打真实 HTTP,含隐私红线用例(自由文本/未知字段必须 400) | `backend/tests/api.test.py` | `python3 backend/tests/api.test.py` |
+| 后端 API 测试 | 起真实服务打真实 HTTP,含隐私红线与传输加固用例(自由文本/未知字段 400、限速 429、默认密钥拒非回环绑定) | `backend/tests/api.test.py` | `python3 backend/tests/api.test.py` |
 
 一切从 `bash frontend/tests/run.sh` 开始:任一失败退出码 1,可直接作 pre-commit / CI 门槛。零依赖,只需 Node(+ 可选 Chrome)。
 
@@ -18,7 +19,7 @@
 
 一次改动可以提交,当且仅当:
 
-1. `bash frontend/tests/run.sh` 全绿;
+1. `bash frontend/tests/run.sh` 全绿;改到 `backend/` 时 `python3 backend/tests/api.test.py` 也全绿(前后端两套都是硬门槛);
 2. 若改动有交互面(向导流程、聊天、连接器、模式切换):做过 §4 的端到端驱动验证,并把"验证了什么、几项通过"写进提交信息;
 3. 按 [17 §7 镜像表](17-repo-architecture-and-conventions.md) 检查过文档同步(包括各文档中的**断言计数**——测试数量变了就全部更新);
 4. 新增可见文案中英文成对。
@@ -65,5 +66,6 @@ backend API v0(见 [backend/README.md](../backend/README.md))沿用同一哲学,
 
 - **隐私红线写成测试**:`/v1/telemetry`、`/v1/feedback` 的请求体做 schema 白名单校验,未知字段、自由文本形态的值一律 400,均有测试用例;`/v1/advise` 的 `need_text` 有"不回显、不落库、不进日志"断言(直接扫 SQLite 文件字节验证);
 - license 校验覆盖 铸造→验证/篡改/垃圾输入 三路;
+- **传输与滥用面也写成断言**:负/非法 Content-Length 400、auth/events 分桶限速 429(窗口由 `BMA_RATE_*` 注入,测试用小窗口验证后清计数)、非回环绑定 + 默认密钥必须拒绝启动;
 - 测试起**真实服务**打真实 HTTP(临时端口 + 隔离数据库),不 mock 内部函数;
 - 前端接入本 API 或任何外部 SaaS 前,先走 §3 白名单流程。

@@ -28,7 +28,7 @@ bash frontend/tests/run.sh
 具体断言:
 
 - **危险 API**:无 `eval` / `new Function` / `document.write` / 字符串定时器 / `outerHTML` / `insertAdjacentHTML`。
-- **零外部依赖面**:无 `fetch/XHR/WebSocket`(纯静态站不发网络请求);所有 `<script>`/`<link>`/图片均为本地相对路径,无远程资源。
+- **零外部依赖面**:除按精确路径豁免的 `assets/local-llm.js` 外,任何文件出现 `fetch/XHR/WebSocket` 即失败;连接器内每个 fetch 必须以四个 `127.0.0.1` 常量(`BASE`/`PORTAL`/`ADVISOR`/`API`)之一开头;所有 `<script>`/`<link>`/图片均为本地相对路径,无远程资源。
 - **注入向量**:无 `javascript:` URL;无 `target=_blank` 缺 `rel=noopener`;无硬编码密钥/私钥/令牌(界面里的 `sk-local-••••` 是打码占位,非真实 key)。
 - **XSS 核心**:直接对 `chat.js` 里真实的 `esc()` 跑五组攻击载荷,确认 `<`、`"`、`&` 全被转义;并断言用户输入经 `esc()` 后只用 `textContent` 渲染,绝不进原始 `innerHTML`。
 - **生成器**:`build.js` 不把自由文本需求框读进安装包/手册内容。
@@ -37,7 +37,7 @@ bash frontend/tests/run.sh
 
 ## 为什么安全面这么小
 
-这是**纯前端静态站**:没有后端、不发网络请求、不用 `eval`。唯一的用户输入入口是聊天页输入框(会回显),已用 `esc()` + `textContent` 双重防护。安装包/手册/聊天回答都来自受控的静态数据,不含可被注入的自由文本。
+这是**零依赖静态站 + 单一联网文件**:除 `local-llm.js`(只连 `127.0.0.1` 本机服务:llm-lab 与自建 API)外无任何网络路径,不用 `eval`。用户输入入口只有聊天框(回显)、向导需求框(write-only,生成链路不读)和注册表单(只发本机 API,不进 DOM),全部经 `esc()` + `textContent` 或结构性隔离防护。安装包/手册/聊天演示回答都来自受控数据。后端自身的红线由 `backend/tests/api.test.py` 另行强制(见 docs/20 §8)。
 
 ## 部署到 HTTP 时的加固建议(可选)
 
@@ -49,4 +49,4 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline';
   object-src 'none'; base-uri 'none'; frame-ancestors 'none'
 ```
 
-(当前用到内联 `onclick`/`style`,故脚本/样式暂留 `'unsafe-inline'`;`connect-src 'none'` 可挡住任何数据外发。)
+(当前用到内联 `onclick`/`style`,故脚本/样式暂留 `'unsafe-inline'`;`connect-src 'none'` 可挡住任何数据外发——若按 docs/22 P0-13 做同源部署、`/v1/*` 反代到后端,则改为 `connect-src 'self'`。)

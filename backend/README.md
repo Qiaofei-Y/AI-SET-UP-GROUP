@@ -11,7 +11,7 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 31 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 35 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |
@@ -24,9 +24,9 @@ python3 backend/tests/api.test.py          # 31 项测试(起真实服务打真�
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
 | `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」 |
 
-**前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时);signup 页注册/登录走 `/v1/auth/*`(经 `local-llm.js` 的 `__bmaAuth`,session token 存 sessionStorage、随标签页关闭清除)。离线自动回退纯前端。
+**前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时);signup 页注册/登录走 `/v1/auth/*`(经 `local-llm.js` 的 `__bmaAuth`,session token 存 sessionStorage、随标签页关闭清除)。向导/遥测/反馈离线自动回退纯前端;**auth 是唯一例外**——离线时注册/登录显式报错、dashboard 无 session 出登录墙,不假装成功(docs/22 P0-14)。
 
-尚未做(按计划触发条件推进):Stripe 对接(收款)、生产部署(Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。注册/登录已自建 v0(见上表),Clerk/Supabase 保留为正式上线时的可选替换。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
+生产化地基已就位(docs/22 批次 0 的代码部分):`--host` 绑定 + 非回环默认密钥拒启、auth/events 分桶限速(429)、Content-Length/超时加固,详见 [docs/20 §3](../docs/20-backend-architecture-and-api.md)。尚未做(按计划触发条件推进):Stripe 对接(收款)、生产部署(TLS 反代 + 进程管理,托管 Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。注册/登录已自建 v0(见上表),Clerk/Supabase 保留为正式上线时的可选替换。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
 
 隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 

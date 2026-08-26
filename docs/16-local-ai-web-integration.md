@@ -91,12 +91,14 @@ open http://localhost:8931/chat.html
 
 ## 9. 前端 ↔ 后端 API(127.0.0.1:8940)
 
-自建后端 v0(`python3 backend/api/server.py`,见 [backend/README.md](../backend/README.md))在线时,前端自动增强两处;离线自动回退,页面功能不变:
+自建后端 v0(`python3 backend/api/server.py`,见 [backend/README.md](../backend/README.md))在线时,前端自动增强四处;向导/反馈/统计离线自动回退、页面功能不变,**auth 除外**(离线显式报错,见下):
 
 **向导推荐方案**:进入第 3 步时,`build.js` 通过 `window.__buildAdvisor.planProvider` 钩子(由 `local-llm.js` 注册)请求 `POST /v1/advise`(只传 模板 slug + 硬件档位,**不传需求框文本**——分类已由 §8 的本地模型完成)。成功则方案卡换用 registry 数据并显示"✦ 实时推荐 · 模型库 @ :8940";带 `planGen` 代数守卫防止切换模式后的过期回包覆盖;**生成的安装包/手册与 API 方案一致**(renderOutput 优先用 apiPlan)。
 
 **聊天反馈**:👍/👎 时 `chat.js` 派发 `chat-feedback` 事件(detail 只有 rating),`local-llm.js` 监听并在 满足"真实本地模型已回答 + API 在线"时 `POST /v1/feedback`,载荷仅 `{rating, template, model_id}`——纠正文本框的内容**永不上报**(后端 schema 结构上也收不了)。
 
 **方案统计(数据飞轮种子)**:点"生成我的文件"时,`build.js` 用 slug/档位/布尔构造载荷,经 `window.__buildAdvisor.reportPlan` 钩子 `POST /v1/telemetry/deploy`,带 `stage:'plan_generated'` 与真实安装结果区分;仅当方案本身来自 API(id 与 registry 对齐)且 API 在线时上报,fire-and-forget。
+
+**账号(注册/登录/登录态)**:`local-llm.js` 暴露 `window.__bmaAuth`(signup/login/me/logout,4 秒超时),`signup.js` 与 `dashboard.html` 经它走 `/v1/auth/*`;session token 存 sessionStorage(关标签页即清)。**这一处不做离线降级**:API 不可达时注册/登录显式报错、dashboard 出登录墙,绝不假通行(docs/22 P0-14;端点规格与威胁模型见 [docs/20 §5/§7](20-backend-architecture-and-api.md))。
 
 **边界不变**:`API` 常量与 BASE/PORTAL/ADVISOR 同规矩——钉死 `127.0.0.1`、只赋值一次、每个 fetch 以固定常量开头(安全套件 89 项)。

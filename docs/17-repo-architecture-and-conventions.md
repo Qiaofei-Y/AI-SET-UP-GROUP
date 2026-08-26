@@ -1,6 +1,6 @@
 # 17 · 仓库架构与工程约定
 
-> 一句话:仓库分四块——`docs/`(产品与工程文档)、`frontend/`(零构建静态站)、`backend/`(目前只有计划)、`figma/`(原型与设计规范);前端的一切约定围绕三条铁律:**零构建零依赖、单一联网文件、全站双语成对**。
+> 一句话:仓库分四块——`docs/`(产品与工程文档)、`frontend/`(零构建静态站)、`backend/`(演进计划 + 零依赖 API v0)、`figma/`(原型与设计规范);前端的一切约定围绕三条铁律:**零构建零依赖、单一联网文件、全站双语成对**。
 
 ## 1. 顶层结构与职责边界
 
@@ -8,13 +8,15 @@
 AI-SET-UP-GROUP/
 ├── README.md          文档索引(所有新文档必须在这里登记)
 ├── CLAUDE.md          AI 协作说明(命令、安全边界、约定摘要)
-├── docs/01–19         编号文档:01–08 产品/商业,09 工程任务,10 图表,
+├── ONBOARDING.md      新成员上手指南(跑起来、门槛、别踩的雷)
+├── docs/01–22         编号文档:01–08 产品/商业,09 工程任务,10 图表,
 │                      11 AI 架构,12–15 商业运营,16 本地 AI 接入,
-│                      17 架构约定(本文),18 测试规范,19 安全模型
+│                      17 架构约定(本文),18 测试规范,19 安全模型,
+│                      20 后端技术参考,21 Lambda 云部署设计,22 商用化审计
 ├── frontend/          可运行的多页静态站(页面清单见 frontend/README.md)
 │   ├── *.html         每页一个文件,HTML 只放内容
 │   ├── assets/        CSS/JS 按"共享 vs 页面专属 vs 功能"拆分
-│   └── tests/         安全测试套件(全仓唯一测试入口)
+│   └── tests/         前端安全测试套件(静态断言 + XSS 实测 + UI 冒烟)
 ├── backend/           演进计划 + API v0(零依赖 stdlib;api/server.py、api/registry.json、tests/)
 └── figma/             高保真原型 + design-system.md(视觉规范唯一出处)
 ```
@@ -38,7 +40,7 @@ AI-SET-UP-GROUP/
 ## 3. 前端三条铁律
 
 1. **零构建、零依赖**:没有 npm、打包器、框架;`<script>`/`<link>`/图片全部本地相对路径。改变这一点是重大架构决策,需先写决策记录(见 §7)。
-2. **单一联网文件**:全站只有 `assets/local-llm.js` 允许任何网络 API,且只许指向 `127.0.0.1` 的固定常量(`BASE`/`PORTAL`/`ADVISOR`)。详见 [19 安全模型](19-security-model.md)。
+2. **单一联网文件**:全站只有 `assets/local-llm.js` 允许任何网络 API,且只许指向 `127.0.0.1` 的固定常量(`BASE`/`PORTAL`/`ADVISOR`/`API`)。详见 [19 安全模型](19-security-model.md)。
 3. **双语成对**:任何用户可见文案必须同时提供中英文(机制见 §5),只提供一种语言的 PR 视为未完成。
 
 ## 4. 代码分割与命名约定
@@ -69,7 +71,10 @@ AI-SET-UP-GROUP/
 | `window.LocalLLM`(`ready()`、`ask(q)`) | local-llm.js | chat.js | 聊天页询问真实模型 |
 | `window.__buildAdvisor`(`needs`、`select(slug, via)`) | build.js | local-llm.js | 本地 AI 分类结果选中模板卡 |
 | `window.__buildAdvisor.planProvider(req, cb)` | local-llm.js 注册 | build.js 调用 | 方案步骤向后端 `/v1/advise` 要实时推荐 |
+| `window.__buildAdvisor.reportPlan(payload)` | local-llm.js 注册 | build.js 调用 | "生成文件"上报 `/v1/telemetry/deploy`(slug/档位/布尔,fire-and-forget) |
 | `chat-feedback` 事件(detail.rating) | chat.js | local-llm.js | 👍/👎 转发到后端 `/v1/feedback`(仅评分,无内容) |
+| `window.__bmaAuth`(`signup/login/me/logout`) | local-llm.js | signup.js, dashboard.html | 注册/登录/登录态走后端 `/v1/auth/*`(唯一联网文件代发) |
+| `window.FX.decode(el)` + `data-fx` 根属性 | fx.js | 页面标记 / 测试 | 文字解码动效;`data-fx="on"` 是动效层初始化完成的测试锚点 |
 
 约定:钩子全部挂 window 或 document 事件,**不互相 import**(没有模块系统);使用方必须容忍钩子不存在(页面可能没加载对方文件)。
 
@@ -84,6 +89,8 @@ AI-SET-UP-GROUP/
 | 连接器 local-llm.js | docs/16、CLAUDE.md 安全边界节 |
 | 测试断言数量或规则 | docs/13 §测试、16、18、frontend/tests/README.md 中的计数与描述 |
 | 端口 | §2 端口表、docs/16、CLAUDE.md |
+| 后端 server.py / 端点 | docs/20(端点规格、env 表、测试数)、backend/README 状态表、CLAUDE.md |
+| 动效层 fx.css / fx.js | figma/design-system.md 动效节、§6 钩子清单、ui.smoke 的锚点约定 |
 | 任何 docs/*.md | llm-lab 在线时 `ai ingest ~/AI-SET-UP-GROUP`(RAG 语料就是这些文档) |
 | 新增文档 | README.md 索引表登记 |
 
@@ -92,4 +99,4 @@ AI-SET-UP-GROUP/
 - **为什么零构建**:演示站的价值是"双击就能跑 + 任何人能读懂";引入构建链会把非技术协作者挡在门外,且当前规模(约 10 页)完全不需要。触发重新评估的条件:页面间共享组件开始复制粘贴失控,或需要真实前端框架的交互复杂度。
 - **为什么单一联网文件**:把"数据不出本机"从口号变成可机器验证的断言——审计面收敛到一个文件,测试按精确路径豁免,防同名文件混入(详见 19)。
 - **为什么需求框只写不读(build.js 侧)**:自由文本是攻击者可控输入,隔离在生成链路之外;读框和联网职责收进连接器,自由文本只可能到 127.0.0.1(详见 16 §8、19)。
-- **为什么 backend 只有计划没有代码**:见 [backend/README.md](../backend/README.md) 设计原则——数据没证明需要之前不建。
+- **为什么 backend 长期只有计划、v0 也保持零依赖**:数据没证明需要之前不建(见 [backend/README.md](../backend/README.md) 设计原则);2026-08 决策提前动工的 API v0 沿用前端同一哲学(纯 stdlib、单文件、易审计),上线时机仍按各阶段触发条件。
