@@ -7,12 +7,25 @@
   var activeTemplate = null;    // template prefill currently shown in #needText
   var needEdited = false;       // true once the user types in #needText
 
-  // ---- Advisor rule table (scenario is used for RAG default; model tier from VRAM) ----
-  function pickModel(vram) {
+  // ---- Advisor rule table ----
+  // Offline mirror of backend/api/registry.json, ordered largest-first
+  // (sync enforced by tests/security.test.js §8). best_for lists the needs a
+  // model is strongest at; pickModel adds NEED_BONUS quality points on a match,
+  // so the in-tier specialist wins while a much bigger generalist still takes over.
+  var MODELS = [
+    { id: 'qwen2.5-32b-instruct', name: 'Qwen2.5 32B Instruct', size: '~20 GB', file: 'qwen2.5-32b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF', quant: 'Q4_K_M', vram: 24, quality: 92, speed: 62, best_for: ['company', 'legal', 'research', 'data'] },
+    { id: 'qwen2.5-14b-instruct', name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', vram: 12, quality: 85, speed: 78, best_for: ['company', 'legal', 'research', 'data'] },
+    { id: 'llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', size: '~4.9 GB', file: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', repo: 'bartowski/Meta-Llama-3.1-8B-Instruct-GGUF', quant: 'Q4_K_M', vram: 8, quality: 78, speed: 88, best_for: ['company', 'writing', 'research'] },
+    { id: 'qwen2.5-7b-instruct', name: 'Qwen2.5 7B Instruct', size: '~4.7 GB', file: 'qwen2.5-7b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-7B-Instruct-GGUF', quant: 'Q4_K_M', vram: 8, quality: 76, speed: 88, best_for: ['data', 'support'] },
+    { id: 'mistral-7b-instruct-v0.3', name: 'Mistral 7B Instruct v0.3', size: '~4.4 GB', file: 'Mistral-7B-Instruct-v0.3-Q4_K_M.gguf', repo: 'bartowski/Mistral-7B-Instruct-v0.3-GGUF', quant: 'Q4_K_M', vram: 6, quality: 72, speed: 90, best_for: ['writing', 'support'] }
+  ];
+  var NEED_BONUS = 10;
+  function pickModel(vram, need) {
     var v = parseInt(vram, 10);
-    if (v >= 24) return { name: 'Qwen2.5 32B Instruct', size: '~20 GB', file: 'qwen2.5-32b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF', quant: 'Q4_K_M', quality: 92, speed: 62 };
-    if (v >= 12) return { name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', quality: 85, speed: 78 };
-    return { name: 'Llama 3.1 8B Instruct', size: '~4.9 GB', file: 'Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf', repo: 'bartowski/Meta-Llama-3.1-8B-Instruct-GGUF', quant: 'Q4_K_M', quality: 78, speed: 88 };
+    var score = function (m) { return m.quality + (m.best_for.indexOf(need) >= 0 ? NEED_BONUS : 0); };
+    var pool = MODELS.filter(function (m) { return m.vram <= v; });
+    if (!pool.length) pool = [MODELS[MODELS.length - 1]]; // smallest as the floor
+    return pool.reduce(function (best, m) { return score(m) > score(best) ? m : best; });
   }
   function ragDefault(need) { return need !== 'writing'; } // all doc-grounded needs get RAG; writing works from style samples
   function needLabel(k) {
@@ -27,12 +40,13 @@
     // to the smallest sensible config (cloud is the recommended path in that case)
     var vram = STATE.gpu === 'none' ? '8' : STATE.vram;
     // cloud gets a bigger tier; hybrid's on-device half is sized like local
-    var m = pickModel(mode === 'cloud' ? '24' : vram);
+    var m = pickModel(mode === 'cloud' ? '24' : vram, STATE.need);
     var rag = ragDefault(STATE.need);
     var gb = parseFloat((m.size.match(/[\d.]+/) || ['0'])[0]); // keep decimals: '~4.9 GB' → 4.9
     return {
       title: t('Private Knowledge Assistant · Balanced', '私有知识助手 · 均衡版'),
       model: m, rag: rag,
+      matched: m.best_for.indexOf(STATE.need) >= 0,
       space: m.size,
       quality: m.quality, speed: m.speed,
       spacePct: mode === 'cloud' ? 30 : Math.min(70, Math.round((gb / 24) * 100))
@@ -74,6 +88,7 @@
       title: t('Private Knowledge Assistant · Balanced', '私有知识助手 · 均衡版'),
       model: { name: m.name, quant: m.quant, repo: m.repo, file: m.file, size: '~' + m.size_gb + ' GB' },
       rag: j.rag, space: '~' + m.size_gb + ' GB',
+      matched: (m.best_for || []).indexOf(STATE.need) >= 0,
       quality: m.quality, speed: m.speed,
       spacePct: STATE.mode === 'cloud' ? 30 : Math.min(70, Math.round((m.size_gb / 24) * 100)),
       fromApi: true
@@ -105,6 +120,8 @@
       '<span class="pick">✦ ' + t('BEST MATCH', '最佳匹配') + '</span>' +
       '<h3>' + p.title + '</h3>' +
       '<div class="desc">' + t('For: ', '用于:') + needLabel(STATE.need) + ' · ' + runsWhere +
+        (p.matched ? ' · <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">' +
+          t('✦ model matched to this need', '✦ 模型按需求匹配') + '</span>' : '') +
         (p.fromApi ? ' · <span style="font-family:var(--mono);font-size:11px;color:var(--accent)">' +
           t('✦ live · model registry', '✦ 实时推荐 · 模型库') + '</span>' : '') + '</div>' +
       meter(t('Answer quality', '回答质量'), t('Very good', '很好'), p.quality, 'var(--accent)') +

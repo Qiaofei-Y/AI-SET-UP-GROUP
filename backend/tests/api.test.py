@@ -114,6 +114,12 @@ class ApiTest(unittest.TestCase):
             self.assertGreater(m['size_gb'], 0)
             self.assertTrue(m['license'], '%s: license must be recorded' % m['id'])
             self.assertTrue(server._short_id(m['id']), '%s: id must be shape-safe' % m['id'])
+            self.assertTrue(m.get('best_for'), '%s: best_for must be recorded' % m['id'])
+            self.assertTrue(set(m['best_for']) <= set(server.TEMPLATES),
+                            '%s: best_for must use template slugs' % m['id'])
+        # every template has at least one specialist somewhere in the registry
+        covered = set(t for m in models for t in m['best_for'])
+        self.assertEqual(covered, set(server.TEMPLATES))
 
     # ---- advise: rule tiers mirror frontend pickModel ----
     def test_advise_tiers(self):
@@ -123,6 +129,23 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(s, 200)
             self.assertIn(expect, j['model']['id'])
             self.assertEqual(j['mode'], 'local')
+
+    def test_advise_matches_template_to_model(self):
+        # need-aware pick: in-tier specialists win, a much bigger generalist still takes over
+        cases = ((24, 'legal', 'qwen2.5-32b-instruct'),
+                 (24, 'writing', 'qwen2.5-32b-instruct'),   # top tier: generalist out-scores the bonus
+                 (12, 'data', 'qwen2.5-14b-instruct'),
+                 (12, 'writing', 'llama-3.1-8b-instruct'),  # specialist beats the bigger generalist
+                 (12, 'support', 'qwen2.5-7b-instruct'),
+                 (8, 'support', 'qwen2.5-7b-instruct'),
+                 (8, 'data', 'qwen2.5-7b-instruct'),
+                 (8, 'company', 'llama-3.1-8b-instruct'),
+                 (6, 'company', 'mistral-7b-instruct-v0.3'))
+        for vram, template, expect in cases:
+            s, j, _ = call(self.port, '/v1/advise',
+                           {'template': template,
+                            'hardware': {'gpu': 'nvidia', 'vram_gb': vram, 'ram_gb': 32}})
+            self.assertEqual((s, j['model']['id']), (200, expect), '%s@%dGB' % (template, vram))
 
     def test_advise_no_gpu_goes_cloud_big_tier(self):
         s, j, _ = call(self.port, '/v1/advise', {'hardware': {'gpu': 'none', 'ram_gb': 16}})

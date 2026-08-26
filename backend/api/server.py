@@ -87,11 +87,17 @@ def load_registry():
         return json.load(f)
 
 
-def pick_model(models, vram_gb):
-    """Largest model whose vram_min_gb fits; smallest as the floor fallback."""
+NEED_BONUS = 10  # in-tier specialists beat bigger generalists only within 10 quality points
+
+
+def pick_model(models, vram_gb, template=None):
+    """Best model that fits the VRAM, need-aware: quality + NEED_BONUS when the
+    model's best_for lists the template. Same rule and data as the frontend's
+    offline pickModel (build.js MODELS — sync enforced by security.test.js §8).
+    Smallest model is the floor when nothing fits."""
     fitting = [m for m in models if m['vram_min_gb'] <= vram_gb]
-    pool = fitting or models
-    return max(pool, key=lambda m: m['vram_min_gb']) if fitting else min(pool, key=lambda m: m['vram_min_gb'])
+    pool = fitting or [min(models, key=lambda m: m['vram_min_gb'])]
+    return max(pool, key=lambda m: m['quality'] + (NEED_BONUS if template in m.get('best_for', ()) else 0))
 
 
 # ---------- advisor (keyword rules; local LLM upgrade is opt-in via BMA_ADVISOR_LLM) ----------
@@ -159,12 +165,15 @@ def advise(body, models):
         advisor = 'llm' if template else 'rules'
         template = template or classify(need)
     mode = body.get('mode') or ('cloud' if gpu == 'none' else 'local')
-    model = pick_model(models, 24 if mode == 'cloud' else vram)  # cloud gets the big tier
+    model = pick_model(models, 24 if mode == 'cloud' else vram, template)  # cloud gets the big tier
     rag = template != 'writing'   # doc-grounded templates get RAG; writing works from style samples
+    matched = template in model.get('best_for', ())
     why_en = ('Cloud tier: no dedicated GPU on this machine.' if gpu == 'none'
-              else 'Largest model that fits in %d GB of VRAM.' % vram)
+              else ('Best fit in %d GB of VRAM — strongest at this kind of work.' % vram if matched
+                    else 'Largest model that fits in %d GB of VRAM.' % vram))
     why_zh = ('云端档位:这台电脑没有独立显卡。' if gpu == 'none'
-              else '在 %d GB 显存内能装下的最大模型。' % vram)
+              else ('在 %d GB 显存内的最优选——最擅长这类需求。' % vram if matched
+                    else '在 %d GB 显存内能装下的最大模型。' % vram))
     return {'template': template, 'mode': mode, 'rag': rag, 'model': model,
             'advisor': advisor, 'why': {'en': why_en, 'zh': why_zh}}
 

@@ -1,6 +1,6 @@
 {
-  "updated": "2026-08-16",
-  "note": "Model registry data file (docs/09 M2-2: rules are data, not code). Mirrors frontend/assets/build.js pickModel() tiers — keep the two in sync.",
+  "updated": "2026-08-25",
+  "note": "Model registry data file (docs/09 M2-2: rules are data, not code). Mirrors frontend/assets/build.js MODELS — kept in sync by frontend/tests/security.test.js §8. best_for lists the wizard templates each model is strongest at; selection rule (both sides): among models that fit the VRAM, quality + 10 bonus when best_for matches the need — the in-tier specialist wins, a much bigger general model still takes over.",
   "models": [
     {
       "id": "qwen2.5-32b-instruct",
@@ -12,7 +12,8 @@
       "vram_min_gb": 24,
       "license": "Apache-2.0",
       "quality": 92,
-      "speed": 62
+      "speed": 62,
+      "best_for": ["company", "legal", "research", "data"]
     },
     {
       "id": "qwen2.5-14b-instruct",
@@ -24,7 +25,8 @@
       "vram_min_gb": 12,
       "license": "Apache-2.0",
       "quality": 85,
-      "speed": 78
+      "speed": 78,
+      "best_for": ["company", "legal", "research", "data"]
     },
     {
       "id": "llama-3.1-8b-instruct",
@@ -36,7 +38,34 @@
       "vram_min_gb": 8,
       "license": "Llama 3.1 Community License",
       "quality": 78,
-      "speed": 88
+      "speed": 88,
+      "best_for": ["company", "writing", "research"]
+    },
+    {
+      "id": "qwen2.5-7b-instruct",
+      "name": "Qwen2.5 7B Instruct",
+      "quant": "Q4_K_M",
+      "file": "qwen2.5-7b-instruct-q4_k_m.gguf",
+      "repo": "Qwen/Qwen2.5-7B-Instruct-GGUF",
+      "size_gb": 4.7,
+      "vram_min_gb": 8,
+      "license": "Apache-2.0",
+      "quality": 76,
+      "speed": 88,
+      "best_for": ["data", "support"]
+    },
+    {
+      "id": "mistral-7b-instruct-v0.3",
+      "name": "Mistral 7B Instruct v0.3",
+      "quant": "Q4_K_M",
+      "file": "Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
+      "repo": "bartowski/Mistral-7B-Instruct-v0.3-GGUF",
+      "size_gb": 4.4,
+      "vram_min_gb": 6,
+      "license": "Apache-2.0",
+      "quality": 72,
+      "speed": 90,
+      "best_for": ["writing", "support"]
     }
   ]
 }

@@ -21,7 +21,7 @@ backend/
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
 │       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
 └── tests/
-    └── api.test.py        # 36 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 37 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
@@ -102,7 +102,7 @@ sessions (token_hash PRIMARY KEY, user_id, ts, expires)
 存活探测 → `200 {"ok": true, "service": "buildmyai-api", "version": "0.1"}`
 
 ### GET /v1/registry/models?vram=N
-模型库(`registry.json` 驱动)。`vram` 可选、必须为非负整数(否则 400);过滤出 `vram_min_gb ≤ N` 的模型。
+模型库(`registry.json` 驱动,每个模型带 `best_for` 擅长模板列表)。`vram` 可选、必须为非负整数(否则 400);过滤出 `vram_min_gb ≤ N` 的模型。
 → `200 {"models": [...], "recommended": "<首个模型 id 或 null>"}`
 
 ### POST /v1/advise
@@ -113,7 +113,7 @@ sessions (token_hash PRIMARY KEY, user_id, ts, expires)
   "hardware": { "gpu": "nvidia|none", "vram_gb": 0-256, "ram_gb": 0-1024 } }
 ```
 
-决策链:`template` 显式给出 → 直接用(`advisor:"client"`);否则有 `need_text` 且 `BMA_ADVISOR_LLM` 配置了回环端点 → 本地 LLM 分类(`advisor:"llm"`,输出必须精确命中六个模板 slug 之一,超时/垃圾/服务不在一律回退);否则关键词规则(`advisor:"rules"`)。无独显强制云端档位。
+决策链:`template` 显式给出 → 直接用(`advisor:"client"`);否则有 `need_text` 且 `BMA_ADVISOR_LLM` 配置了回环端点 → 本地 LLM 分类(`advisor:"llm"`,输出必须精确命中六个模板 slug 之一,超时/垃圾/服务不在一律回退);否则关键词规则(`advisor:"rules"`)。无独显强制云端档位。**选模型是需求感知的**(docs/11 的 `(场景, VRAM) → 方案` 规则表):在显存装得下的模型里按 `quality + 10(best_for 命中模板)` 取最高——同档内的「专长模型」胜出,大一档的通用模型要好 10 分以上才会取代;`why` 字段会说明是否按需求命中。规则与数据同 frontend `pickModel`,由 security.test.js §8 锁死同步。
 → `200 {"template", "mode", "rag", "model": {...}, "advisor", "why": {"en", "zh"}}`
 
 **`need_text` 红线**:只在本次请求的内存里存在——不落日志、不落库、不回显;若发往 LLM 也只能是 127.0.0.1(代码先验回环再发起任何请求)。提示注入的最坏结果是选错模板(输出被枚举钳制)。
@@ -198,7 +198,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。36 项覆盖:五组业务端点、auth 全流程(含 clickwrap 留痕)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。37 项覆盖:五组业务端点(含需求→模型匹配矩阵)、auth 全流程(含 clickwrap 留痕)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 

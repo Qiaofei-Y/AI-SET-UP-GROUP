@@ -11,14 +11,14 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 36 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 37 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |
 |------|------|------|
 | `GET /v1/health` | ✅ v0 | 存活探测 |
-| `POST /v1/advise` | ✅ v0 规则版 + LLM opt-in | 关键词分类 + 显存档位选模型,镜像 frontend 规则;设 `BMA_ADVISOR_LLM=http://127.0.0.1:8080` 可换用本地 LLM 分类(**仅接受回环地址**,超时/垃圾输出/服务不在一律回退规则,响应带 `advisor: client\|llm\|rules`);`need_text` 只在内存处理,不落日志/库/回显 |
-| `GET /v1/registry/models` | ✅ v0 | 数据文件 `api/registry.json` 驱动(与 frontend `pickModel` 保持同步) |
+| `POST /v1/advise` | ✅ v0 规则版 + LLM opt-in | 关键词分类 + **需求感知选模型**(显存装得下的里面,best_for 命中模板者加权胜出——docs/11 的 `(场景, VRAM)` 规则表),镜像 frontend 规则;设 `BMA_ADVISOR_LLM=http://127.0.0.1:8080` 可换用本地 LLM 分类(**仅接受回环地址**,超时/垃圾输出/服务不在一律回退规则,响应带 `advisor: client\|llm\|rules`);`need_text` 只在内存处理,不落日志/库/回显 |
+| `GET /v1/registry/models` | ✅ v0 | 数据文件 `api/registry.json` 驱动,5 个模型、每个带 `best_for` 擅长域(与 frontend `MODELS`/`pickModel` 全字段 + 规则矩阵双重同步,测试强制) |
 | `POST /v1/license/verify` | ✅ v0 | HMAC 签名 key、无状态、72h 离线宽限;密钥用 `BMA_LICENSE_SECRET` 注入 |
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |

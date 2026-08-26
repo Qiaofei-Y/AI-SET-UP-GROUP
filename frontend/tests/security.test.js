@@ -144,33 +144,50 @@ const i18n = read(path.join(WEB, 'assets', 'i18n.js'));
 ok("i18n localStorage stores only the 'bma-lang' code",
    /setItem\(\s*['"]bma-lang['"]\s*,\s*lang\s*\)/.test(i18n));
 
-// ---------- 8. build.js pickModel ↔ backend registry.json stay in sync ----------
-// (registry.json's own note: it mirrors the wizard's hardcoded tiers — this is
-//  the executable version of that reminder, so editing one side alone fails here.)
+// ---------- 8. build.js MODELS/pickModel ↔ backend registry.json stay in sync ----------
+// (registry.json's own note: it mirrors the wizard's MODELS table — this is the
+//  executable version of that reminder, so editing one side alone fails here.
+//  pickModel itself is executed in a sandbox against the need→model matrix so
+//  frontend and backend keep the SAME need-aware selection rule.)
 const registry = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'backend', 'api', 'registry.json'), 'utf8'));
-const byVram = {};
-for (const m of registry.models) byVram[m.vram_min_gb] = m;
-const floorVram = Math.min(...registry.models.map((m) => m.vram_min_gb));
-const pickSrc = (build.match(/function pickModel[\s\S]*?\n  \}/) || [''])[0];
-const tiers = [];
-for (const line of pickSrc.split('\n')) {
-  const m = line.match(/(?:if \(v >= (\d+)\) )?return \{(.*)\};/);
-  if (!m) continue;
-  const get = (k) => (m[2].match(new RegExp(k + ":\\s*'([^']*)'")) || [])[1];
-  tiers.push({ vram: m[1] ? parseInt(m[1], 10) : floorVram, name: get('name'),
-               size: get('size'), file: get('file'), repo: get('repo'), quant: get('quant') });
+const byId = {};
+for (const m of registry.models) byId[m.id] = m;
+const modelsSrc = (build.match(/var MODELS = \[[\s\S]*?\n  \];/) || [''])[0];
+const pickSrc = (build.match(/var NEED_BONUS[\s\S]*?function pickModel[\s\S]*?\n  \}/) || [''])[0];
+let MODELS = [];
+try { MODELS = vm.runInNewContext(modelsSrc + ' MODELS;'); } catch (e) { /* fails the count check */ }
+ok('build.js MODELS parsed and entry count matches registry (' + MODELS.length + '/' + registry.models.length + ')',
+   MODELS.length > 0 && MODELS.length === registry.models.length);
+for (const m of MODELS) {
+  const want = byId[m.id] || {};
+  ok('registry in sync with build.js MODELS entry ' + m.id,
+     want.file === m.file && want.repo === m.repo && want.quant === m.quant &&
+     want.name === m.name && want.vram_min_gb === m.vram &&
+     want.quality === m.quality && want.speed === m.speed &&
+     JSON.stringify(want.best_for) === JSON.stringify(m.best_for) &&
+     Math.abs(parseFloat((m.size || '').replace(/[^\d.]/g, '')) - want.size_gb) < 0.05);
 }
-ok('pickModel tiers parsed and match registry vram_min_gb tiers',
-   tiers.length === registry.models.length &&
-   tiers.every((t) => byVram[t.vram] !== undefined));
-for (const t of tiers) {
-  const want = byVram[t.vram] || {};
-  ok('registry in sync with pickModel tier ' + t.vram + ' GB (' + (t.file || '?') + ')',
-     want.file === t.file && want.repo === t.repo && want.quant === t.quant && want.name === t.name);
+ok('build.js MODELS ordered largest-first (floor fallback relies on it)',
+   MODELS.every((m, i) => i === 0 || MODELS[i - 1].vram >= m.vram));
+// the need→model matrix: mirrored by backend test_advise_matches_template_to_model
+const MATRIX = [
+  [24, 'legal', 'qwen2.5-32b-instruct'],
+  [24, 'writing', 'qwen2.5-32b-instruct'],
+  [12, 'data', 'qwen2.5-14b-instruct'],
+  [12, 'writing', 'llama-3.1-8b-instruct'],
+  [12, 'support', 'qwen2.5-7b-instruct'],
+  [8, 'support', 'qwen2.5-7b-instruct'],
+  [8, 'data', 'qwen2.5-7b-instruct'],
+  [8, 'company', 'llama-3.1-8b-instruct'],
+  [6, 'company', 'mistral-7b-instruct-v0.3'],
+];
+let pick = null;
+try { pick = vm.runInNewContext(modelsSrc + pickSrc + '; pickModel'); } catch (e) { /* fails below */ }
+for (const [vram, need, want] of MATRIX) {
+  let got = null;
+  try { got = pick(String(vram), need).id; } catch (e) { /* fails below */ }
+  ok('pickModel need-aware matrix: ' + need + '@' + vram + 'GB -> ' + want, got === want);
 }
-ok('pickModel size labels match registry size_gb',
-   tiers.every((t) => byVram[t.vram] &&
-     Math.abs(parseFloat((t.size || '').replace(/[^\d.]/g, '')) - byVram[t.vram].size_gb) < 0.05));
 
 // ---------- summary ----------
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
