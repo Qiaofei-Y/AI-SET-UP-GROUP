@@ -291,7 +291,7 @@ class ApiTest(unittest.TestCase):
     def test_auth_signup_login_me_logout_roundtrip(self):
         s, j = self._call_auth('/v1/auth/signup', {
             'name': 'Ada Lovelace', 'email': 'Ada@Example.com',
-            'password': 'correct-horse-9', 'plan': 'pro'})
+            'password': 'correct-horse-9', 'plan': 'pro', 'accept_tos': True})
         self.assertEqual((s, j['ok']), (200, True))
         self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
         self.assertEqual(j['user'], {'name': 'Ada Lovelace', 'email': 'ada@example.com',
@@ -309,7 +309,7 @@ class ApiTest(unittest.TestCase):
         self.assertEqual((s, j['error']), (401, 'not_logged_in'))
 
     def test_auth_duplicate_email_conflict(self):
-        body = {'name': 'A', 'email': 'dup@example.com', 'password': 'longenough1'}
+        body = {'name': 'A', 'email': 'dup@example.com', 'password': 'longenough1', 'accept_tos': True}
         s, _ = self._call_auth('/v1/auth/signup', body)
         self.assertEqual(s, 200)
         s, j = self._call_auth('/v1/auth/signup', dict(body, email='DUP@example.com'))
@@ -317,7 +317,7 @@ class ApiTest(unittest.TestCase):
 
     def test_auth_bad_credentials(self):
         self._call_auth('/v1/auth/signup', {'name': 'B', 'email': 'b@example.com',
-                                            'password': 'right-password'})
+                                            'password': 'right-password', 'accept_tos': True})
         for email, pw in (('b@example.com', 'wrong-password'),
                           ('nobody@example.com', 'right-password')):
             s, j = self._call_auth('/v1/auth/login', {'email': email, 'password': pw})
@@ -326,20 +326,37 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(s, 401)
 
     def test_auth_rejects_bad_shapes(self):
-        base = {'name': 'C', 'email': 'c@example.com', 'password': 'longenough1'}
+        base = {'name': 'C', 'email': 'c@example.com', 'password': 'longenough1', 'accept_tos': True}
         for mutation, want in ((dict(base, password='short'), 'invalid_field:password'),
                                (dict(base, email='not-an-email'), 'invalid_field:email'),
                                (dict(base, name='line\nbreak'), 'invalid_field:name'),
                                (dict(base, bio='free text about me'), 'unknown_field:bio'),
-                               (dict(base, plan='enterprise'), 'invalid_field:plan')):
+                               (dict(base, plan='enterprise'), 'invalid_field:plan'),
+                               (dict(base, accept_tos=False), 'invalid_field:accept_tos'),
+                               ({k: v for k, v in base.items() if k != 'accept_tos'},
+                                'missing_field:accept_tos')):
             s, j = self._call_auth('/v1/auth/signup', mutation)
             self.assertEqual((s, j['error']), (400, want))
+
+    def test_auth_signup_records_tos_acceptance(self):
+        # clickwrap record (P0-5): accepted policy version stamped on the user row
+        s, _ = self._call_auth('/v1/auth/signup', {
+            'name': 'Click Wrap', 'email': 'clickwrap@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        self.assertEqual(s, 200)
+        import sqlite3
+        con = sqlite3.connect(os.environ['BMA_USERS_DB'])
+        row = con.execute('SELECT tos, ts FROM users WHERE email = ?',
+                          ('clickwrap@example.com',)).fetchone()
+        con.close()
+        self.assertEqual(row[0], server.TOS_VERSION)
+        self.assertGreater(row[1], 0)
 
     def test_auth_secrets_never_stored_and_events_db_untouched(self):
         before = db_count('telemetry') + db_count('feedback')
         s, j = self._call_auth('/v1/auth/signup', {
             'name': 'Secret Keeper', 'email': 'keeper@example.com',
-            'password': 'PLAINTEXT-MARKER-789'})
+            'password': 'PLAINTEXT-MARKER-789', 'accept_tos': True})
         self.assertEqual(s, 200)
         with open(os.environ['BMA_USERS_DB'], 'rb') as f:
             blob = f.read()

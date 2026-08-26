@@ -55,7 +55,7 @@ open http://localhost:8931/chat.html
 
 **引用渲染**:`/api/rag` 的 `sources[{file, section}]` 经 `chat.js` 的 `addCite()` 渲染为与演示一致的引用卡;全部走 `textContent`,模型输出没有任何 HTML 注入路径。
 
-**安全边界(由测试强制)**:`frontend/tests/security.test.js`(90 项)规定——
+**安全边界(由测试强制)**:`frontend/tests/security.test.js`(102 项)规定——
 - 全站只有 `frontend/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
 - 其余文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 即测试失败;
 - 连接器内 `BASE`/`PORTAL`/`ADVISOR` 必须各只赋值一次、指向 `127.0.0.1`,每个 `fetch` 必须以三者之一开头,不允许出现其他 URL 字面量。
@@ -73,7 +73,7 @@ open http://localhost:8931/chat.html
 - 连续两次打断流式回答 → 无卡死、无孤儿流、历史不错序 ✓
 - 中文模式点建议问题 → 中文回答 ✓;预置会话追问 → 正确利用 seed 上下文 ✓
 - 服务停掉 → 回退演示答案 + "已断开"提示,15 秒自动重连 ✓(代码路径)
-- 安全套件 90 项全绿 ✓
+- 安全套件 102 项全绿 ✓
 
 ## 7. 边界与下一步
 
@@ -101,4 +101,4 @@ open http://localhost:8931/chat.html
 
 **账号(注册/登录/登录态)**:`local-llm.js` 暴露 `window.__bmaAuth`(signup/login/me/logout,4 秒超时),`signup.js` 与 `dashboard.html` 经它走 `/v1/auth/*`;session token 存 sessionStorage(关标签页即清)。**这一处不做离线降级**:API 不可达时注册/登录显式报错、dashboard 出登录墙,绝不假通行(docs/22 P0-14;端点规格与威胁模型见 [docs/20 §5/§7](20-backend-architecture-and-api.md))。
 
-**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13);每个 fetch 以四常量之一开头(安全套件 90 项)。
+**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13);每个 fetch 以四常量之一开头(安全套件 102 项)。

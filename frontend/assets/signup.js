@@ -49,6 +49,7 @@
       }
       document.title = t('Build My AI — Log in', 'Build My AI — 登录');
       hide('planPill'); hide('betaNote'); hide('nameField'); hide('companyField'); hide('privacyLine');
+      hide('agreeField'); // clickwrap is a signup-time consent; login re-accepts nothing
       document.getElementById('altSignup').classList.add('hidden');
       document.getElementById('altLogin').classList.remove('hidden');
     }
@@ -63,10 +64,12 @@
     var errCompany = document.getElementById('errCompany');
     var errPassword = document.getElementById('errPassword');
     var errForm = document.getElementById('errForm');
+    var fAgree = document.getElementById('fAgree');
+    var errAgree = document.getElementById('errAgree');
     if (LOGIN && fPassword) fPassword.setAttribute('autocomplete', 'current-password');
 
     // Current validation state, so visible errors re-render on language toggle.
-    var errs = { name: false, email: false, company: false, password: false,
+    var errs = { name: false, email: false, company: false, password: false, agree: false,
                  emailTaken: false, badCred: false, api: false, throttled: false };
     function renderErrs() {
       errName.textContent = errs.name ? t('Please enter your name.', '请填写姓名。') : '';
@@ -75,6 +78,8 @@
       errCompany.textContent = errs.company ? t('Company name is required for Business.', '企业版需填写公司名称。') : '';
       errPassword.textContent = errs.password ? t('Password must be at least 8 characters.', '密码至少 8 位。')
         : (errs.badCred ? t('Email or password is incorrect.', '邮箱或密码不正确。') : '');
+      errAgree.textContent = errs.agree
+        ? t('Please accept the Terms of Service and Privacy Policy to continue.', '请先勾选同意服务条款与隐私政策。') : '';
       errForm.textContent = errs.api
         ? t("Can't reach the account service right now — please try again in a moment.",
             '暂时连不上账号服务,请稍后重试。')
@@ -130,6 +135,7 @@
       errs.email = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       errs.company = !LOGIN && isBiz && !company;
       errs.password = password.length < 8;
+      errs.agree = !LOGIN && !(fAgree && fAgree.checked); // clickwrap: consent is required to sign up
       errs.emailTaken = false;
       errs.badCred = false;
       errs.api = false;
@@ -140,7 +146,7 @@
       mark(fCompany, errs.company);
       mark(fPassword, errs.password);
       var firstBad = errs.name ? fName : (errs.email ? fEmail
-        : (errs.company ? fCompany : (errs.password ? fPassword : null)));
+        : (errs.company ? fCompany : (errs.password ? fPassword : (errs.agree ? fAgree : null))));
       if (firstBad) { firstBad.focus(); return; }
 
       var auth = window.__bmaAuth;
@@ -169,7 +175,8 @@
 
       if (!auth) { errs.api = true; renderErrs(); return; }
       var body = { name: name, email: email, password: password,
-                   plan: isBiz ? 'business' : 'pro' };
+                   plan: isBiz ? 'business' : 'pro',
+                   accept_tos: true }; // clickwrap checked (validated above); server records the version
       if (isBiz) body.company = company;
       busy = true;
       auth.signup(body, function (err, res) {

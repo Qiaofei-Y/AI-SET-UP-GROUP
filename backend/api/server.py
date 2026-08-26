@@ -63,6 +63,7 @@ USERS_DB = os.environ.get('BMA_USERS_DB', os.path.join(ROOT, 'data', 'users.db')
 DEFAULT_SECRET = 'dev-secret-change-me'  # fine on loopback, fatal on a public bind
 LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
+TOS_VERSION = 'draft-2026-08-25'  # clickwrap record (P0-5): stamped per signup, bump on policy change
 SESSION_DAYS = 30
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
@@ -211,7 +212,11 @@ def init_users_db(path=None):
     con = sqlite3.connect(path)
     con.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
-        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB)''')
+        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT)''')
+    try:  # migrate pre-clickwrap databases
+        con.execute('ALTER TABLE users ADD COLUMN tos TEXT')
+    except sqlite3.OperationalError:
+        pass
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
     con.commit()
@@ -316,11 +321,14 @@ def _password_shape(v):
 
 
 SIGNUP_SCHEMA = {
-    'name':     (True,  _identity_name),
-    'email':    (True,  _email_shape),
-    'password': (True,  _password_shape),
-    'company':  (False, _identity_name),
-    'plan':     (False, _enum('free', 'pro', 'business')),
+    'name':       (True,  _identity_name),
+    'email':      (True,  _email_shape),
+    'password':   (True,  _password_shape),
+    'company':    (False, _identity_name),
+    'plan':       (False, _enum('free', 'pro', 'business')),
+    # clickwrap (P0-5): consent must be explicit and true — the accepted policy
+    # version + signup timestamp form the acceptance record in users.tos
+    'accept_tos': (True,  lambda v: v is True),
 }
 
 LOGIN_SCHEMA = {
@@ -545,11 +553,11 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             cur = con.execute(
-                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash) '
-                'VALUES (?,?,?,?,?,?,?)',
+                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos) '
+                'VALUES (?,?,?,?,?,?,?,?)',
                 (int(time.time()), body['name'].strip(), email,
                  (body.get('company') or '').strip() or None,
-                 body.get('plan', 'free'), salt, pw))
+                 body.get('plan', 'free'), salt, pw, TOS_VERSION))
             token = create_session(con, cur.lastrowid)
             con.commit()
         except sqlite3.IntegrityError:

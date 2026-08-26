@@ -12,7 +12,12 @@
 .form-field input{width:100%;padding:12px 14px;border:1px solid var(--line-2);border-radius:9px;font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none}
 .form-field input:focus{border-color:var(--accent)}
 .form-err{color:var(--clay);font-size:12px;margin-top:5px;min-height:14px}
-.privacy-line{font-size:12px;color:var(--ink-2);margin:6px 0 18px}
+.privacy-line{font-size:12px;color:var(--ink-2);margin:6px 0 12px}
+/* clickwrap (docs/22 P0-5): explicit checkbox, links open in a new tab */
+.agree-field{margin-bottom:14px}
+.agree{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:#3E3930;line-height:1.55;cursor:pointer}
+.agree input{margin-top:3px;width:15px;height:15px;flex:none;accent-color:var(--accent)}
+.agree a{color:var(--accent);font-weight:500}
 .signup-card .btn.primary{width:100%;justify-content:center}
 .alt-link{text-align:center;font-size:13px;color:var(--ink-2);margin-top:16px}
 .alt-link a{color:var(--accent);font-weight:500}

@@ -1,0 +1,18 @@
+/* Build My AI — legal pages (privacy.html / terms.html / refunds.html). Requires base.css. */
+.legal-wrap{max-width:780px;margin:0 auto;padding:44px 24px 90px}
+.legal-wrap .eyebrow{margin-bottom:12px}
+.legal-wrap h1{font-size:30px;font-weight:650;letter-spacing:-.01em;margin-bottom:8px}
+.legal-meta{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-bottom:22px}
+.draft-banner{background:#F6EADF;border:1px solid #E4C7AC;border-radius:11px;padding:13px 16px;font-size:13px;color:#8A4F22;margin-bottom:26px;line-height:1.55}
+.legal-summary{background:var(--accent-soft);border:1px solid #C4E0DA;border-radius:12px;padding:16px 18px;margin-bottom:30px}
+.legal-summary h2{font-size:13px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2);margin-bottom:8px}
+.legal-summary p{font-size:14px;color:var(--accent-2);line-height:1.6;margin:0}
+.legal-wrap section{margin-bottom:26px}
+.legal-wrap h2.sec{font-size:17px;font-weight:650;margin-bottom:8px}
+.legal-wrap p{font-size:14px;line-height:1.7;color:#3E3930;margin-bottom:9px}
+.legal-wrap ul{margin:2px 0 10px 20px}
+.legal-wrap li{font-size:14px;line-height:1.7;color:#3E3930;margin-bottom:4px}
+.legal-wrap li::marker{color:var(--accent)}
+.legal-wrap a{color:var(--accent);font-weight:500}
+.legal-links{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.legal-links a{margin-right:14px}

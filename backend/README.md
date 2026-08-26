@@ -11,7 +11,7 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 35 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 36 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |

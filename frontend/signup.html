@@ -55,6 +55,13 @@
           <div class="form-err" id="errPassword" role="alert"></div>
         </div>
         <div class="privacy-line" id="privacyLine" data-en="We use this only to set up your account." data-zh="这些信息仅用于创建账号。">We use this only to set up your account.</div>
+        <div class="agree-field" id="agreeField">
+          <label class="agree" for="fAgree">
+            <input type="checkbox" id="fAgree" aria-describedby="errAgree">
+            <span><span data-en="I agree to the " data-zh="我已阅读并同意">I agree to the </span><a href="terms.html" target="_blank" rel="noopener" data-en="Terms of Service" data-zh="《服务条款》">Terms of Service</a><span data-en=" and " data-zh="与">, and</span> <a href="privacy.html" target="_blank" rel="noopener" data-en="Privacy Policy" data-zh="《隐私政策》">Privacy Policy</a><span data-en="." data-zh="。">.</span></span>
+          </label>
+          <div class="form-err" id="errAgree" role="alert"></div>
+        </div>
         <div class="form-err" id="errForm" role="alert"></div>
         <button class="btn primary lg fx-btn-sweep" type="submit" id="suSubmit" data-en="Create free account" data-zh="创建免费账号">Create free account</button>
       </form>

@@ -21,7 +21,7 @@ backend/
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
 │       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
 └── tests/
-    └── api.test.py        # 35 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 36 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
@@ -90,7 +90,7 @@ telemetry(id, ts, stage, template, model, os, gpu, vram_gb, ram_gb, mode,
 feedback (id, ts, rating, template, model)          -- 无任何 content 字段
 
 -- users.db
-users    (id, ts, name, email UNIQUE, company, plan, pw_salt, pw_hash)
+users    (id, ts, name, email UNIQUE, company, plan, pw_salt, pw_hash, tos)
 sessions (token_hash PRIMARY KEY, user_id, ts, expires)
 ```
 
@@ -132,8 +132,11 @@ key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secr
 ### POST /v1/auth/signup
 ```json
 { "name": "≤80 字符单行", "email": "≤254 邮箱形状", "password": "8-128 字符",
-  "company": "可选,同 name 规则", "plan": "free|pro|business,可选,默认 free" }
+  "company": "可选,同 name 规则", "plan": "free|pro|business,可选,默认 free",
+  "accept_tos": "必填,必须为 true(clickwrap,docs/22 P0-5)" }
 ```
+
+接受记录:服务端把当前条款版本(`TOS_VERSION`,现为 `draft-2026-08-25`)连同注册时间戳写入 `users.tos`——政策改版时递增该常量即可区分「接受过哪一版」。
 → `200 {"ok": true, "token": "<48hex>", "user": {"name", "email", "plan"}}`
 → `409 {"error": "email_taken"}`(邮箱不区分大小写唯一,存储时统一小写)
 
@@ -195,7 +198,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。35 项覆盖:五组业务端点、auth 全流程、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。36 项覆盖:五组业务端点、auth 全流程(含 clickwrap 留痕)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 
