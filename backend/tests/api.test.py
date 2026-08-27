@@ -21,6 +21,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 _TMP = tempfile.mkdtemp(prefix='bma-test-')
 os.environ['BMA_DB'] = os.path.join(_TMP, 'events.db')
 os.environ['BMA_USERS_DB'] = os.path.join(_TMP, 'users.db')
+# the suite makes many auth-bucket calls in one window; the rate-limit tests
+# override this with tiny windows and clean up after themselves
+os.environ['BMA_RATE_AUTH'] = '300/60'
 import server  # noqa: E402
 
 
@@ -366,6 +369,96 @@ class ApiTest(unittest.TestCase):
         # guardrails: unknown user / bogus tier change nothing
         self.assertFalse(server.set_plan('nobody@example.com', 'pro'))
         self.assertFalse(server.set_plan('planprobe@example.com', 'enterprise'))
+
+    def test_account_password_change_revokes_other_sessions(self):
+        self._call_auth('/v1/auth/signup', {'name': 'PW', 'email': 'pw@example.com',
+                                            'password': 'old-password-1', 'accept_tos': True})
+        s, j = self._call_auth('/v1/auth/login', {'email': 'pw@example.com', 'password': 'old-password-1'})
+        tok_a = j['token']
+        s, j = self._call_auth('/v1/auth/login', {'email': 'pw@example.com', 'password': 'old-password-1'})
+        tok_b = j['token']
+        # wrong current password -> 403; unauthenticated -> 401
+        s, j = self._call_auth('/v1/account/password',
+                               {'current_password': 'wrong-password-x', 'new_password': 'new-password-2'},
+                               token=tok_a)
+        self.assertEqual((s, j['error']), (403, 'bad_credentials'))
+        s, _ = self._call_auth('/v1/account/password',
+                               {'current_password': 'old-password-1', 'new_password': 'new-password-2'})
+        self.assertEqual(s, 401)
+        # real change via session A: EVERY pre-change token dies (incl. A's own —
+        # a stolen copy must not outlive the password); a fresh token is returned
+        s, j = self._call_auth('/v1/account/password',
+                               {'current_password': 'old-password-1', 'new_password': 'new-password-2'},
+                               token=tok_a)
+        self.assertEqual((s, j['ok']), (200, True))
+        self.assertGreaterEqual(j['revoked_sessions'], 2)
+        self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
+        for dead in (tok_a, tok_b):
+            s, _ = self._call_auth('/v1/auth/me', token=dead)
+            self.assertEqual(s, 401)
+        s, _ = self._call_auth('/v1/auth/me', token=j['token'])
+        self.assertEqual(s, 200)
+        # old password dead, new one works
+        s, _ = self._call_auth('/v1/auth/login', {'email': 'pw@example.com', 'password': 'old-password-1'})
+        self.assertEqual(s, 401)
+        s, _ = self._call_auth('/v1/auth/login', {'email': 'pw@example.com', 'password': 'new-password-2'})
+        self.assertEqual(s, 200)
+
+    def test_account_logout_all(self):
+        s, j = self._call_auth('/v1/auth/signup', {'name': 'LA', 'email': 'la@example.com',
+                                                   'password': 'longenough1', 'accept_tos': True})
+        tok_a = j['token']
+        s, j = self._call_auth('/v1/auth/login', {'email': 'la@example.com', 'password': 'longenough1'})
+        tok_b = j['token']
+        # strict whitelist even on an empty-body endpoint
+        s, j = self._call_auth('/v1/account/logout-all', {'sneaky': 'field'}, token=tok_a)
+        self.assertEqual((s, j['error']), (400, 'unknown_field:sneaky'))
+        s, j = self._call_auth('/v1/account/logout-all', {}, token=tok_a)
+        self.assertEqual((s, j['ok'], j['revoked_sessions']), (200, True, 2))
+        for tok in (tok_a, tok_b):
+            s, _ = self._call_auth('/v1/auth/me', token=tok)
+            self.assertEqual(s, 401)
+
+    def test_account_export(self):
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Export Me', 'email': 'export@example.com', 'password': 'longenough1',
+            'company': 'ACME', 'plan': 'pro', 'accept_tos': True})
+        tok = j['token']
+        s, _ = self._call_auth('/v1/account/export')
+        self.assertEqual(s, 401)
+        s, j = self._call_auth('/v1/account/export', token=tok)
+        self.assertEqual((s, j['ok']), (200, True))
+        u = j['user']
+        self.assertEqual((u['email'], u['company'], u['plan'], u['plan_intent'], u['tos_accepted']),
+                         ('export@example.com', 'ACME', 'free', 'pro', server.TOS_VERSION))
+        self.assertGreater(u['created_ts'], 0)
+        self.assertTrue(any(sess['current'] for sess in j['sessions']))
+        # security material never leaves: no token hashes, no password fields
+        blob = json.dumps(j)
+        self.assertNotIn('token_hash', blob)
+        self.assertNotIn('pw_', blob)
+        self.assertNotIn(server._token_hash(tok), blob)
+        self.assertIn('anonymous', j['note'])
+
+    def test_account_delete_erases_at_file_level(self):
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Erase Me Fully', 'email': 'erase-me@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        s, j = self._call_auth('/v1/account/delete', {'password': 'wrong-password-x'}, token=tok)
+        self.assertEqual((s, j['error']), (403, 'bad_credentials'))
+        s, j = self._call_auth('/v1/account/delete', {'password': 'longenough1'}, token=tok)
+        self.assertEqual((s, j['deleted']), (200, True))
+        # account gone: token dead, login dead
+        s, _ = self._call_auth('/v1/auth/me', token=tok)
+        self.assertEqual(s, 401)
+        s, _ = self._call_auth('/v1/auth/login', {'email': 'erase-me@example.com', 'password': 'longenough1'})
+        self.assertEqual(s, 401)
+        # file-level erasure: secure_delete + VACUUM leave no trace in the db bytes
+        with open(os.environ['BMA_USERS_DB'], 'rb') as f:
+            blob = f.read()
+        self.assertNotIn(b'erase-me@example.com', blob)
+        self.assertNotIn(b'Erase Me Fully', blob)
 
     def test_auth_duplicate_email_conflict(self):
         body = {'name': 'A', 'email': 'dup@example.com', 'password': 'longenough1', 'accept_tos': True}

@@ -21,7 +21,7 @@ backend/
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
 │       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
 └── tests/
-    └── api.test.py        # 39 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 43 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
@@ -152,6 +152,15 @@ Header `Authorization: Bearer <token>` → 删除该 session → `200 {"ok": tru
 ### GET /v1/auth/me
 Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。
 
+### 账号自助(docs/22 P1 三件套,隐私政策承诺的可执行形式;全部 Bearer 认证 + auth 限速桶)
+
+- **POST /v1/account/password** `{"current_password", "new_password"}`(均 8–128)→ 校验当前密码(恒定工作量 PBKDF2)→ 换盐换哈希 → **轮换全部 session(含当前——被盗的现 token 也不能活过改密),同一事务内铸造新 token 返回** → `200 {"ok": true, "revoked_sessions": N, "token": "<新 48hex>"}`(前端换入 sessionStorage);当前密码错 `403 bad_credentials`。
+- **POST /v1/account/logout-all** `{}`(空体,未知键仍 400)→ 撤销该用户全部 session(含当前)→ `200 {"ok": true, "revoked_sessions": N}`。
+- **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
+- **POST /v1/account/delete** `{"password"}`(破坏性操作需重认证)→ 删除 sessions + user,**文件级抹除**:`PRAGMA secure_delete=ON`(释放页清零)+ `VACUUM`(压缩),测试直接扫库文件字节断言邮箱/姓名零痕迹;密码错 `403`。
+
+配套:`create_session` 顺手清扫过期 session(`DELETE WHERE expires <= now`),sessions 表有界。
+
 ## 6. 校验层:schema 白名单(隐私红线的可执行形式)
 
 所有 POST 体都过 `validate(body, SCHEMA)`:**未知键直接 400**(白名单,不是黑名单),必填缺失 400,值不过形状检查 400。检查器就五种:
@@ -201,7 +210,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。39 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕与 plan 服务端权威)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。43 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、账号自助四端点)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 

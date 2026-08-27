@@ -13,7 +13,7 @@
 | `deploy.html` | **部署方式(独立页)**:本地/云端/混合详解 + 场景选型对照 |
 | `pricing.html` | **价格(独立页)**:Beta 免费横幅 + 三档价格 + 价格常见问题 |
 | `build.html` | **引导流程**:需求(6 个模板,与模板页一致)→ 设备 → 推荐方案 → 本地/云端/混合 → 生成**真实可用**的 Ollama 引导安装包 + 分步指南 / 云端手册(混合两者都给);SmartScreen 提示、人话版预览(可切原始脚本)、「即将推出」诚实徽标 |
-| `dashboard.html` | **Control Center 预览**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI),**全页示例数据并明确标注**(顶栏横幅 + 各卡 sample 徽标,无假进度/假更新提醒);未登录出登录墙,`/v1/auth/me` 验证通过才放行(P0-14) |
+| `dashboard.html` | **Control Center 预览**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI),**全页示例数据并明确标注**;唯一真实卡是**「账号」自助卡**(改密并撤销其他 session、全设备登出、导出 JSON、文件级删除账号——隐私政策的可执行形式);未登录出登录墙(P0-14) |
 | `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库,示例内容明确标注;纠正/拖放为预览,不假装学习或索引) |
 | `signup.html` | **注册/登录页**:Pro/Business 创建免费账号(Beta 期已上线功能全部免费,无门禁宣称);`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;注册需勾选条款(clickwrap,服务端留痕);账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
 | `privacy.html` / `terms.html` / `refunds.html` | **法律三件套(草案)**:隐私政策 / 服务条款 / 退款政策,双语,带「待律师审阅」横幅;全站页脚可达(docs/22 P0-5) |
@@ -39,7 +39,7 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/build.js` | 向导逻辑 + **真实 Ollama 安装包/指南/云端手册生成器**(纯 cmd batch,零 PowerShell;Llama 模型自动附 "Built with Llama" 许可注记);内置 registry 镜像 `MODELS` 表(含 `ollama` 钉版标签),`pickModel(vram, need)` 按需求加权选模型(与后端同规则,测试锁同步) | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
 | `assets/signup.js` | 注册/登录逻辑:本地校验 + `__bmaAuth` 真实注册/登录;API 不可达时显式报错(无假通行,P0-14) | signup |
-| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(llm-lab 只连 `127.0.0.1`,后端 API 本地页连 `127.0.0.1:8940`、部署页走同源 `/v1/*`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态;chat 回退档接 Ollama 11434) | chat + build + signup + dashboard |
+| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(llm-lab 只连 `127.0.0.1`,后端 API 本地页连 `127.0.0.1:8940`、部署页走同源 `/v1/*`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态与账号自助四端点;chat 回退档接 Ollama 11434) | chat + build + signup + dashboard |
 
 原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。完整工程约定(i18n 规则、全局钩子清单、文档镜像规则)见 [docs/17](../docs/17-repo-architecture-and-conventions.md)。
 

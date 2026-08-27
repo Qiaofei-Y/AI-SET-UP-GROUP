@@ -255,6 +255,7 @@ def set_plan(email, plan):
 def create_session(con, user_id):
     token = secrets.token_hex(24)
     now = int(time.time())
+    con.execute('DELETE FROM sessions WHERE expires <= ?', (now,))  # opportunistic sweep
     con.execute('INSERT INTO sessions (token_hash, user_id, ts, expires) VALUES (?,?,?,?)',
                 (_token_hash(token), user_id, now, now + SESSION_DAYS * 86400))
     return token
@@ -370,6 +371,18 @@ LOGIN_SCHEMA = {
     'password': (True, _password_shape),
 }
 
+# account self-service (docs/22 P1: password change / logout-all / CCPA delete+export)
+PASSWORD_CHANGE_SCHEMA = {
+    'current_password': (True, _password_shape),
+    'new_password':     (True, _password_shape),
+}
+
+DELETE_ACCOUNT_SCHEMA = {  # destructive: re-authenticate with the password
+    'password': (True, _password_shape),
+}
+
+EMPTY_SCHEMA = {}  # body must be {} — unknown keys still 400
+
 
 def validate(body, schema):
     """Strict whitelist: unknown key, missing required or bad value -> error name."""
@@ -420,6 +433,8 @@ def insert(table, cols, vals, path=DB_PATH):
 
 RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated (events)
     '/v1/auth/signup': 'auth', '/v1/auth/login': 'auth', '/v1/auth/logout': 'auth',
+    '/v1/account/password': 'auth', '/v1/account/logout-all': 'auth',
+    '/v1/account/delete': 'auth',
     '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
 }
 RATE_DEFAULTS = {'auth': '30/60', 'events': '120/60'}
@@ -513,6 +528,8 @@ class Api(BaseHTTPRequestHandler):
                                     'recommended': models[0]['id'] if models else None})
         if path == '/v1/auth/me':
             return self._auth_me()
+        if path == '/v1/account/export':
+            return self._account_export()
         return self._json(404, {'error': 'not_found'})
 
     def do_POST(self):
@@ -524,6 +541,9 @@ class Api(BaseHTTPRequestHandler):
             '/v1/auth/signup': self._auth_signup,
             '/v1/auth/login': self._auth_login,
             '/v1/auth/logout': self._auth_logout,
+            '/v1/account/password': self._account_password,
+            '/v1/account/logout-all': self._account_logout_all,
+            '/v1/account/delete': self._account_delete,
         }
         h = handlers.get(self.path)
         if not h:
@@ -650,6 +670,108 @@ class Api(BaseHTTPRequestHandler):
             return self._json(401, {'error': 'not_logged_in'})
         return self._json(200, {'ok': True,
                                 'user': {'name': row[1], 'email': row[2], 'plan': row[3]}})
+
+    # -- account self-service (docs/22 P1: the privacy policy's promises, executable) --
+    def _verify_password(self, con, user_id, password):
+        """Constant-work re-auth for sensitive operations."""
+        row = con.execute('SELECT pw_salt, pw_hash FROM users WHERE id = ?', (user_id,)).fetchone()
+        salt = row[0] if row else b'\x00' * 16
+        _, pw = hash_password(password, salt)
+        return bool(row) and hmac.compare_digest(pw, row[1])
+
+    def _account_password(self, body):
+        err = validate(body, PASSWORD_CHANGE_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        token = self._bearer()
+        con = users_con()
+        try:
+            row = session_user(con, token)
+            if not row:
+                return self._json(401, {'error': 'not_logged_in'})
+            if not self._verify_password(con, row[0], body['current_password']):
+                return self._json(403, {'error': 'bad_credentials'})
+            salt, pw = hash_password(body['new_password'])
+            con.execute('UPDATE users SET pw_salt = ?, pw_hash = ? WHERE id = ?',
+                        (salt, pw, row[0]))
+            # rotate EVERYTHING: every pre-change token dies — including the one
+            # this request rode in on (a stolen copy of it must not outlive the
+            # password). The caller gets a fresh token minted in the same
+            # transaction and swaps it into sessionStorage.
+            cur = con.execute('DELETE FROM sessions WHERE user_id = ?', (row[0],))
+            new_token = create_session(con, row[0])
+            con.commit()
+            return self._json(200, {'ok': True, 'revoked_sessions': cur.rowcount,
+                                    'token': new_token})
+        finally:
+            con.close()
+
+    def _account_logout_all(self, body):
+        err = validate(body, EMPTY_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        con = users_con()
+        try:
+            row = session_user(con, self._bearer())
+            if not row:
+                return self._json(401, {'error': 'not_logged_in'})
+            cur = con.execute('DELETE FROM sessions WHERE user_id = ?', (row[0],))
+            con.commit()
+            return self._json(200, {'ok': True, 'revoked_sessions': cur.rowcount})
+        finally:
+            con.close()
+
+    def _account_export(self):
+        """CCPA portability: everything the identity store holds, secrets excluded
+        (password material and session token hashes are security data, not
+        personal data). Telemetry is anonymous by design and cannot be linked."""
+        token = self._bearer()
+        con = users_con()
+        try:
+            row = session_user(con, token)
+            if not row:
+                return self._json(401, {'error': 'not_logged_in'})
+            u = con.execute('SELECT ts, name, email, company, plan, plan_intent, tos '
+                            'FROM users WHERE id = ?', (row[0],)).fetchone()
+            sess = con.execute('SELECT ts, expires, token_hash FROM sessions WHERE user_id = ? '
+                               'ORDER BY ts', (row[0],)).fetchall()
+        finally:
+            con.close()
+        return self._json(200, {
+            'ok': True,
+            'exported_at': int(time.time()),
+            'user': {'created_ts': u[0], 'name': u[1], 'email': u[2], 'company': u[3],
+                     'plan': u[4], 'plan_intent': u[5], 'tos_accepted': u[6]},
+            'sessions': [{'created_ts': s[0], 'expires_ts': s[1],
+                          'current': s[2] == _token_hash(token)} for s in sess],
+            'note': 'Telemetry and feedback are anonymous, schema-whitelisted events '
+                    'with no link to your identity — there is nothing to export there.',
+        })
+
+    def _account_delete(self, body):
+        err = validate(body, DELETE_ACCOUNT_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        con = users_con()
+        try:
+            row = session_user(con, self._bearer())
+            if not row:
+                return self._json(401, {'error': 'not_logged_in'})
+            if not self._verify_password(con, row[0], body['password']):
+                return self._json(403, {'error': 'bad_credentials'})
+            # file-level erasure, matching the repo's auditability ethos: freed
+            # pages are zeroed (secure_delete) and the file compacted (VACUUM)
+            con.execute('PRAGMA secure_delete = ON')
+            con.execute('DELETE FROM sessions WHERE user_id = ?', (row[0],))
+            con.execute('DELETE FROM users WHERE id = ?', (row[0],))
+            con.commit()
+            try:  # compaction is best-effort: the delete is already durable and
+                con.execute('VACUUM')  # secure_delete has zeroed the freed pages
+            except sqlite3.OperationalError:
+                pass
+            return self._json(200, {'ok': True, 'deleted': True})
+        finally:
+            con.close()
 
 
 def create_server(port=8940, host='127.0.0.1'):

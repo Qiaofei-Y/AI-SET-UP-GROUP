@@ -481,7 +481,12 @@
     signup: function (body, cb) { authCall('/v1/auth/signup', body, null, cb); },
     login: function (body, cb) { authCall('/v1/auth/login', body, null, cb); },
     me: function (token, cb) { authCall('/v1/auth/me', null, token, cb); },
-    logout: function (token, cb) { authCall('/v1/auth/logout', {}, token, cb); }
+    logout: function (token, cb) { authCall('/v1/auth/logout', {}, token, cb); },
+    // account self-service (dashboard) — the privacy policy's promises, live
+    changePassword: function (token, body, cb) { authCall('/v1/account/password', body, token, cb); },
+    logoutAll: function (token, cb) { authCall('/v1/account/logout-all', {}, token, cb); },
+    exportData: function (token, cb) { authCall('/v1/account/export', null, token, cb); },
+    deleteAccount: function (token, body, cb) { authCall('/v1/account/delete', body, token, cb); }
   };
 
   window.LocalLLM = {
