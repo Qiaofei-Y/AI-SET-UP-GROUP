@@ -100,3 +100,4 @@
 .kfile .m{flex:1;min-width:0}.kfile .m h4{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kfile .m p{font-size:11px;color:var(--ink-2)}
 
 .chat-msg.a .chat-bub{white-space:pre-wrap}
+.kpanel-note{font-family:var(--mono);font-size:11px;color:var(--ink-2);padding:8px 18px 0;line-height:1.5}

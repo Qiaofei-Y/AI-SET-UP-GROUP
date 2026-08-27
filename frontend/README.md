@@ -13,9 +13,9 @@
 | `deploy.html` | **部署方式(独立页)**:本地/云端/混合详解 + 场景选型对照 |
 | `pricing.html` | **价格(独立页)**:Beta 免费横幅 + 三档价格 + 价格常见问题 |
 | `build.html` | **引导流程**:需求(6 个模板,与模板页一致)→ 设备 → 推荐方案 → 本地/云端/混合 → 生成**真实可用**的 Ollama 引导安装包 + 分步指南 / 云端手册(混合两者都给);SmartScreen 提示、人话版预览(可切原始脚本)、「即将推出」诚实徽标 |
-| `dashboard.html` | **Control Center 演示**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI);未登录出登录墙,`/v1/auth/me` 验证通过才放行(P0-14) |
-| `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库) |
-| `signup.html` | **注册/登录页**:Pro/Business 创建免费账号解锁全部功能;`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;注册需勾选条款(clickwrap,服务端留痕);账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
+| `dashboard.html` | **Control Center 预览**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI),**全页示例数据并明确标注**(顶栏横幅 + 各卡 sample 徽标,无假进度/假更新提醒);未登录出登录墙,`/v1/auth/me` 验证通过才放行(P0-14) |
+| `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库,示例内容明确标注;纠正/拖放为预览,不假装学习或索引) |
+| `signup.html` | **注册/登录页**:Pro/Business 创建免费账号(Beta 期已上线功能全部免费,无门禁宣称);`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;注册需勾选条款(clickwrap,服务端留痕);账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
 | `privacy.html` / `terms.html` / `refunds.html` | **法律三件套(草案)**:隐私政策 / 服务条款 / 退款政策,双语,带「待律师审阅」横幅;全站页脚可达(docs/22 P0-5) |
 
 ## 代码分割(CSS / JS 各司其职)

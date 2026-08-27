@@ -48,14 +48,14 @@
       <div class="tmpl" data-need="data" role="radio" tabindex="0" aria-checked="false"><div class="ic">📊</div><h4 data-en="Data Analyst AI" data-zh="数据分析 AI">Data Analyst AI</h4><p data-en="Ask your spreadsheets in plain words" data-zh="用人话问你的表格">Ask your spreadsheets in plain words</p></div>
     </div>
     <div class="wizard-nav" style="justify-content:flex-end">
-      <button class="btn primary fx-btn-sweep" id="n0" data-en="Next: check my computer →" data-zh="下一步:检测电脑 →">Next: check my computer →</button>
+      <button class="btn primary fx-btn-sweep" id="n0" data-en="Next: about my computer →" data-zh="下一步:说说我的电脑 →">Next: about my computer →</button>
     </div>
   </div>
 
   <!-- STEP 1 : DEVICE -->
   <div class="panel hidden" id="step1">
     <h2 data-en="Tell us about your computer" data-zh="说说你的电脑">Tell us about your computer</h2>
-    <p class="lead" data-en="The installed app detects this automatically. Here, confirm your setup so we pick the right model." data-zh="安装后的应用会自动检测。这里请确认一下配置,好让我们挑对模型。">The installed app detects this automatically. Here, confirm your setup so we pick the right model.</p>
+    <p class="lead" data-en="Our upcoming desktop app will detect this automatically. For now, tell us your setup so we pick the right model." data-zh="即将推出的桌面应用会自动检测。现在请先填写你的配置,好让我们挑对模型。">Our upcoming desktop app will detect this automatically. For now, tell us your setup so we pick the right model.</p>
     <div class="fields">
       <div class="field"><label for="f_os" data-en="Operating system" data-zh="操作系统">Operating system</label>
         <select id="f_os"><option value="win11">Windows 11</option><option value="win10">Windows 10</option><option value="mac" disabled data-en="macOS — coming soon" data-zh="macOS——即将支持">macOS — coming soon</option></select></div>
@@ -85,7 +85,7 @@
         <div class="pick" id="recLocal" data-en="✦ RECOMMENDED" data-zh="✦ 推荐">✦ RECOMMENDED</div>
         <h3><span>💻</span> <span data-en="On this computer" data-zh="在这台电脑">On this computer</span></h3>
         <div class="tag" data-en="Private · free after setup · works offline" data-zh="私密 · 装好后免费 · 离线可用">Private · free after setup · works offline</div>
-        <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A one-click installer" data-zh="一键安装包">A one-click installer</b></div>
+        <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="A guided installer — works today" data-zh="引导式安装包——现已可用">A guided installer — works today</b></div>
         <div class="hidden" id="localGpuWarn" style="margin-top:10px;font-size:13px;color:var(--clay)" data-en="⚠ Local needs an NVIDIA graphics card — this computer doesn't have one." data-zh="⚠ 本地运行需要 NVIDIA 显卡——这台电脑没有。">⚠ Local needs an NVIDIA graphics card — this computer doesn't have one.</div>
       </div>
       <div class="opt" data-mode="cloud" role="radio" tabindex="0" aria-checked="false">
@@ -96,7 +96,7 @@
       </div>
       <div class="opt" data-mode="hybrid" role="radio" tabindex="0" aria-checked="false">
         <h3><span>🔗</span> <span data-en="Hybrid" data-zh="混合">Hybrid</span></h3>
-        <div class="tag" data-en="Local for private answers · cloud for heavy tasks · Pro (free during beta)" data-zh="私密回答走本地 · 繁重任务走云端 · Pro(Beta 期免费)">Local for private answers · cloud for heavy tasks · Pro (free during beta)</div>
+        <div class="tag" data-en="Local + cloud, two setups today · manual switching, auto-routing coming · Pro (free during beta)" data-zh="本地 + 云端两套配置 · 目前手动切换,自动分流即将推出 · Pro(Beta 期免费)">Local + cloud, two setups today · manual switching, auto-routing coming · Pro (free during beta)</div>
         <div class="kv"><span data-en="You'll get" data-zh="你将得到">You'll get</span><b data-en="Installer + cloud guide" data-zh="安装包 + 云端手册">Installer + cloud guide</b></div>
         <div class="hidden" id="hybridGpuWarn" style="margin-top:10px;font-size:13px;color:var(--clay)" data-en="⚠ The local half needs an NVIDIA graphics card — this computer doesn't have one." data-zh="⚠ 本地部分需要 NVIDIA 显卡——这台电脑没有。">⚠ The local half needs an NVIDIA graphics card — this computer doesn't have one.</div>
       </div>

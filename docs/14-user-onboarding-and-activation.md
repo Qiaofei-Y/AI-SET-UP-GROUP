@@ -407,7 +407,7 @@ Beta 期间,以上全部免费。注册免费账号即可解锁——无需信�
 [ 创建免费账号 ]        [ 以后再说 ]
 ```
 
-> 落点:所有升级 CTA 指向 **[frontend/signup.html](../frontend/signup.html)**(注册页,已有 "Unlock all features" / "Create free account" / "You're on the beta list!" 文案)。Business 注册需**填写公司名**(见 §8)。
+> 落点:所有升级 CTA 指向 **[frontend/signup.html](../frontend/signup.html)**(注册页,现文案为 "Everything that's live, free during beta" / "Create free account" / "You're on the beta list!"——P0-6 诚实化后不再宣称「解锁」,门禁上线后再恢复本节的解锁话术)。Business 注册需**填写公司名**(见 §8)。
 
 ### 7.3 升级引导的禁忌
 

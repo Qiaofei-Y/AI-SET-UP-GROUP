@@ -141,9 +141,9 @@
       '<details class="adv"><summary>' + t('Advanced (for the technical)', '高级模式(给懂技术的人看)') + '</summary><table>' +
         row(t('Recommended model', '推荐模型'), p.model.name + ' (' + p.model.quant + ')') +
         (isHybrid ? row(t('Cloud escalation model', '云端升级模型'), pickModel('24').name) : '') +
-        row(t('Runtime', '推理运行时'), 'llama.cpp server (CUDA)') +
-        row(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('On · bge-base-en + local vector store', '开启 · bge-base-en + 本地向量库') : t('Off', '关闭')) +
-        row(t('Source', '下载来源'), 'huggingface.co / ' + p.model.repo) +
+        row(t('Runtime', '推理运行时'), STATE.mode === 'cloud' ? 'llama.cpp server (CUDA)' : t('Ollama (llama.cpp-based)', 'Ollama(基于 llama.cpp)')) +
+        row(t('Knowledge / RAG', '知识库 / RAG'), p.rag ? t('Planned — ships with the desktop app (bge-base-en + local vector store)', '规划中——随桌面应用推出(bge-base-en + 本地向量库)') : t('Off', '关闭')) +
+        row(t('Source', '下载来源'), STATE.mode === 'cloud' ? 'huggingface.co / ' + p.model.repo : 'ollama.com / ' + (p.model.ollama || '')) +
       '</table></details>';
     syncModeCards();
   }

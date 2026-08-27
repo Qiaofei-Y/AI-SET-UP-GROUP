@@ -28,7 +28,7 @@
     'You are "Build My AI", a private AI assistant running fully on this computer. ' +
     'Be concise and helpful. Always reply in the same language as the user\'s last message ' +
     '(Chinese for Chinese, English for English). Plain text only — no markdown headings.';
-  var TITLE_DEMO = { en: 'My Company Knowledge AI · running locally', zh: '我的公司知识 AI · 本地运行' };
+  var TITLE_DEMO = { en: 'My Company Knowledge AI · demo preview', zh: '我的公司知识 AI · 演示预览' };
   var TITLE_CHAT = { en: 'My Local AI · general chat (no knowledge base yet)', zh: '我的本地 AI · 通用问答(暂未接知识库)' };
   var TITLE_RAG = { en: 'Project Knowledge AI · local RAG', zh: '项目知识 AI · 本地 RAG' };
   // suggested questions that the indexed project corpus can actually answer

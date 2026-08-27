@@ -24,12 +24,12 @@
   ];
   var KBBYID = {}; KB.forEach(function (e) { KBBYID[e.id] = e; });
   var FALLBACK = {
-    en: "I couldn't find that in your files. Try the Supplier A contract, the Q2 inventory report, or the purchase approval policy — or add more documents from the Knowledge panel (top right).",
-    zh: '我在你的文件里没找到相关内容。可以问 A 供应商合同、Q2 库存报表、或采购审批制度——也可以从右上角"知识库"面板添加更多文档。'
+    en: "I couldn't find that in the sample files. Try the Supplier A contract, the Q2 inventory report, or the purchase approval policy. (The Knowledge panel is a preview — adding files there doesn't expand answers yet.)",
+    zh: '我在示例文件里没找到相关内容。可以问 A 供应商合同、Q2 库存报表、或采购审批制度。(右上角"知识库"面板为预览,添加文件暂不会扩充可回答范围。)'
   };
   var GREET = {
-    en: "Hi! I've read your documents. Ask me anything about your contracts, reports or policies — I'll answer with the source.",
-    zh: '你好!我已经读完你的文件。关于合同、报表或制度尽管问——我会带来源回答。'
+    en: "Hi! This demo has read a small sample knowledge base. Ask about the sample contracts, reports or policies — I'll answer with the source.",
+    zh: '你好!这个演示已读完一小份示例知识库。示例合同、报表或制度的问题尽管问——我会带来源回答。'
   };
   var CONVERSATIONS = {
     proc: [ { r: 'u', en: "For our 2024 contract with Supplier A, what's the payment cycle?", zh: '2024 年和 A 供应商的合同,付款周期是多少天?' }, { r: 'a', key: 'payment' } ],
@@ -48,7 +48,7 @@
     { t: 'pdf', en: 'Delivery_Terms.pdf', zh: '交付条款.pdf', me: '540 KB · 6 pages', mz: '540 KB · 6 页', st: 'ok' }
   ];
   var NEWNAMES = [ { en: 'NDA_2025.pdf', zh: '保密协议_2025.pdf' }, { en: 'Vendor_List.xlsx', zh: '供应商清单.xlsx' }, { en: 'Board_Minutes.docx', zh: '董事会纪要.docx' } ];
-  var newIdx = 0, fileCount = 12, teachCount = 317, activeStream = null, toastT = null;
+  var newIdx = 0, fileCount = 12, activeStream = null, toastT = null;
 
   function lang() { return window.__lang === 'zh' ? 'zh' : 'en'; }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&#39;'); }
@@ -125,7 +125,7 @@
       if (up.classList.contains('on')) { up.classList.remove('on'); return; }
       up.classList.add('on'); down.classList.remove('on');
       document.dispatchEvent(new CustomEvent('chat-feedback', { detail: { rating: 'up' } }));
-      toast(t('Thanks — logged as a good answer.', '已记录为满意回答。'));
+      toast(t('Thanks for the feedback.', '感谢你的反馈。'));
     };
     down.onclick = function () {
       if (down.classList.contains('on')) { down.classList.remove('on'); return; }
@@ -141,16 +141,17 @@
     if (col.querySelector('.teach-box')) return;
     var box = document.createElement('div'); box.className = 'teach-box';
     var lbl = document.createElement('div'); lbl.className = 'lbl';
-    lbl.setAttribute('data-en', "What's the correct answer? Your AI will learn from it.");
-    lbl.setAttribute('data-zh', '正确答案是什么？你的 AI 会从中学习。');
-    lbl.textContent = lang() === 'zh' ? '正确答案是什么？你的 AI 会从中学习。' : "What's the correct answer? Your AI will learn from it.";
+    lbl.setAttribute('data-en', "What should the answer have been? Teach My AI (coming soon) will train on corrections — this preview doesn't save them yet.");
+    lbl.setAttribute('data-zh', '正确答案应该是什么？Teach My AI(即将推出)会用纠正做训练——当前预览暂不保存。');
+    lbl.textContent = lang() === 'zh' ? '正确答案应该是什么？Teach My AI(即将推出)会用纠正做训练——当前预览暂不保存。'
+      : "What should the answer have been? Teach My AI (coming soon) will train on corrections — this preview doesn't save them yet.";
     var ta = document.createElement('textarea'); ta.setAttribute('data-en-ph', 'Type the correct answer…'); ta.setAttribute('data-zh-ph', '输入正确答案…');
     ta.placeholder = lang() === 'zh' ? '输入正确答案…' : 'Type the correct answer…';
     var row = document.createElement('div'); row.className = 'row';
     var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'mini cancel'; cancel.setAttribute('data-en', 'Cancel'); cancel.setAttribute('data-zh', '取消'); cancel.textContent = lang() === 'zh' ? '取消' : 'Cancel';
-    var save = document.createElement('button'); save.type = 'button'; save.className = 'mini save'; save.setAttribute('data-en', 'Save correction'); save.setAttribute('data-zh', '保存纠正'); save.textContent = lang() === 'zh' ? '保存纠正' : 'Save correction';
+    var save = document.createElement('button'); save.type = 'button'; save.className = 'mini save'; save.setAttribute('data-en', 'Got it'); save.setAttribute('data-zh', '知道了'); save.textContent = lang() === 'zh' ? '知道了' : 'Got it';
     cancel.onclick = function () { box.remove(); };
-    save.onclick = function () { teachCount++; box.remove(); toast(t('Saved — your AI will learn from this.', '已保存 — 你的 AI 会从中学习。') + ' (Teach My AI: ' + teachCount + '/500)'); };
+    save.onclick = function () { box.remove(); toast(t('Thanks — Teach My AI is coming soon; this preview does not train your AI yet.', '谢谢——Teach My AI 即将推出;当前预览不会训练你的 AI。')); };
     row.appendChild(cancel); row.appendChild(save);
     box.appendChild(lbl); box.appendChild(ta); box.appendChild(row);
     col.appendChild(box); ta.focus(); toBottom();
@@ -305,10 +306,10 @@
     var ext = n.en.split('.').pop(); var type = ext === 'xlsx' ? 'xls' : ext === 'docx' ? 'doc' : 'pdf';
     var f = { t: type, en: n.en, zh: n.zh, me: 'just added', mz: '刚添加', st: 'indexing' };
     FILES.unshift(f); renderFiles();
-    toast(t('Reading & indexing ' + n.en + '…', '正在读取并索引 ' + n.zh + '…'));
+    toast(t('Adding sample file ' + n.en + ' (preview)…', '正在添加示例文件 ' + n.zh + '(预览)…'));
     setTimeout(function () {
-      f.st = 'ok'; f.me = 'indexed just now'; f.mz = '刚刚索引完成'; fileCount++; renderFiles(); setCount();
-      toast(t('Indexed — your AI can now use ' + n.en + '.', '已索引 — 你的 AI 现在能用 ' + n.zh + ' 了。'));
+      f.st = 'ok'; f.me = 'sample · added just now'; f.mz = '示例 · 刚刚添加'; fileCount++; renderFiles(); setCount();
+      toast(t('Sample file added (preview) — real document indexing ships with the desktop app.', '已添加示例文件(预览)——真实的文档索引将随桌面应用推出。'));
     }, 1300);
   }
   function openK() {
@@ -372,7 +373,13 @@
         drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('drag'); });
       });
       drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
-      drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); addFile(); });
+      drop.addEventListener('drop', function (e) {
+        e.preventDefault(); drop.classList.remove('drag');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          toast(t('Nothing was read or uploaded — this drop zone is a preview.', '未读取、未上传任何文件——此拖放区为预览。'));
+        }
+        addFile();
+      });
     }
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
