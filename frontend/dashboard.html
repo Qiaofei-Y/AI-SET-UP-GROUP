@@ -87,6 +87,36 @@
         <div class="ch"><h3>🎓 <span data-en="Teach My AI" data-zh="教我的 AI">Teach My AI</span></h3><span class="badge gray" data-en="◷ Coming soon" data-zh="◷ 即将推出">◷ Coming soon</span></div>
         <p style="font-size:12.5px;color:var(--ink-2);margin-bottom:4px" data-en="When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet." data-zh="Teach My AI 上线后,你的纠正会在这里累积——攒够 500 条,就为你微调一个更聪明的版本。目前尚未收集任何内容。">When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet.</p>
       </div>
+
+      <!-- account self-service: the LIVE card on this preview page (privacy policy, executable) -->
+      <div class="dcard span2 fx-card" id="acctCard">
+        <div class="ch"><h3>🛡️ <span data-en="Account" data-zh="账号">Account</span></h3><span class="badge teal" data-en="● live — these actions are real" data-zh="● 真实功能——这些操作是真的">● live — these actions are real</span></div>
+        <div class="acct-grid">
+          <div class="acct-col">
+            <div class="acct-lbl" data-en="CHANGE PASSWORD" data-zh="修改密码">CHANGE PASSWORD</div>
+            <input id="pwCur" type="password" autocomplete="current-password" data-en-ph="Current password" data-zh-ph="当前密码" placeholder="Current password">
+            <input id="pwNew" type="password" autocomplete="new-password" data-en-ph="New password (min 8 characters)" data-zh-ph="新密码(至少 8 位)" placeholder="New password (min 8 characters)">
+            <button type="button" class="btn ghost" id="pwBtn" data-en="Change password" data-zh="修改密码">Change password</button>
+            <div class="acct-msg" id="pwMsg" role="alert"></div>
+          </div>
+          <div class="acct-col">
+            <div class="acct-lbl" data-en="YOUR DATA &amp; SESSIONS" data-zh="你的数据与登录">YOUR DATA &amp; SESSIONS</div>
+            <button type="button" class="btn ghost" id="exportBtn" data-en="⬇ Export my data (.json)" data-zh="⬇ 导出我的数据 (.json)">⬇ Export my data (.json)</button>
+            <button type="button" class="btn ghost" id="outAllBtn" data-en="Sign out on all devices" data-zh="在所有设备上退出登录">Sign out on all devices</button>
+            <button type="button" class="btn ghost danger" id="delBtn" data-en="Delete my account…" data-zh="删除我的账号…">Delete my account…</button>
+            <div class="acct-msg" id="acctMsg" role="alert"></div>
+            <div class="acct-danger hidden" id="delConfirm">
+              <p data-en="This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm." data-zh="这将把你的账号与登录记录从本地数据库中永久抹除(文件级清零并压缩),无法撤销。输入密码以确认。">This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm.</p>
+              <input id="delPw" type="password" autocomplete="current-password" data-en-ph="Your password" data-zh-ph="你的密码" placeholder="Your password">
+              <div class="acct-danger-row">
+                <button type="button" class="btn ghost" id="delCancel" data-en="Cancel" data-zh="取消">Cancel</button>
+                <button type="button" class="btn ghost danger" id="delGo" data-en="Permanently delete" data-zh="永久删除">Permanently delete</button>
+              </div>
+              <div class="acct-msg" id="delMsg" role="alert"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 </div></div>
@@ -148,11 +178,128 @@
 
   logoutBtn.addEventListener('click', function () {
     if (token && window.__bmaAuth) window.__bmaAuth.logout(token, function () {});
+    clearSession();
+    showLogin();
+  });
+
+  // ---- account self-service card (REAL actions against the local API) ----
+  function clearSession() {
     try {
       sessionStorage.removeItem('bma-session');
       sessionStorage.removeItem('bma-user');
     } catch (ignore) {}
-    showLogin();
+  }
+  function setMsg(id, en, zh, good) {
+    var el = document.getElementById(id);
+    el.setAttribute('data-en', en); el.setAttribute('data-zh', zh);
+    el.textContent = t(en, zh);
+    el.classList.toggle('good', !!good);
+  }
+  var OFFLINE_EN = "Can't reach the account service — try again in a moment.";
+  var OFFLINE_ZH = '暂时连不上账号服务,请稍后重试。';
+  var acctBusy = false; // one in-flight account action at a time — no double-click races
+  function pwShape(v) { return v.length >= 8 && v.length <= 128; }
+  // shared non-success renderer: 401 fails closed back to the gate (P0-14),
+  // 429 says throttled, everything else is honestly "unreachable"
+  function renderErr(id, res, badPwEn, badPwZh) {
+    if (res && res.status === 401) { clearSession(); showLogin(); return; }
+    if (res && res.status === 403) { setMsg(id, badPwEn, badPwZh); return; }
+    if (res && res.status === 429) {
+      setMsg(id, 'Too many attempts — wait a minute and try again.', '尝试次数过多,请稍等一分钟再试。');
+      return;
+    }
+    setMsg(id, OFFLINE_EN, OFFLINE_ZH);
+  }
+
+  document.getElementById('pwBtn').addEventListener('click', function () {
+    var cur = document.getElementById('pwCur'), nw = document.getElementById('pwNew');
+    if (!pwShape(cur.value) || !pwShape(nw.value)) {
+      setMsg('pwMsg', 'Passwords must be 8–128 characters.', '密码需为 8–128 位。');
+      return;
+    }
+    if (acctBusy) return;
+    acctBusy = true;
+    window.__bmaAuth.changePassword(token, { current_password: cur.value, new_password: nw.value },
+      function (err, res) {
+        acctBusy = false;
+        if (err) { setMsg('pwMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+        if (res.status === 200 && res.json.ok) {
+          // the server rotated every session, including this one — adopt the new token
+          if (res.json.token) {
+            token = res.json.token;
+            try { sessionStorage.setItem('bma-session', token); } catch (ignore) {}
+          }
+          cur.value = ''; nw.value = '';
+          setMsg('pwMsg', 'Password changed — all other devices were signed out.',
+                 '密码已修改——其他所有设备已退出登录。', true);
+          return;
+        }
+        renderErr('pwMsg', res, 'Current password is incorrect.', '当前密码不正确。');
+      });
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', function () {
+    if (acctBusy) return;
+    acctBusy = true;
+    window.__bmaAuth.exportData(token, function (err, res) {
+      acctBusy = false;
+      if (err) { setMsg('acctMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+      if (res.status !== 200 || !res.json.ok) {
+        renderErr('acctMsg', res, OFFLINE_EN, OFFLINE_ZH);
+        return;
+      }
+      var blob = new Blob([JSON.stringify(res.json, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'build-my-ai-account-data.json';
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+      setMsg('acctMsg', 'Your data was downloaded as build-my-ai-account-data.json.',
+             '你的数据已下载为 build-my-ai-account-data.json。', true);
+    });
+  });
+
+  document.getElementById('outAllBtn').addEventListener('click', function () {
+    if (acctBusy) return;
+    acctBusy = true;
+    window.__bmaAuth.logoutAll(token, function (err, res) {
+      acctBusy = false;
+      if (err) { setMsg('acctMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+      if (res.status === 200 || res.status === 401) { // revoked either way: fail closed
+        clearSession();
+        showLogin();
+        return;
+      }
+      renderErr('acctMsg', res, OFFLINE_EN, OFFLINE_ZH);
+    });
+  });
+
+  var delConfirm = document.getElementById('delConfirm');
+  document.getElementById('delBtn').addEventListener('click', function () {
+    delConfirm.classList.toggle('hidden');
+  });
+  document.getElementById('delCancel').addEventListener('click', function () {
+    delConfirm.classList.add('hidden');
+    document.getElementById('delPw').value = '';
+  });
+  document.getElementById('delGo').addEventListener('click', function () {
+    var pw = document.getElementById('delPw');
+    if (!pwShape(pw.value)) {
+      setMsg('delMsg', 'Enter your password to confirm.', '请输入密码以确认。');
+      return;
+    }
+    if (acctBusy) return;
+    acctBusy = true;
+    window.__bmaAuth.deleteAccount(token, { password: pw.value }, function (err, res) {
+      acctBusy = false;
+      if (err) { setMsg('delMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+      if (res.status === 200 && res.json.deleted) {
+        clearSession();
+        showLogin(); // the gate returns; the account no longer exists
+        return;
+      }
+      renderErr('delMsg', res, 'Password is incorrect.', '密码不正确。');
+    });
   });
 })();
 
