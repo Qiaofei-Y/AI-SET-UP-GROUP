@@ -11,13 +11,17 @@
 //           accounts. On a local page it's :8940 on this machine; on a real
 //           domain it's SAME-ORIGIN relative (reverse proxy forwards /v1/*,
 //           docs/22 P0-13) — no other host is ever constructible.
-// chat.html ladder: RAG (portal up) > general chat (8080 up) > canned demo.
+//   OLLAMA  :11434 the engine our guided installer sets up (OpenAI-compatible
+//                  /v1) — the chat fallback rung when llm-lab isn't running,
+//                  so a user who completed the real install can chat right here
+// chat.html ladder: RAG (portal up) > general chat (8080) > Ollama (11434) > demo.
 // build.html: the need box is classified into a template slug by ADVISOR/BASE.
 // All model output is rendered via textContent — no HTML injection path.
 (function () {
   var BASE = 'http://127.0.0.1:8080';
   var PORTAL = 'http://127.0.0.1:8090';
   var ADVISOR = 'http://127.0.0.1:8092';
+  var OLLAMA = 'http://127.0.0.1:11434';
   var LOCAL_PAGE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var API = LOCAL_PAGE ? 'http://127.0.0.1:8940' : '';
   var SYSTEM =
@@ -35,7 +39,7 @@
     { en: 'What is the product roadmap?', zh: '产品路线图是什么?' }
   ];
 
-  var isReady = false, ragUp = false, modelName = '', history = [];
+  var isReady = false, ragUp = false, ollamaUp = false, ollamaTag = '', modelName = '', history = [];
   // in-flight request bookkeeping: `gen` invalidates stale async completions,
   // `cur` holds the one active request ({ctrl, out, committed, userMsg}).
   var gen = 0, cur = null, probeTimer = null;
@@ -70,6 +74,12 @@
         'Connected · retrieval (bge-m3) + generation (' + modelName + ') run on this computer — answers cite the project docs.',
         '已连接 · 检索(bge-m3)+ 生成(' + modelName + ')全在本机——回答会引用项目文档。');
       setChips();
+    } else if (ollamaUp) {
+      setText('.modelchip', modelName + ' · Ollama', modelName + ' · Ollama');
+      setText('#chatTitle', TITLE_CHAT.en, TITLE_CHAT.zh);
+      setText('.chat-hint',
+        'Connected via Ollama · answers come from ' + modelName + ' running on this computer — nothing leaves your machine.',
+        '已通过 Ollama 连接 · 回答来自本机运行的 ' + modelName + '——数据不离开你的电脑。');
     } else {
       setText('.modelchip', modelName + ' · local', modelName + ' · 本地');
       setText('#chatTitle', TITLE_CHAT.en, TITLE_CHAT.zh);
@@ -103,6 +113,7 @@
         var m = j && (j.models || j.data);
         modelName = m && m[0] ? prettyModel(m[0].name || m[0].id || m[0].model) : 'Local model';
         isReady = true;
+        ollamaUp = false; // llm-lab has priority — it carries the RAG portal
         // chat model is up — now see if the RAG portal is too
         var pc2 = new AbortController();
         var timer2 = setTimeout(function () { pc2.abort(); }, 1500);
@@ -122,11 +133,46 @@
         }
         if (!ragUp) scheduleReprobe(); // keep trying to pick the portal up
       })
-      .catch(function () { clearTimeout(timer); isReady = false; scheduleReprobe(); });
+      .catch(function () {
+        clearTimeout(timer);
+        isReady = ollamaUp; // stay ready while the Ollama rung holds — no demo-answer flicker mid-reprobe
+        probeOllama();
+      });
+  }
+
+  // Fallback rung: the Ollama engine our guided installer sets up (:11434,
+  // OpenAI-compatible /v1). Only reached when llm-lab (8080) is down; the 15s
+  // reprobe keeps watching for the richer llm-lab stack (it carries RAG).
+  function probeOllama() {
+    var pc = new AbortController();
+    var timer = setTimeout(function () { pc.abort(); }, 1500);
+    var wasUp = ollamaUp;
+    fetch(OLLAMA + '/v1/models', { signal: pc.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(timer);
+        var ids = ((j && j.data) || []).map(function (x) { return String(x.id || x.name || ''); }).filter(Boolean);
+        if (!ids.length) throw new Error('no models installed');
+        // prefer an instruct model (what the guided installer pulls), else the first
+        ollamaTag = ids.filter(function (id) { return /instruct/i.test(id); })[0] || ids[0];
+        modelName = prettyModel(ollamaTag);
+        ollamaUp = true; isReady = true; ragUp = false;
+        setChip();
+        if (!wasUp) {
+          toast(t('Local AI connected via Ollama: ' + modelName + ' — answers now come from your own AI.',
+                  '已通过 Ollama 连接本地 AI:' + modelName + '——回答来自你自己的 AI。'));
+        }
+        scheduleReprobe();
+      })
+      .catch(function () {
+        clearTimeout(timer);
+        if (wasUp) { goOffline(); }              // Ollama died: full offline handling + chip
+        else { ollamaUp = false; isReady = false; scheduleReprobe(); }
+      });
   }
 
   function goOffline() {
-    isReady = false; ragUp = false; setChipOffline(); scheduleReprobe();
+    isReady = false; ragUp = false; ollamaUp = false; setChipOffline(); scheduleReprobe();
   }
 
   // Synchronously settle the in-flight request at interrupt time, BEFORE the
@@ -212,23 +258,35 @@
     function stale() { return gen !== me.gen || me.committed; }
 
     var res;
+    var viaOllama = ollamaUp; // freeze the rung for this request's whole lifecycle
     try {
-      res = await fetch(BASE + '/v1/chat/completions', {
+      var payload = {
+        stream: true, temperature: 0.6, max_tokens: 512,
+        messages: [{ role: 'system', content: SYSTEM }].concat(history)
+      };
+      if (viaOllama) payload.model = ollamaTag; // Ollama requires the tag; llama.cpp serves its loaded model
+      var opts = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: me.ctrl.signal,
-        body: JSON.stringify({
-          stream: true, temperature: 0.6, max_tokens: 512,
-          messages: [{ role: 'system', content: SYSTEM }].concat(history)
-        })
-      });
+        body: JSON.stringify(payload)
+      };
+      // two literal fetches on purpose: the security suite proves every fetch
+      // starts with a pinned constant (docs/18 §3 precedent)
+      res = await (viaOllama ? fetch(OLLAMA + '/v1/chat/completions', opts)
+                             : fetch(BASE + '/v1/chat/completions', opts));
       if (!res.ok || !res.body) throw new Error('bad response ' + (res && res.status));
     } catch (e) {
       if (cur === me) cur = null;
       if (e && e.name === 'AbortError') { live.done(); return; } // interrupt already settled by commitCurrent()
       if (!stale()) { commitCurrent(); goOffline(); }            // drops the dangling user turn
-      live.fail('(Local model unreachable — back to demo answers. Is `ai` still running?)',
-                '(本地模型连不上——已切回演示回答。`ai` 服务还在跑吗?)');
+      if (viaOllama) {
+        live.fail('(Ollama unreachable — back to demo answers. It starts automatically after a restart.)',
+                  '(Ollama 连不上——已切回演示回答。重启电脑后 Ollama 会自动启动。)');
+      } else {
+        live.fail('(Local model unreachable — back to demo answers. Is `ai` still running?)',
+                  '(本地模型连不上——已切回演示回答。`ai` 服务还在跑吗?)');
+      }
       return;
     }
 

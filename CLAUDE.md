@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(130 项,含 pickModel↔registry 同步校验与生成物实跑断言)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(131 项,含 pickModel↔registry 同步校验与生成物实跑断言)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931
@@ -43,7 +43,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 `frontend/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
 - **全站只有 `frontend/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
-- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)必须各只赋值一次、指向 `127.0.0.1`;`API` 是被测试锁形的条件式——localhost 页面为 `127.0.0.1:8940`,部署页面为 `''`(同源相对,反代转 `/v1/*`,P0-13);每个 `fetch` 必须以四常量之一开头;不允许出现其他 URL 字面量。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)/`OLLAMA`(11434,引导安装的引擎)必须各只赋值一次、指向 `127.0.0.1`;`API` 是被测试锁形的条件式——localhost 页面为 `127.0.0.1:8940`,部署页面为 `''`(同源相对,反代转 `/v1/*`,P0-13);每个 `fetch` 必须以五常量之一开头;不允许出现其他 URL 字面量。
 - `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
 - 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。
@@ -56,7 +56,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 
 **双语 i18n**(`assets/i18n.js`):HTML 元素用 `data-en`/`data-zh` 属性(占位符用 `data-en-ph`/`data-zh-ph`),JS 生成的字符串用全局 `t(en, zh)`;当前语言在 `window.__lang`,切换派发 `langchange` 事件。**任何新增的可见文案都必须成对提供中英文。**
 
-**聊天页三档模式**(`chat.html`,详见 `docs/16`):`chat.js` 负责 UI 并暴露 `__chatLive` 接口;`local-llm.js` 加载时探测本机 llm-lab,按可用性走阶梯——① 项目 RAG(8080+8090 都在,回答带引用卡,检索不到自动降级)→ ② 通用流式聊天(仅 8080,SSE,最近 12 条上下文)→ ③ 静态演示(内置小样本答案)。断线每 15 秒重探。
+**聊天页四档模式**(`chat.html`,详见 `docs/16`):`chat.js` 负责 UI 并暴露 `__chatLive` 接口;`local-llm.js` 加载时探测本机服务,按可用性走阶梯——① 项目 RAG(8080+8090 都在,回答带引用卡,检索不到自动降级)→ ② 通用流式聊天(仅 8080,SSE,最近 12 条上下文)→ ③ **Ollama 回退档**(11434,引导安装包装好的引擎;必须带钉版模型 tag)→ ④ 静态演示(内置小样本答案)。断线每 15 秒重探,llm-lab 恢复即优先。
 
 **打断语义是连接器最易错的部分**:每个请求持独立 `AbortController` + 全局代数计数器 `gen`,过期请求的一切异步收尾都要先判 stale 才能碰共享状态;用户打断时同步提交半截回答进历史、没流出内容就删掉悬空 user 轮,保证 messages 永远是干净交替。改 `local-llm.js` 的请求生命周期前先读 `docs/16-local-ai-web-integration.md` 第 4 节。
 

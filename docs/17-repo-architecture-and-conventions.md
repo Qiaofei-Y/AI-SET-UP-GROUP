@@ -34,6 +34,7 @@ AI-SET-UP-GROUP/
 | 8082 | Qwen2.5-Coder(尚未接入网页) | llm-lab |
 | 8090 | Michael AI Portal(`/api/rag`) | llm-lab |
 | 8092 | **预留顾问端口**——起任意 OpenAI 兼容服务即被 build 向导自动采用 | 用户自定 |
+| 11434 | Ollama(引导安装包装的引擎,OpenAI 兼容 `/v1`)——聊天页的回退档 | 用户自装 |
 
 新增端口必须更新本表、`docs/16`、CLAUDE.md 三处。
 

@@ -63,6 +63,8 @@ ok('local-llm.js: PORTAL pinned to 127.0.0.1 and assigned exactly once',
   /var PORTAL = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bPORTAL\s*=/g) || []).length === 1);
 ok('local-llm.js: ADVISOR pinned to 127.0.0.1 and assigned exactly once',
   /var ADVISOR = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bADVISOR\s*=/g) || []).length === 1);
+ok('local-llm.js: OLLAMA pinned to 127.0.0.1 and assigned exactly once',
+  /var OLLAMA = 'http:\/\/127\.0\.0\.1:11434'/.test(conn) && (conn.match(/\bOLLAMA\s*=/g) || []).length === 1);
 // P0-13 same-origin topology (docs/22): API may be EITHER the local loopback
 // literal (page served from localhost — dev/demo) OR the empty string (deployed
 // page — every call stays same-origin via the reverse proxy). The conditional
@@ -74,8 +76,8 @@ ok('local-llm.js: API is loopback (local page) or same-origin \'\' (deployed), a
   /var API = LOCAL_PAGE \? 'http:\/\/127\.0\.0\.1:\d+' : '';/.test(conn)
   && (conn.match(/\bAPI\s*=/g) || []).length === 1);
 const fetches = conn.match(/\bfetch\s*\(/g) || [];
-const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL|ADVISOR|API)\s*\+/g) || [];
-ok('local-llm.js: every fetch() targets BASE, PORTAL, ADVISOR or API (' + pinnedFetches.length + '/' + fetches.length + ')',
+const pinnedFetches = conn.match(/\bfetch\s*\(\s*(BASE|PORTAL|ADVISOR|OLLAMA|API)\s*\+/g) || [];
+ok('local-llm.js: every fetch() targets BASE, PORTAL, ADVISOR, OLLAMA or API (' + pinnedFetches.length + '/' + fetches.length + ')',
   fetches.length > 0 && fetches.length === pinnedFetches.length);
 ok('local-llm.js: no other URL literals besides 127.0.0.1', !/https?:\/\/(?!127\.0\.0\.1)/.test(conn));
 ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',
