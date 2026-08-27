@@ -175,6 +175,8 @@
 
       if (!auth) { errs.api = true; renderErrs(); return; }
       var body = { name: name, email: email, password: password,
+                   // requested plan = funnel intent only; the account always starts
+                   // on 'free' — entitlements are server-authoritative (P0-3)
                    plan: isBiz ? 'business' : 'pro',
                    accept_tos: true }; // clickwrap checked (validated above); server records the version
       if (isBiz) body.company = company;

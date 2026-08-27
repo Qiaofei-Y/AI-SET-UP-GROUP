@@ -329,8 +329,9 @@ class ApiTest(unittest.TestCase):
             'password': 'correct-horse-9', 'plan': 'pro', 'accept_tos': True})
         self.assertEqual((s, j['ok']), (200, True))
         self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
+        # P0-3: the requested plan never becomes the actual plan at signup
         self.assertEqual(j['user'], {'name': 'Ada Lovelace', 'email': 'ada@example.com',
-                                     'plan': 'pro'})
+                                     'plan': 'free'})
         s, j = self._call_auth('/v1/auth/me', token=j['token'])
         self.assertEqual((s, j['user']['email']), (200, 'ada@example.com'))
 
@@ -342,6 +343,29 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(s, 200)
         s, j = self._call_auth('/v1/auth/me', token=token)
         self.assertEqual((s, j['error']), (401, 'not_logged_in'))
+
+    def test_auth_plan_is_server_authoritative(self):
+        # P0-3: client-reported plan lands as intent only; entitlements start free
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Plan Probe', 'email': 'planprobe@example.com',
+            'password': 'longenough1', 'plan': 'business', 'accept_tos': True})
+        self.assertEqual((s, j['user']['plan']), (200, 'free'))
+        import sqlite3
+        con = sqlite3.connect(os.environ['BMA_USERS_DB'])
+        row = con.execute('SELECT plan, plan_intent FROM users WHERE email = ?',
+                          ('planprobe@example.com',)).fetchone()
+        con.close()
+        self.assertEqual(row, ('free', 'business'))
+        # the only upgrade path is the server-side set_plan()
+        self.assertTrue(server.set_plan('planprobe@example.com', 'pro'))
+        s, j = self._call_auth('/v1/auth/login',
+                               {'email': 'planprobe@example.com', 'password': 'longenough1'})
+        self.assertEqual((s, j['user']['plan']), (200, 'pro'))
+        s, j = self._call_auth('/v1/auth/me', token=j['token'])
+        self.assertEqual((s, j['user']['plan']), (200, 'pro'))
+        # guardrails: unknown user / bogus tier change nothing
+        self.assertFalse(server.set_plan('nobody@example.com', 'pro'))
+        self.assertFalse(server.set_plan('planprobe@example.com', 'enterprise'))
 
     def test_auth_duplicate_email_conflict(self):
         body = {'name': 'A', 'email': 'dup@example.com', 'password': 'longenough1', 'accept_tos': True}

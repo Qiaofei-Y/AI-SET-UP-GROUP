@@ -221,15 +221,35 @@ def init_users_db(path=None):
     con = sqlite3.connect(path)
     con.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
-        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT)''')
-    try:  # migrate pre-clickwrap databases
-        con.execute('ALTER TABLE users ADD COLUMN tos TEXT')
-    except sqlite3.OperationalError:
-        pass
+        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
+        plan_intent TEXT)''')
+    for migration in ('ALTER TABLE users ADD COLUMN tos TEXT',
+                      'ALTER TABLE users ADD COLUMN plan_intent TEXT'):
+        try:  # migrate databases created before these columns existed
+            con.execute(migration)
+        except sqlite3.OperationalError:
+            pass
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
     con.commit()
     con.close()
+
+
+def set_plan(email, plan):
+    """The ONLY way users.plan changes (P0-3): called by the future Stripe
+    webhook, and by the --set-plan ops CLI until then. Returns True if a row
+    was updated. Takes effect on the user's next /v1/auth/me (plan is read
+    per-request via JOIN — no session invalidation needed)."""
+    if plan not in ('free', 'pro', 'business'):
+        return False
+    con = users_con()
+    try:
+        cur = con.execute('UPDATE users SET plan = ? WHERE email = ?',
+                          (plan, (email or '').strip().lower()))
+        con.commit()
+        return cur.rowcount == 1
+    finally:
+        con.close()
 
 
 def create_session(con, user_id):
@@ -336,6 +356,9 @@ SIGNUP_SCHEMA = {
     'email':      (True,  _email_shape),
     'password':   (True,  _password_shape),
     'company':    (False, _identity_name),
+    # requested plan — recorded as INTENT only (funnel signal). Accounts always
+    # start on 'free'; users.plan changes solely server-side via set_plan()
+    # (future Stripe webhook / ops CLI). P0-3: no client-reported entitlements.
     'plan':       (False, _enum('free', 'pro', 'business')),
     # clickwrap (P0-5): consent must be explicit and true — the accepted policy
     # version + signup timestamp form the acceptance record in users.tos
@@ -567,11 +590,12 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             cur = con.execute(
-                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos) '
-                'VALUES (?,?,?,?,?,?,?,?)',
+                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos, plan_intent) '
+                'VALUES (?,?,?,?,?,?,?,?,?)',
                 (int(time.time()), body['name'].strip(), email,
                  (body.get('company') or '').strip() or None,
-                 body.get('plan', 'free'), salt, pw, TOS_VERSION))
+                 'free',  # P0-3: entitlements are server-authoritative — see set_plan()
+                 salt, pw, TOS_VERSION, body.get('plan')))
             token = create_session(con, cur.lastrowid)
             con.commit()
         except sqlite3.IntegrityError:
@@ -580,7 +604,7 @@ class Api(BaseHTTPRequestHandler):
             con.close()
         return self._json(200, {'ok': True, 'token': token,
                                 'user': {'name': body['name'].strip(), 'email': email,
-                                         'plan': body.get('plan', 'free')}})
+                                         'plan': 'free'}})
 
     def _auth_login(self, body):
         err = validate(body, LOGIN_SCHEMA)
@@ -647,9 +671,21 @@ def main():
                          'a non-default BMA_LICENSE_SECRET and a TLS reverse proxy in front)')
     ap.add_argument('--mint', metavar='TIER', choices=['pro', 'business'],
                     help='print a demo license key and exit')
+    ap.add_argument('--set-plan', nargs=2, metavar=('EMAIL', 'TIER'),
+                    help='ops: set a user\'s plan (free|pro|business) and exit — '
+                         'the only path that changes entitlements until the Stripe webhook ships')
     args = ap.parse_args()
     if args.mint:
         print(mint_license(args.mint))
+        return
+    if args.set_plan:
+        init_users_db()
+        email, tier = args.set_plan
+        if set_plan(email, tier):
+            print('plan set: %s -> %s' % (email, tier))
+        else:
+            print('no such user or invalid tier (free|pro|business): %s' % email)
+            raise SystemExit(1)
         return
     httpd = create_server(args.port, args.host)
     llm = os.environ.get('BMA_ADVISOR_LLM', '')
