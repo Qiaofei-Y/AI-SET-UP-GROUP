@@ -17,9 +17,9 @@
 | 状态 | 侧 | 条目 | 验收信号 | 关联 |
 |---|---|---|---|---|
 | ◐ | 外部 | **注册公司主体 + 开 Stripe 账户**(周期长,第一天启动) | Stripe Dashboard 拿到 test/live 密钥;EIN/主体名落定 | P0-4 |
-| ☐ | 代码 | **Stripe Checkout 会话创建端点** `POST /v1/billing/checkout` | 传 plan→返回 Stripe 托管结账 URL;无密钥时 503 且不暴露 | P0-1 |
-| ☐ | 代码 | **Stripe Webhook 回写** `POST /v1/billing/webhook` | HMAC-SHA256 签名校验(pure stdlib);`checkout.session.completed`→`set_plan(uid, tier)`;伪造签名 400 | P0-1/3 |
-| ☐ | 代码 | **users 表加 stripe_customer_id / subscription_status / plan_period_end** | 迁移幂等;webhook 落库;测试断言字段存在 | P0-1/3 |
+| ☑ | 代码 | **Stripe Checkout 会话创建端点** `POST /v1/billing/checkout` | ✅ `_billing_checkout` 登录态传 plan→`stripe_post` 建托管结账并返回 URL;无密钥 503 `billing_unavailable`;非付费 plan 400。测试:requires_login / unprovisioned_503 / rejects_bad_plan | P0-1 |
+| ☑ | 代码 | **Stripe Webhook 回写** `POST /v1/billing/webhook` | ✅ `verify_stripe_signature`(纯 stdlib HMAC-SHA256 + 300s 时间窗)校验原始字节;`checkout.session.completed`/`customer.subscription.updated|deleted`→`apply_subscription`(按 customer id);伪造签名 400、过期时间戳拒收。测试:bad_signature / stale_timestamp / drives_plan_lifecycle | P0-1/3 |
+| ☑ | 代码 | **users 表加 stripe_customer_id / subscription_status / plan_period_end** | ✅ 三列经 `USERS_MIGRATIONS` 版本化幂等迁移(见 P1 SQLite);webhook 落库;`test_billing_migration_columns_exist` 断言字段存在 | P0-1/3 |
 | ☑ | 代码 | **plan 门禁消费方**:后端 `require_plan()` 装饰逻辑 + 前端按 `plan` 显隐 | ✅ 服务端权威 entitlements 清单(`/v1/auth/me` + `/v1/entitlements`)+ `_require_capability()` 守卫;free 账号打 `/v1/pro/rag-manifest`→402 `upgrade_required`,set_plan→pro 即放行(后端测试断言全生命周期);dashboard 新增 LIVE「你的套餐」卡按 entitlements 显隐 + free 显升级 CTA。**诚实约束**:只有真实能力(advanced_rag 为唯一已上线 Pro 功能)进清单,coming-soon 不假门禁 | P0-3 |
 | ☑ | 代码 | **站点基建**:`404.html` / `robots.txt` / `sitemap.xml` / SEO meta / OG 标签 | ✅ 13 页各有 per-page `description` + `canonical` + OG/Twitter 标签(首页含双语 `og:locale`);`404.html` 双语 + `noindex` + 沿用 `fx`/`i18n` 约定;`robots.txt` 允许收录、`Disallow: /dashboard.html`;`sitemap.xml` 用 `__DOMAIN__` 占位待部署替换;smoke 覆盖 404;全站仍无外部资源(135 安全断言 + 15 页 smoke 全绿) | P1 站点基建 |
 | ☑ | 代码 | **SQLite 生产化**:WAL + busy_timeout + 迁移版本表 `schema_version` | ✅ 两库所有连接走 `connect_db()`(`journal_mode=WAL` + `busy_timeout=5000ms` + `synchronous=NORMAL`),并发读/单写不再 file-lock 串行;`run_migrations()` 用 `schema_version` 记录已跑步数,只补跑未跑步(重复启动不重跑,已验证 v5/v2 稳定),旧库(无 `schema_version`、缺列)自动补列且保留旧行;`_account_delete` VACUUM 后加 `wal_checkpoint(TRUNCATE)` 使文件级抹除仍落主库文件(字节扫描测试仍绿);后端 53 项测试全通过 | P1 SQLite |
