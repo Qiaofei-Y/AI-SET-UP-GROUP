@@ -65,6 +65,7 @@ LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
 TOS_VERSION = 'draft-2026-08-25'  # clickwrap record (P0-5): stamped per signup, bump on policy change
 SESSION_DAYS = 30
+SQLITE_BUSY_TIMEOUT_MS = 5000     # WAL lets readers and one writer coexist; on a busy-lock, wait this long before erroring
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
 MAX_NEED_TEXT = 500              # one sentence, not a document
@@ -225,6 +226,49 @@ def verify_license(license_key, secret=None):
     return tier.lower() if hmac.compare_digest(sig, _license_sig(tier, token, secret)) else None
 
 
+# ---------- sqlite production hardening (WAL + busy_timeout + versioned migrations) ----------
+# Every connection to either database goes through connect_db(): WAL mode lets many
+# readers coexist with one writer instead of the file-level lock that DELETE-journal
+# mode takes (concurrent requests no longer serialize on a "database is locked"), and
+# busy_timeout makes the rare writer contention wait-then-succeed rather than error.
+# WAL is a persistent property of the file; the pragma is re-asserted per connection
+# so a fresh data dir gets it too. synchronous=NORMAL is the durable-enough pairing
+# WAL is designed for (an OS crash can lose the last transaction, never corrupt).
+
+def connect_db(path):
+    con = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_MS / 1000)
+    con.execute('PRAGMA journal_mode = WAL')
+    con.execute('PRAGMA busy_timeout = %d' % SQLITE_BUSY_TIMEOUT_MS)
+    con.execute('PRAGMA synchronous = NORMAL')
+    return con
+
+
+def run_migrations(con, migrations):
+    """Apply pending schema migrations exactly once, tracked in schema_version.
+
+    `migrations` is an ordered tuple of (sql, ...) steps. The stored version is the
+    count already applied; on startup we run only steps past it, then record the new
+    count — so repeat launches don't re-run migrations (the acceptance signal). The
+    per-statement try/except stays as defense: a DB created by an older build already
+    has these columns from its CREATE TABLE, and swallowing the duplicate-column error
+    keeps that first versioned pass a no-op instead of a crash."""
+    con.execute('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)')
+    row = con.execute('SELECT version FROM schema_version').fetchone()
+    if row is None:
+        con.execute('INSERT INTO schema_version (version) VALUES (0)')
+        current = 0
+    else:
+        current = row[0]
+    for step in range(current, len(migrations)):
+        for stmt in migrations[step]:
+            try:
+                con.execute(stmt)
+            except sqlite3.OperationalError:
+                pass  # already applied on a DB that predates schema_version
+    con.execute('UPDATE schema_version SET version = ?', (len(migrations),))
+    con.commit()
+
+
 # ---------- auth (self-built P2: users + sessions in their own database) ----------
 
 def hash_password(password, salt=None):
@@ -238,33 +282,33 @@ def _token_hash(token):
 
 
 def users_con():
-    return sqlite3.connect(USERS_DB)
+    return connect_db(USERS_DB)
+
+
+# billing columns (P0-1/3): the customer id links a Stripe subscription back to this
+# row; status/period_end mirror the subscription so the app can gate without a
+# round-trip to Stripe. New steps go on the end — never reorder (version = count run).
+USERS_MIGRATIONS = (
+    ('ALTER TABLE users ADD COLUMN tos TEXT',),
+    ('ALTER TABLE users ADD COLUMN plan_intent TEXT',),
+    ('ALTER TABLE users ADD COLUMN stripe_customer_id TEXT',),
+    ('ALTER TABLE users ADD COLUMN subscription_status TEXT',),
+    ('ALTER TABLE users ADD COLUMN plan_period_end INTEGER',),
+)
 
 
 def init_users_db(path=None):
     path = path or USERS_DB
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    con = sqlite3.connect(path)
+    con = connect_db(path)
     con.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
         company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
         plan_intent TEXT, stripe_customer_id TEXT, subscription_status TEXT,
         plan_period_end INTEGER)''')
-    for migration in ('ALTER TABLE users ADD COLUMN tos TEXT',
-                      'ALTER TABLE users ADD COLUMN plan_intent TEXT',
-                      # billing (P0-1/3): the customer id links a Stripe subscription
-                      # back to this row; status/period_end mirror the subscription so
-                      # the app can gate without a round-trip to Stripe
-                      'ALTER TABLE users ADD COLUMN stripe_customer_id TEXT',
-                      'ALTER TABLE users ADD COLUMN subscription_status TEXT',
-                      'ALTER TABLE users ADD COLUMN plan_period_end INTEGER'):
-        try:  # migrate databases created before these columns existed
-            con.execute(migration)
-        except sqlite3.OperationalError:
-            pass
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
-    con.commit()
+    run_migrations(con, USERS_MIGRATIONS)
     con.close()
 
 
@@ -533,27 +577,27 @@ def validate(body, schema):
 
 # ---------- storage (aggregates only — see red lines above) ----------
 
+EVENTS_MIGRATIONS = (
+    ('ALTER TABLE telemetry ADD COLUMN stage TEXT',),
+    ('ALTER TABLE telemetry ADD COLUMN install_method TEXT',),
+)
+
+
 def init_db(path=DB_PATH):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    con = sqlite3.connect(path)
+    con = connect_db(path)
     con.execute('''CREATE TABLE IF NOT EXISTS telemetry (
         id INTEGER PRIMARY KEY, ts INTEGER, stage TEXT, template TEXT, model TEXT, os TEXT,
         gpu TEXT, vram_gb INTEGER, ram_gb INTEGER, mode TEXT, success INTEGER,
         duration_s INTEGER, error_code TEXT, install_method TEXT)''')
-    for migration in ('ALTER TABLE telemetry ADD COLUMN stage TEXT',
-                      'ALTER TABLE telemetry ADD COLUMN install_method TEXT'):
-        try:  # migrate databases created before these columns existed
-            con.execute(migration)
-        except sqlite3.OperationalError:
-            pass
     con.execute('''CREATE TABLE IF NOT EXISTS feedback (
         id INTEGER PRIMARY KEY, ts INTEGER, rating TEXT, template TEXT, model TEXT)''')
-    con.commit()
+    run_migrations(con, EVENTS_MIGRATIONS)
     con.close()
 
 
 def insert(table, cols, vals, path=DB_PATH):
-    con = sqlite3.connect(path)
+    con = connect_db(path)
     con.execute('INSERT INTO %s (%s) VALUES (%s)' % (table, ','.join(cols), ','.join('?' * len(vals))), vals)
     con.commit()
     con.close()
@@ -962,6 +1006,10 @@ class Api(BaseHTTPRequestHandler):
             con.commit()
             try:  # compaction is best-effort: the delete is already durable and
                 con.execute('VACUUM')  # secure_delete has zeroed the freed pages
+                # WAL keeps the VACUUM'd pages in users.db-wal; TRUNCATE folds them
+                # back into users.db and empties the sidecar, so the file-level
+                # erasure guarantee holds when the .db bytes are scanned (test asserts).
+                con.execute('PRAGMA wal_checkpoint(TRUNCATE)')
             except sqlite3.OperationalError:
                 pass
             return self._json(200, {'ok': True, 'deleted': True})
