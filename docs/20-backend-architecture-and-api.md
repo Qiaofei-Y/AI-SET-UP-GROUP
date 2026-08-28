@@ -155,7 +155,14 @@ key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secr
 Header `Authorization: Bearer <token>` → 删除该 session → `200 {"ok": true}`;无 token 401。
 
 ### GET /v1/auth/me
-Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。
+Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}, "entitlements": {"plan", "rank", "capabilities": [...]}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。**entitlements 是服务端权威能力集**——前端只按它显隐,绝不信浏览器侧的猜测。
+
+### 门禁 / entitlements(docs/22 P0-3;plan 网关的可执行形式)
+
+能力清单 `CAPABILITIES`(slug → 最低 plan)是**唯一真相源**:`/v1/auth/me` 与守卫 `_require_capability()` 都读它。**诚实约束**:只有**当前真实存在**的能力入清单(现仅 `model_advice`/`guided_install`/`local_chat` 为 free,`advanced_rag` 为 pro——即定价页标注「演示可用」的那一项);memory/fine-tuning/shared-KB 等 coming-soon 功能**不入清单、不假门禁**(否则破 P0-6 诚实不变量)。`PLAN_RANK = free<pro<business`,高档含低档能力。
+
+- **GET /v1/entitlements**(Bearer)→ `200 {"ok": true, "entitlements": {plan, rank, capabilities}}`;未登录 401。前端直接轮询用。
+- **GET /v1/pro/rag-manifest**(Bearer + 需 `advanced_rag`)→ 有权:`200 {capability, formats, citations, chunk_tokens, overlap_tokens}`(Advanced-RAG 能力描述符,唯一已上线 Pro 资源);**无权**:`402 {"error": "upgrade_required", "capability", "required_plan", "current_plan"}`——诚实告知要升到哪档,而非半答。这是 plan 门禁端到端的样板:新增真实 Pro 端点照此调 `_require_capability()` 即可。
 
 ### 账号自助(docs/22 P1 三件套,隐私政策承诺的可执行形式;全部 Bearer 认证 + auth 限速桶)
 
@@ -218,13 +225,14 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 | 聊天 👍/👎 | `POST /v1/feedback` | `local-llm.js` 监听 `chat-feedback` 事件 | 仅真实本地模型回答时 |
 | 注册/登录 | `POST /v1/auth/*` | `local-llm.js` `__bmaAuth` ← `signup.js` | **离线显式报错,不假通行**(P0-14) |
 | 登录态展示/退出 | `GET /v1/auth/me`、`logout` | `__bmaAuth` ← `dashboard.html` | sessionStorage token;无有效 session 时登录墙拦截 |
+| 套餐 / 能力显隐 | `GET /v1/auth/me` 的 `entitlements` | dashboard「你的套餐」LIVE 卡 | 按服务端能力集渲染 ✓/🔒,free 显升级 CTA(P0-3) |
 | 订阅结账/管理 | `POST /v1/billing/checkout`、`portal` | `local-llm.js` `__bmaBilling` ← 定价页/dashboard(第 2 周接线) | 返回 Stripe 托管 URL,页面整页跳转;复用 `API` 前缀不破 egress 锁 |
 
 向导/遥测/反馈离线自动降级——**API 是增强,不是依赖**(设计原则 1,backend/README §0)。**唯一例外是 auth**:账号是真实状态,离线时注册/登录显式报错、dashboard 出登录墙,绝不假装成功(docs/22 P0-14,商用前提)。
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。51 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、账号自助四端点)、**计费闭环(checkout 需登录/未配置 503/坏档 400、portal 无 customer 409、webhook 坏签名与过期时间戳 400、签名有效驱动 plan 升→降生命周期、伪造事件不改 plan)**、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。53 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、账号自助四端点)、**计费闭环(checkout 需登录/未配置 503/坏档 400、portal 无 customer 409、webhook 坏签名与过期时间戳 400、签名有效驱动 plan 升→降生命周期、伪造事件不改 plan)**、**门禁闭环(entitlements 随 plan 翻转、free 打 Pro 资源 402 upgrade_required、set_plan 升档即放行、两端点需登录)**、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 

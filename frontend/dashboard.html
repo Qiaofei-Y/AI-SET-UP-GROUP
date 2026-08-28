@@ -88,6 +88,14 @@
         <p style="font-size:12.5px;color:var(--ink-2);margin-bottom:4px" data-en="When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet." data-zh="Teach My AI 上线后,你的纠正会在这里累积——攒够 500 条,就为你微调一个更聪明的版本。目前尚未收集任何内容。">When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet.</p>
       </div>
 
+      <!-- plan & entitlements: LIVE — reflects the server-authoritative plan gate (P0-3) -->
+      <div class="dcard span2 fx-card" id="planCard">
+        <div class="ch"><h3>🎫 <span data-en="Your plan" data-zh="你的套餐">Your plan</span></h3><span class="badge teal" id="planBadge" data-en="● live" data-zh="● 真实">● live</span></div>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:2px 0 8px" data-en="What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims." data-zh="你的套餐当前解锁了哪些能力。这直接来自服务端——套餐一变功能即解锁,绝不听浏览器一面之词。">What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims.</p>
+        <ul id="planCaps" style="list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:13px"></ul>
+        <a class="btn primary fx-btn-sweep hidden" id="planUpgrade" href="pricing.html" style="margin-top:10px;justify-content:center" data-en="Upgrade to Pro →" data-zh="升级到专业版 →">Upgrade to Pro →</a>
+      </div>
+
       <!-- account self-service: the LIVE card on this preview page (privacy policy, executable) -->
       <div class="dcard span2 fx-card" id="acctCard">
         <div class="ch"><h3>🛡️ <span data-en="Account" data-zh="账号">Account</span></h3><span class="badge teal" data-en="● live — these actions are real" data-zh="● 真实功能——这些操作是真的">● live — these actions are real</span></div>
@@ -168,11 +176,51 @@
     gate.classList.add('hidden');
   }
 
+  // ---- plan gate reflection (P0-3): render the server's capability set ----
+  // Every capability the product can have, with its plan and bilingual label. We
+  // show unlocked ones as ✓ and everything above the user's plan as a locked hint,
+  // so the card is honest about what buying more would add. Coming-soon features
+  // are labelled as such and never presented as unlocked. Render is textContent-only.
+  var CAP_CATALOG = [
+    { slug: 'model_advice',   en: 'Model recommendation',        zh: '模型推荐' },
+    { slug: 'guided_install', en: 'Guided local install',        zh: '引导式本地安装' },
+    { slug: 'local_chat',     en: 'Chat with your local model',  zh: '与本地模型对话' },
+    { slug: 'advanced_rag',   en: 'Advanced RAG + citations',    zh: '高级 RAG + 来源引用', need: 'Pro' },
+    { slug: 'memory',         en: 'Memory & auto-updates',       zh: '长期记忆与自动更新', need: 'Pro', soon: true },
+    { slug: 'fine_tuning',    en: 'Fine-tuning (Teach My AI)',   zh: '微调(Teach My AI)', need: 'Pro', soon: true },
+    { slug: 'shared_kb',      en: 'Shared company knowledge base', zh: '企业共享知识库', need: 'Business', soon: true }
+  ];
+  function renderPlan(ent) {
+    var caps = (ent && ent.capabilities) || [];
+    var list = document.getElementById('planCaps');
+    while (list.firstChild) list.removeChild(list.firstChild);
+    CAP_CATALOG.forEach(function (c) {
+      var on = caps.indexOf(c.slug) !== -1;
+      var li = document.createElement('li');
+      var mark = document.createElement('span');
+      mark.textContent = on ? '✓ ' : '🔒 ';
+      mark.style.color = on ? 'var(--teal, #14b8a6)' : 'var(--ink-3, #94a3b8)';
+      var label = document.createElement('span');
+      var en = c.en, zh = c.zh;
+      if (!on && c.soon) { en += ' — coming soon'; zh += ' — 即将推出'; }
+      else if (!on && c.need) { en += ' — ' + c.need; zh += ' — ' + (c.need === 'Business' ? '企业版' : '专业版'); }
+      label.setAttribute('data-en', en); label.setAttribute('data-zh', zh);
+      label.textContent = t(en, zh);
+      if (!on) { li.style.color = 'var(--ink-3, #94a3b8)'; }
+      li.appendChild(mark); li.appendChild(label);
+      list.appendChild(li);
+    });
+    // upgrade CTA only for free accounts (checkout wiring lands next; for now it
+    // points at pricing so the path is honest, never a dead unlock)
+    document.getElementById('planUpgrade').classList.toggle('hidden', (ent && ent.plan) !== 'free');
+  }
+
   if (!token || !window.__bmaAuth) { showLogin(); }
   else {
     window.__bmaAuth.me(token, function (err, res) {
       if (err || res.status !== 200 || !res.json.ok) { showLogin(); return; } // offline/expired
       showUser(res.json.user);
+      renderPlan(res.json.entitlements);
     });
   }
 

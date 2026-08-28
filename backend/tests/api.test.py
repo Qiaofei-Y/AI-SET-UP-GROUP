@@ -695,6 +695,40 @@ class ApiTest(unittest.TestCase):
         finally:
             del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
 
+    # ---- entitlements / plan gate (P0-3) ---------------------------------------
+    def test_entitlements_reflect_plan_and_gate_flips_with_it(self):
+        """The plan gate is server-authoritative and honest: a free user is denied
+        the one live Pro capability with a 402 that names the plan to buy; the same
+        user, once moved to pro (the webhook's job), passes — no client say-so."""
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Gate User', 'email': 'gate@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        token = j['token']
+        # /v1/auth/me carries the capability set the frontend shows/hides against
+        self.assertEqual(j['user']['plan'], 'free')
+        s, j = self._call_auth('/v1/auth/me', token=token)
+        caps = j['entitlements']['capabilities']
+        self.assertIn('local_chat', caps)
+        self.assertNotIn('advanced_rag', caps)          # coming-of-Pro, not free
+        # the dedicated manifest endpoint agrees
+        s, j = self._call_auth('/v1/entitlements', token=token)
+        self.assertEqual((s, j['entitlements']['plan']), (200, 'free'))
+        # the gated Pro resource: free user gets an honest upgrade prompt, not data
+        s, j = self._call_auth('/v1/pro/rag-manifest', token=token)
+        self.assertEqual((s, j['error'], j['required_plan']), (402, 'upgrade_required', 'pro'))
+
+        # upgrade the ONLY way plans move (server-side), then re-check the gate
+        self.assertTrue(server.set_plan('gate@example.com', 'pro'))
+        s, j = self._call_auth('/v1/auth/me', token=token)
+        self.assertIn('advanced_rag', j['entitlements']['capabilities'])
+        s, j = self._call_auth('/v1/pro/rag-manifest', token=token)
+        self.assertEqual((s, j['ok'], j['citations']), (200, True, True))
+
+    def test_entitlements_requires_login(self):
+        for path in ('/v1/entitlements', '/v1/pro/rag-manifest'):
+            s, j = self._call_auth(path)
+            self.assertEqual((s, j['error']), (401, 'not_logged_in'), path)
+
     def test_default_secret_refuses_public_bind(self):
         # P0-17 fail-closed: the check fires before any socket is opened
         self.assertEqual(server.LICENSE_SECRET, 'dev-secret-change-me')

@@ -285,6 +285,39 @@ def set_plan(email, plan):
         con.close()
 
 
+# ---------- entitlements (P0-3: what each plan actually unlocks) ----------------
+# Server-authoritative and HONEST: a capability is listed only if it is REAL today.
+# Coming-soon features (memory, fine-tuning, shared KB, audit logs …) are NOT here —
+# gating vaporware would break the repo's honesty invariant (docs/22 P0-6). When a
+# feature ships for real, add it here with its min plan and the gate follows.
+PLAN_RANK = {'free': 0, 'pro': 1, 'business': 2}
+
+# slug -> (min_plan, human label). The frontend renders these; require_plan() guards
+# backend routes against them.
+CAPABILITIES = {
+    'model_advice':   ('free', 'Model recommendation'),
+    'guided_install': ('free', 'Guided local install'),
+    'local_chat':     ('free', 'Chat with your local model'),
+    # the one paid feature that is LIVE today (pricing.html: "live in the demo")
+    'advanced_rag':   ('pro',  'Advanced RAG + citations'),
+}
+
+
+def entitlements_for(plan):
+    """The capability set a plan unlocks — the single source of truth both
+    /v1/auth/me (frontend show/hide) and require_plan() (backend guard) read."""
+    rank = PLAN_RANK.get(plan, 0)
+    caps = [slug for slug, (min_plan, _) in CAPABILITIES.items()
+            if rank >= PLAN_RANK[min_plan]]
+    return {'plan': plan, 'rank': rank, 'capabilities': caps}
+
+
+def plan_allows(plan, capability):
+    """True if `plan` unlocks `capability`. Unknown capability -> False (fail closed)."""
+    spec = CAPABILITIES.get(capability)
+    return bool(spec) and PLAN_RANK.get(plan, 0) >= PLAN_RANK[spec[0]]
+
+
 def link_customer(email, customer_id):
     """Bind a Stripe customer id to a user row (idempotent). Called the first time
     we create a checkout session for them so the webhook can find them later."""
@@ -644,6 +677,10 @@ class Api(BaseHTTPRequestHandler):
                                     'recommended': models[0]['id'] if models else None})
         if path == '/v1/auth/me':
             return self._auth_me()
+        if path == '/v1/entitlements':
+            return self._entitlements()
+        if path == '/v1/pro/rag-manifest':
+            return self._pro_rag_manifest()
         if path == '/v1/account/export':
             return self._account_export()
         return self._json(404, {'error': 'not_found'})
@@ -791,7 +828,43 @@ class Api(BaseHTTPRequestHandler):
         if not row:
             return self._json(401, {'error': 'not_logged_in'})
         return self._json(200, {'ok': True,
-                                'user': {'name': row[1], 'email': row[2], 'plan': row[3]}})
+                                'user': {'name': row[1], 'email': row[2], 'plan': row[3]},
+                                # server-authoritative capability set: the frontend
+                                # shows/hides against this, never against a client guess
+                                'entitlements': entitlements_for(row[3])})
+
+    # -- entitlements (P0-3: the plan gate, server-authoritative) --
+    def _require_capability(self, capability):
+        """Guard for plan-gated routes. Returns (id, name, email, plan) row on
+        success, or None after already emitting the right response: 401 if not
+        logged in, 402 upgrade_required (with the plan that unlocks it) otherwise."""
+        row = self._session_user()
+        if not row:
+            self._json(401, {'error': 'not_logged_in'})
+            return None
+        if not plan_allows(row[3], capability):
+            spec = CAPABILITIES.get(capability)
+            self._json(402, {'error': 'upgrade_required', 'capability': capability,
+                             'required_plan': spec[0] if spec else None,
+                             'current_plan': row[3]})
+            return None
+        return row
+
+    def _entitlements(self):
+        row = self._session_user()
+        if not row:
+            return self._json(401, {'error': 'not_logged_in'})
+        return self._json(200, {'ok': True, 'entitlements': entitlements_for(row[3])})
+
+    def _pro_rag_manifest(self):
+        # a real Pro-only resource: the Advanced-RAG capability descriptor (the one
+        # paid feature that is live today). Free users get an honest 402, not a
+        # half-answer — this is what the plan gate looks like end to end.
+        if not self._require_capability('advanced_rag'):
+            return
+        return self._json(200, {'ok': True, 'capability': 'advanced_rag',
+                                'formats': ['pdf', 'docx', 'xlsx', 'txt', 'md'],
+                                'citations': True, 'chunk_tokens': 512, 'overlap_tokens': 64})
 
     # -- account self-service (docs/22 P1: the privacy policy's promises, executable) --
     def _verify_password(self, con, user_id, password):
