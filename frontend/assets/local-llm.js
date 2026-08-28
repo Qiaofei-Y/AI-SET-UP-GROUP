@@ -488,6 +488,14 @@
     exportData: function (token, cb) { authCall('/v1/account/export', null, token, cb); },
     deleteAccount: function (token, body, cb) { authCall('/v1/account/delete', body, token, cb); }
   };
+  // ---- billing (API): start a Stripe-HOSTED checkout / portal (P0-1/2) ----
+  // We never handle card data: these return a Stripe URL and the page does a
+  // full-page redirect to it. authCall already pins to the API prefix, so no new
+  // network target is introduced (the security test's egress lock stays intact).
+  window.__bmaBilling = {
+    checkout: function (token, plan, cb) { authCall('/v1/billing/checkout', { plan: plan }, token, cb); },
+    portal: function (token, cb) { authCall('/v1/billing/portal', {}, token, cb); }
+  };
 
   window.LocalLLM = {
     ready: function () { return isReady && !!window.__chatLive; },

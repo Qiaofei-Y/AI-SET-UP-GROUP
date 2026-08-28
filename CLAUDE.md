@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `docs/01–22`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)、**20 后端技术文档**(端点规格、分库设计、红线→断言映射,改 `server.py` 前必读)。
 - `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示 + 法律三件套草案)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
-- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback/auth 六组端点,隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session 只存 token 哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定。
+- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback/auth/billing 七组端点(billing 为 Stripe 托管结账/门户/webhook,卡数据不进本进程),隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session 只存 token 哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定。
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
 硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
@@ -27,7 +27,7 @@ open http://localhost:8931/chat.html
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
 python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(43 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(51 项,起真实服务)
 # 可选:BMA_ADVISOR_LLM=http://127.0.0.1:8080 让 /v1/advise 用本地 LLM 分类(仅回环,失败回退规则)
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)

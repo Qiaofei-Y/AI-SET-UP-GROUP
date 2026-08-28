@@ -568,6 +568,133 @@ class ApiTest(unittest.TestCase):
         codes = [call(self.port, '/v1/feedback', body)[0] for _ in range(3)]
         self.assertEqual(codes, [200, 200, 429])
 
+    # ---- billing (P0-1/2/3): Stripe payment loop -------------------------------
+    def _webhook(self, event, secret='whsec_test', ts=None):
+        """POST a raw Stripe-style event with a valid-by-default signature header."""
+        import hashlib
+        import hmac
+        import time as _t
+        raw = json.dumps(event).encode()
+        ts = str(int(_t.time())) if ts is None else str(ts)
+        sig = hmac.new(secret.encode(), (ts + '.').encode() + raw, hashlib.sha256).hexdigest()
+        req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
+                                     data=raw, method='POST')
+        req.add_header('Content-Type', 'application/json')
+        req.add_header('Stripe-Signature', 't=%s,v1=%s' % (ts, sig))
+        try:
+            with urllib.request.urlopen(req) as r:
+                return r.status, json.loads(r.read() or b'{}')
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read() or b'{}')
+
+    def test_billing_migration_columns_exist(self):
+        import sqlite3
+        con = sqlite3.connect(os.environ['BMA_USERS_DB'])
+        cols = {r[1] for r in con.execute('PRAGMA table_info(users)')}
+        con.close()
+        self.assertLessEqual({'stripe_customer_id', 'subscription_status', 'plan_period_end'}, cols)
+
+    def test_billing_checkout_requires_login(self):
+        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'})
+        self.assertEqual((s, j['error']), (401, 'not_logged_in'))
+
+    def test_billing_checkout_unprovisioned_503(self):
+        # no BMA_STRIPE_SECRET/price in the test env → honest 503, not a half-checkout
+        self.assertEqual(os.environ.get('BMA_STRIPE_SECRET', ''), '')
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Buyer One', 'email': 'buyer1@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'}, token=j['token'])
+        self.assertEqual((s, j['error']), (503, 'billing_unavailable'))
+
+    def test_billing_checkout_rejects_bad_plan(self):
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Buyer Two', 'email': 'buyer2@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'free'}, token=j['token'])
+        self.assertEqual((s, j['error']), (400, 'invalid_field:plan'))
+
+    def test_billing_portal_without_customer_409(self):
+        os.environ['BMA_STRIPE_SECRET'] = 'sk_test_dummy'  # provisioned...
+        try:
+            s, j = self._call_auth('/v1/auth/signup', {
+                'name': 'No Sub', 'email': 'nosub@example.com',
+                'password': 'longenough1', 'accept_tos': True})
+            # ...but this user never checked out, so there's no customer to manage
+            s, j = self._call_auth('/v1/billing/portal', {}, token=j['token'])
+            self.assertEqual((s, j['error']), (409, 'no_customer'))
+        finally:
+            del os.environ['BMA_STRIPE_SECRET']
+
+    def test_billing_webhook_rejects_bad_signature(self):
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        try:
+            raw = json.dumps({'type': 'checkout.session.completed'}).encode()
+            req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
+                                         data=raw, method='POST')
+            req.add_header('Stripe-Signature', 't=1,v1=deadbeef')
+            try:
+                urllib.request.urlopen(req)
+                self.fail('expected 400')
+            except urllib.error.HTTPError as e:
+                self.assertEqual(e.code, 400)
+        finally:
+            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
+
+    def test_billing_webhook_drives_plan_lifecycle(self):
+        """The webhook is the ONLY thing that moves a paying user's plan (P0-3):
+        checkout completes → pro; subscription canceled → back to free."""
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
+        try:
+            s, j = self._call_auth('/v1/auth/signup', {
+                'name': 'Pay Ing', 'email': 'paying@example.com',
+                'password': 'longenough1', 'accept_tos': True})
+            token = j['token']
+            self.assertEqual(j['user']['plan'], 'free')
+            cust = 'cus_test_paying'
+
+            # 1) checkout completes → account linked to the customer + upgraded to pro
+            s, j = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
+                'client_reference_id': 'paying@example.com', 'customer': cust,
+                'metadata': {'plan': 'pro'}}}})
+            self.assertEqual(s, 200)
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'pro')
+
+            # 2) a bad-signature copy of the SAME event must not move anything
+            raw = json.dumps({'type': 'customer.subscription.deleted',
+                              'data': {'object': {'customer': cust}}}).encode()
+            req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
+                                         data=raw, method='POST')
+            req.add_header('Stripe-Signature', 't=1,v1=0000')
+            try:
+                urllib.request.urlopen(req)
+            except urllib.error.HTTPError as e:
+                self.assertEqual(e.code, 400)
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'pro', 'forged event must not downgrade')
+
+            # 3) subscription canceled → entitlement drops back to free
+            s, j = self._webhook({'type': 'customer.subscription.deleted', 'data': {'object': {
+                'customer': cust, 'status': 'canceled', 'current_period_end': 1900000000}}})
+            self.assertEqual(s, 200)
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'free')
+        finally:
+            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
+            del os.environ['BMA_STRIPE_PRICE_PRO']
+
+    def test_billing_webhook_stale_timestamp_rejected(self):
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        try:
+            # correctly signed but 10 minutes old → outside tolerance (replay lid)
+            s, j = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {}}},
+                                 ts=1000000000)
+            self.assertEqual((s, j['error']), (400, 'bad_signature'))
+        finally:
+            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
+
     def test_default_secret_refuses_public_bind(self):
         # P0-17 fail-closed: the check fires before any socket is opened
         self.assertEqual(server.LICENSE_SECRET, 'dev-secret-change-me')

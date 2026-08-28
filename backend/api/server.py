@@ -69,6 +69,32 @@ GRACE_HOURS = 72                 # offline grace: never lock out a user who is o
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
 MAX_NEED_TEXT = 500              # one sentence, not a document
 LLM_TIMEOUT_S = 4                # advisor LLM is local; anything slower falls back to rules
+STRIPE_TIMEOUT_S = 15            # outbound to api.stripe.com; slower than local, still bounded
+
+# ---------- Stripe billing config (P0-1/2/3) -----------------------------------
+# All read at request time so ops can inject keys without touching code. Card data
+# never touches our system: Checkout + Billing Portal are Stripe-HOSTED pages; we
+# only mint a session and later trust a signature-verified webhook. This keeps the
+# privacy pitch intact (no PAN, no CVC, no card in users.db — only a customer id).
+STRIPE_API = 'https://api.stripe.com'  # the ONLY non-loopback URL the backend dials
+
+
+def stripe_cfg():
+    """Live config, read per request. `secret` empty => billing is un-provisioned
+    and the checkout/portal endpoints 503 instead of half-working."""
+    return {
+        'secret':         os.environ.get('BMA_STRIPE_SECRET', ''),
+        'webhook_secret': os.environ.get('BMA_STRIPE_WEBHOOK_SECRET', ''),
+        'success_url':    os.environ.get('BMA_CHECKOUT_SUCCESS_URL',
+                                         'http://localhost:8931/checkout-success.html'),
+        'cancel_url':     os.environ.get('BMA_CHECKOUT_CANCEL_URL',
+                                         'http://localhost:8931/checkout-cancel.html'),
+        'portal_return':  os.environ.get('BMA_PORTAL_RETURN_URL',
+                                         'http://localhost:8931/dashboard.html'),
+        # plan -> Stripe Price id. A plan with no price id cannot be checked out.
+        'prices': {'pro':      os.environ.get('BMA_STRIPE_PRICE_PRO', ''),
+                   'business': os.environ.get('BMA_STRIPE_PRICE_BUSINESS', '')},
+    }
 
 # BMA_ADVISOR_LLM may only point at this machine: need_text never leaves it
 LOOPBACK_URL = re.compile(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$')
@@ -222,9 +248,16 @@ def init_users_db(path=None):
     con.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
         company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
-        plan_intent TEXT)''')
+        plan_intent TEXT, stripe_customer_id TEXT, subscription_status TEXT,
+        plan_period_end INTEGER)''')
     for migration in ('ALTER TABLE users ADD COLUMN tos TEXT',
-                      'ALTER TABLE users ADD COLUMN plan_intent TEXT'):
+                      'ALTER TABLE users ADD COLUMN plan_intent TEXT',
+                      # billing (P0-1/3): the customer id links a Stripe subscription
+                      # back to this row; status/period_end mirror the subscription so
+                      # the app can gate without a round-trip to Stripe
+                      'ALTER TABLE users ADD COLUMN stripe_customer_id TEXT',
+                      'ALTER TABLE users ADD COLUMN subscription_status TEXT',
+                      'ALTER TABLE users ADD COLUMN plan_period_end INTEGER'):
         try:  # migrate databases created before these columns existed
             con.execute(migration)
         except sqlite3.OperationalError:
@@ -236,10 +269,10 @@ def init_users_db(path=None):
 
 
 def set_plan(email, plan):
-    """The ONLY way users.plan changes (P0-3): called by the future Stripe
-    webhook, and by the --set-plan ops CLI until then. Returns True if a row
-    was updated. Takes effect on the user's next /v1/auth/me (plan is read
-    per-request via JOIN — no session invalidation needed)."""
+    """Set a user's plan by email (P0-3). Used by the --set-plan ops CLI; the
+    Stripe webhook uses apply_subscription() (by customer id) instead. Returns
+    True if a row was updated. Takes effect on the user's next /v1/auth/me (plan
+    is read per-request via JOIN — no session invalidation needed)."""
     if plan not in ('free', 'pro', 'business'):
         return False
     con = users_con()
@@ -250,6 +283,66 @@ def set_plan(email, plan):
         return cur.rowcount == 1
     finally:
         con.close()
+
+
+def link_customer(email, customer_id):
+    """Bind a Stripe customer id to a user row (idempotent). Called the first time
+    we create a checkout session for them so the webhook can find them later."""
+    con = users_con()
+    try:
+        con.execute('UPDATE users SET stripe_customer_id = ? WHERE email = ?',
+                    (customer_id, (email or '').strip().lower()))
+        con.commit()
+    finally:
+        con.close()
+
+
+def apply_subscription(customer_id, plan, status, period_end):
+    """The billing counterpart to set_plan(): the Stripe webhook is the ONLY caller
+    (P0-3, entitlements stay server-authoritative). Resolves the user by their
+    Stripe customer id and mirrors the subscription. Returns True if a row moved."""
+    if plan not in ('free', 'pro', 'business') or not customer_id:
+        return False
+    con = users_con()
+    try:
+        cur = con.execute(
+            'UPDATE users SET plan = ?, subscription_status = ?, plan_period_end = ? '
+            'WHERE stripe_customer_id = ?', (plan, status, period_end, customer_id))
+        con.commit()
+        return cur.rowcount == 1
+    finally:
+        con.close()
+
+
+def verify_stripe_signature(payload, header, secret, now=None, tolerance=300):
+    """Stripe's scheme: header is 't=<unix>,v1=<hex hmac>,...'; the signed message
+    is '<t>.<raw payload>' under HMAC-SHA256(secret). Reject on missing parts, bad
+    digest, or a timestamp outside the tolerance window (replay lid). Pure stdlib."""
+    if not secret or not header:
+        return False
+    parts = dict(p.split('=', 1) for p in header.split(',') if '=' in p)
+    ts, sig = parts.get('t'), parts.get('v1')
+    if not ts or not sig or not ts.isdigit():
+        return False
+    now = int(time.time()) if now is None else now
+    if abs(now - int(ts)) > tolerance:
+        return False
+    expected = hmac.new(secret.encode(), (ts + '.').encode() + payload,
+                        hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, sig)
+
+
+def stripe_post(cfg, path, fields):
+    """Form-encode `fields` and POST to Stripe with the secret key. Nested keys use
+    Stripe's bracket convention (e.g. line_items[0][price]). Returns parsed JSON or
+    raises urllib.error.* / ValueError — callers turn failures into a 502."""
+    import urllib.parse
+    data = urllib.parse.urlencode(fields).encode()
+    req = urllib.request.Request(STRIPE_API + path, data=data, method='POST')
+    req.add_header('Authorization', 'Bearer ' + cfg['secret'])
+    req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+    with urllib.request.urlopen(req, timeout=STRIPE_TIMEOUT_S) as r:
+        return json.loads(r.read())
 
 
 def create_session(con, user_id):
@@ -381,6 +474,10 @@ DELETE_ACCOUNT_SCHEMA = {  # destructive: re-authenticate with the password
     'password': (True, _password_shape),
 }
 
+BILLING_CHECKOUT_SCHEMA = {  # which paid tier to start a hosted checkout for
+    'plan': (True, _enum('pro', 'business')),
+}
+
 EMPTY_SCHEMA = {}  # body must be {} — unknown keys still 400
 
 
@@ -436,6 +533,10 @@ RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated
     '/v1/account/password': 'auth', '/v1/account/logout-all': 'auth',
     '/v1/account/delete': 'auth',
     '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
+    # billing checkout/portal mint Stripe sessions (outbound cost); webhook is
+    # public and signature-gated — bucket it too so a bad-sig flood can't hammer us
+    '/v1/billing/checkout': 'auth', '/v1/billing/portal': 'auth',
+    '/v1/billing/webhook': 'events',
 }
 RATE_DEFAULTS = {'auth': '30/60', 'events': '120/60'}
 _RATE = {}                       # (bucket, ip) -> [window_start, count]
@@ -501,6 +602,21 @@ class Api(BaseHTTPRequestHandler):
             self._json(400, {'error': 'bad_json'})
             return None
 
+    def _raw_body(self):
+        """Raw bytes for signature-verified endpoints (the webhook). Same length
+        guards as _body(); returns None after emitting an error response."""
+        try:
+            n = int(self.headers.get('Content-Length', 0) or 0)
+        except ValueError:
+            n = -1
+        if n < 0:
+            self._json(400, {'error': 'bad_content_length'})
+            return None
+        if n > MAX_BODY:
+            self._json(413, {'error': 'body_too_large'})
+            return None
+        return self.rfile.read(n)
+
     def log_message(self, fmt, *args):
         # never log request bodies (need_text privacy); path-only line in debug mode
         if os.environ.get('BMA_DEBUG'):
@@ -533,6 +649,13 @@ class Api(BaseHTTPRequestHandler):
         return self._json(404, {'error': 'not_found'})
 
     def do_POST(self):
+        bucket = RATE_BUCKETS.get(self.path)
+        if bucket and rate_limited(bucket, self.client_address[0]):
+            return self._json(429, {'error': 'rate_limited'})
+        # webhook is signed over the EXACT bytes Stripe sent — it must see the raw
+        # body, never the re-serialized JSON, so it's routed before _body() parses
+        if self.path == '/v1/billing/webhook':
+            return self._billing_webhook()
         handlers = {
             '/v1/advise': self._advise,
             '/v1/license/verify': self._license,
@@ -544,13 +667,12 @@ class Api(BaseHTTPRequestHandler):
             '/v1/account/password': self._account_password,
             '/v1/account/logout-all': self._account_logout_all,
             '/v1/account/delete': self._account_delete,
+            '/v1/billing/checkout': self._billing_checkout,
+            '/v1/billing/portal': self._billing_portal,
         }
         h = handlers.get(self.path)
         if not h:
             return self._json(404, {'error': 'not_found'})
-        bucket = RATE_BUCKETS.get(self.path)
-        if bucket and rate_limited(bucket, self.client_address[0]):
-            return self._json(429, {'error': 'rate_limited'})
         body = self._body()
         if body is None:
             return
@@ -773,6 +895,120 @@ class Api(BaseHTTPRequestHandler):
         finally:
             con.close()
 
+    # -- billing (P0-1/2/3): Stripe-hosted checkout & portal; webhook is the only
+    #    thing that moves users.plan for a paying account (entitlements stay
+    #    server-authoritative). Card data never touches this process. --
+    def _session_user(self):
+        con = users_con()
+        try:
+            return session_user(con, self._bearer())
+        finally:
+            con.close()
+
+    def _billing_checkout(self, body):
+        err = validate(body, BILLING_CHECKOUT_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        row = self._session_user()
+        if not row:
+            return self._json(401, {'error': 'not_logged_in'})
+        cfg = stripe_cfg()
+        price = cfg['prices'].get(body['plan'])
+        if not cfg['secret'] or not price:
+            # billing un-provisioned: say so honestly instead of half-working
+            return self._json(503, {'error': 'billing_unavailable'})
+        email = row[2]
+        try:
+            sess = stripe_post(cfg, '/v1/checkout/sessions', {
+                'mode': 'subscription',
+                'line_items[0][price]': price,
+                'line_items[0][quantity]': 1,
+                'customer_email': email,
+                # echoed back on checkout.session.completed so the webhook can link
+                # the new Stripe customer to this account and set the right plan
+                'client_reference_id': email,
+                'metadata[plan]': body['plan'],
+                'subscription_data[metadata][plan]': body['plan'],
+                'success_url': cfg['success_url'],
+                'cancel_url': cfg['cancel_url'],
+            })
+        except Exception:
+            return self._json(502, {'error': 'stripe_error'})
+        return self._json(200, {'ok': True, 'url': sess.get('url')})
+
+    def _billing_portal(self, body):
+        err = validate(body, EMPTY_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        row = self._session_user()
+        if not row:
+            return self._json(401, {'error': 'not_logged_in'})
+        cfg = stripe_cfg()
+        if not cfg['secret']:
+            return self._json(503, {'error': 'billing_unavailable'})
+        con = users_con()
+        try:
+            cust = con.execute('SELECT stripe_customer_id FROM users WHERE id = ?',
+                               (row[0],)).fetchone()
+        finally:
+            con.close()
+        if not cust or not cust[0]:
+            # no subscription ever started — nothing for the portal to manage
+            return self._json(409, {'error': 'no_customer'})
+        try:
+            sess = stripe_post(cfg, '/v1/billing_portal/sessions', {
+                'customer': cust[0], 'return_url': cfg['portal_return']})
+        except Exception:
+            return self._json(502, {'error': 'stripe_error'})
+        return self._json(200, {'ok': True, 'url': sess.get('url')})
+
+    def _billing_webhook(self):
+        raw = self._raw_body()
+        if raw is None:
+            return
+        cfg = stripe_cfg()
+        sig = self.headers.get('Stripe-Signature', '')
+        if not verify_stripe_signature(raw, sig, cfg['webhook_secret']):
+            return self._json(400, {'error': 'bad_signature'})
+        try:
+            event = json.loads(raw or b'{}')
+        except (ValueError, UnicodeDecodeError):
+            return self._json(400, {'error': 'bad_json'})
+        self._handle_stripe_event(event, cfg)
+        # ack fast: any real work already happened; Stripe retries on non-2xx
+        return self._json(200, {'ok': True})
+
+    def _price_to_plan(self, cfg, price_id):
+        for plan, pid in cfg['prices'].items():
+            if pid and pid == price_id:
+                return plan
+        return None
+
+    def _handle_stripe_event(self, event, cfg):
+        etype = event.get('type', '')
+        obj = (event.get('data') or {}).get('object') or {}
+        if etype == 'checkout.session.completed':
+            email, customer = obj.get('client_reference_id'), obj.get('customer')
+            plan = (obj.get('metadata') or {}).get('plan')
+            if email and customer:
+                link_customer(email, customer)
+            if customer and plan:
+                apply_subscription(customer, plan, 'active', None)
+        elif etype in ('customer.subscription.updated', 'customer.subscription.created'):
+            customer, status = obj.get('customer'), obj.get('status')
+            items = ((obj.get('items') or {}).get('data') or [{}])
+            price_id = (items[0].get('price') or {}).get('id')
+            plan = self._price_to_plan(cfg, price_id)
+            # a past_due/unpaid/canceled subscription loses entitlements; only an
+            # active/trialing one keeps the paid plan it maps to
+            entitled = plan if status in ('active', 'trialing') else 'free'
+            if customer:
+                apply_subscription(customer, entitled, status, obj.get('current_period_end'))
+        elif etype == 'customer.subscription.deleted':
+            customer = obj.get('customer')
+            if customer:
+                apply_subscription(customer, 'free', 'canceled', obj.get('current_period_end'))
+
 
 def create_server(port=8940, host='127.0.0.1'):
     if host not in ('127.0.0.1', 'localhost', '::1') and LICENSE_SECRET == DEFAULT_SECRET:
@@ -795,7 +1031,7 @@ def main():
                     help='print a demo license key and exit')
     ap.add_argument('--set-plan', nargs=2, metavar=('EMAIL', 'TIER'),
                     help='ops: set a user\'s plan (free|pro|business) and exit — '
-                         'the only path that changes entitlements until the Stripe webhook ships')
+                         'the manual override; the Stripe webhook is the automated path')
     args = ap.parse_args()
     if args.mint:
         print(mint_license(args.mint))
