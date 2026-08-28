@@ -1,0 +1,12 @@
+# Build My AI — robots policy
+# The whole marketing/app site is public; nothing here is private (user data
+# never reaches these pages — it lives on the user's own machine).
+User-agent: *
+Allow: /
+
+# The account Control Center is login-gated and has no indexable content.
+Disallow: /dashboard.html
+
+# Sitemap uses an absolute URL, so it is set at deploy time once the production
+# domain is chosen (see docs/23). After deploy, uncomment and fill:
+# Sitemap: https://YOUR-DOMAIN/sitemap.xml

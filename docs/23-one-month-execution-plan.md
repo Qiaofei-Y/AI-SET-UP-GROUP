@@ -21,7 +21,7 @@
 | ☐ | 代码 | **Stripe Webhook 回写** `POST /v1/billing/webhook` | HMAC-SHA256 签名校验(pure stdlib);`checkout.session.completed`→`set_plan(uid, tier)`;伪造签名 400 | P0-1/3 |
 | ☐ | 代码 | **users 表加 stripe_customer_id / subscription_status / plan_period_end** | 迁移幂等;webhook 落库;测试断言字段存在 | P0-1/3 |
 | ☑ | 代码 | **plan 门禁消费方**:后端 `require_plan()` 装饰逻辑 + 前端按 `plan` 显隐 | ✅ 服务端权威 entitlements 清单(`/v1/auth/me` + `/v1/entitlements`)+ `_require_capability()` 守卫;free 账号打 `/v1/pro/rag-manifest`→402 `upgrade_required`,set_plan→pro 即放行(后端测试断言全生命周期);dashboard 新增 LIVE「你的套餐」卡按 entitlements 显隐 + free 显升级 CTA。**诚实约束**:只有真实能力(advanced_rag 为唯一已上线 Pro 功能)进清单,coming-soon 不假门禁 | P0-3 |
-| ☐ | 代码 | **站点基建**:`404.html` / `robots.txt` / `sitemap.xml` / SEO meta / OG 标签 | 各页有 title/description/OG;404 双语;robots 允许收录 | P1 站点基建 |
+| ☑ | 代码 | **站点基建**:`404.html` / `robots.txt` / `sitemap.xml` / SEO meta / OG 标签 | ✅ 13 页各有 per-page `description` + `canonical` + OG/Twitter 标签(首页含双语 `og:locale`);`404.html` 双语 + `noindex` + 沿用 `fx`/`i18n` 约定;`robots.txt` 允许收录、`Disallow: /dashboard.html`;`sitemap.xml` 用 `__DOMAIN__` 占位待部署替换;smoke 覆盖 404;全站仍无外部资源(135 安全断言 + 15 页 smoke 全绿) | P1 站点基建 |
 | ☐ | 代码 | **SQLite 生产化**:WAL + busy_timeout + 迁移版本表 `schema_version` | 并发读写不锁库;重复启动迁移不重跑 | P1 SQLite |
 
 ## 第 2 周 · 结账前端 + 订阅生命周期 + 发信(混合)
