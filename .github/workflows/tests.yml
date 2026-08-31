@@ -20,6 +20,9 @@ jobs:
       # stdlib-only: boots the real server on an ephemeral port and speaks real HTTP
       - name: python3 backend/tests/api.test.py
         run: python3 backend/tests/api.test.py
+      # backup + restore drill (snapshot → encrypt → decrypt → restore → verify)
+      - name: python3 backend/ops/backup.py --selftest
+        run: python3 backend/ops/backup.py --selftest
 
   frontend:
     name: Frontend security + XSS + UI smoke

@@ -55,7 +55,7 @@
 | ☐ | 外部 | **静态站上托管**:Cloudflare Pages/Vercel + 域名 + CSP 响应头 | 生产域名可访问;CSP 头符合 docs/19 | P0-11 |
 | ☐ | 外部 | **后端生产部署 + TLS 反代**:进程管理 + `/v1/*` 反代 + HTTPS | 生产域名 `/v1/health` 200 over TLS | P0-12 |
 | ☑ | 代码 | **CI/CD**:GitHub Actions 跑 `frontend/tests/run.sh` + `backend/tests/api.test.py` | ✅ `.github/workflows/tests.yml`:backend / frontend 两个并行 job,PR + push-to-main 触发;backend 起真实服务跑真实 HTTP,frontend 在 ubuntu-latest(自带 Chrome)跑完整套(静态 + 单元 + XSS + 全页 smoke)。**待办(外部一步)**:在 GitHub 仓库设置对 `main` 开 branch protection 并把这两个 check 设为 required,才真正「红则挡合并」 | P1 CI/CD |
-| ☐ | 混合 | **数据库备份**:Litestream→S3 或定时 `.backup`+加密上传 | users.db 有连续/定时备份;演练一次恢复 | P1 备份 |
+| ◐ | 混合 | **数据库备份**:Litestream→S3 或定时 `.backup`+加密上传 | ✅ `backend/ops/backup.py`(零依赖 stdlib):sqlite3 **在线备份**(WAL 安全,不停服)+ `PRAGMA integrity_check`,可选 openssl AES-256 加密(设 `BMA_BACKUP_KEY`)、保留窗口裁剪、可选 aws CLI 传 S3(设 `BMA_BACKUP_S3`)。`--restore` 恢复校验;`--selftest` 是**恢复演练**(快照→加密→解密→恢复→逐行比对),已本地跑通 + 真机加密备份/恢复取回原行,并纳入 CI backend job 每次跑。**待办(外部)**:配 cron/systemd 定时 + S3 桶与凭据(或改用 Litestream 连续复制) | P1 备份 |
 | ☑ | 代码 | **监控/告警/安全事件日志**:结构化日志(不记 body,红线不破)+ 5xx/429 告警 | ✅ 每个响应一行 body-free JSON 到 stderr(平台可采集,不落库):纯函数 `log_record()` 只带 method/path(去 query)/status/ms/ip,结构上不可能含 body/need_text/email/token/header;level 映射 5xx→error、401/403/429→warn 供告警管道触发;`BMA_LOG=0` 可静音(测试用),默认开。测试:`test_log_record_is_body_free_and_leveled` + 真机验证已发出。**待办(外部)**:把 warn/error 接入实际告警系统(PagerDuty/邮件等) | P1 监控 |
 | ◐ | 混合 | **代码签名申请启动**(证书周期长,与本月并行)+ 下载中心页占位 | ✅ `downloads.html` 骨架已上线:按「今天可用/即将推出」诚实标注(引导式 Ollama 安装/手册/云手册=现已可用,Windows 签名桌面应用/macOS=即将推出),说明「安装包由向导按配置生成」不放假下载按钮;入 sitemap + smoke + deploy 页入口。**待办(外部)**:EV/OV 代码签名证书申请(周期长) | P1 签名/下载中心 |
 
