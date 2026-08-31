@@ -227,6 +227,24 @@ for (const a of art || []) {
      isLl === (a.guide.indexOf('Llama 3.1 Community License') >= 0));
 }
 
+// P0-10 WEBSITE LAYER: the plan/download UI (not just the generated files) must
+// surface "Built with Llama" + the license link for Llama-family models.
+const uiNoticeSrc = (build.match(/function llamaNoticeHtml[\s\S]*?\n  \}/) || [''])[0];
+let uiNotice = null;
+try {
+  uiNotice = vm.runInNewContext('(function(){ var t=function(en,zh){return en;};' + modelsSrc +
+    ' function isLlama(m){ return m.ollama.indexOf("llama") === 0; }' + uiNoticeSrc +
+    '; return MODELS.map(function(m){ return {id: m.id, ollama: m.ollama, html: llamaNoticeHtml(m)}; });})()');
+} catch (e) { /* fails below */ }
+ok('UI llamaNoticeHtml executes and covers every model (' + (uiNotice ? uiNotice.length : 0) + '/' + registry.models.length + ')',
+   Array.isArray(uiNotice) && uiNotice.length === registry.models.length);
+for (const u of uiNotice || []) {
+  const isLl = u.ollama.indexOf('llama') === 0;
+  ok('UI "Built with Llama" notice ' + (isLl ? 'present' : 'absent') + ' for ' + u.id + ' (P0-10 site layer)',
+     isLl === (u.html.indexOf('Built with Llama') >= 0) &&
+     isLl === (u.html.indexOf('llama.com/llama3_1/license') >= 0));
+}
+
 // ---------- summary ----------
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
