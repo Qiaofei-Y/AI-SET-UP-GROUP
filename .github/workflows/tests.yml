@@ -1,0 +1,36 @@
+name: tests
+
+# Gate every PR (and pushes to main) on the two zero-dependency test suites.
+# A non-zero exit turns the check red; enable branch protection on `main` requiring
+# both jobs so red blocks merge (docs/23 Week 4 · docs/13 §9.1).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # stdlib-only: boots the real server on an ephemeral port and speaks real HTTP
+      - name: python3 backend/tests/api.test.py
+        run: python3 backend/tests/api.test.py
+
+  frontend:
+    name: Frontend security + XSS + UI smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # ubuntu-latest ships google-chrome, so run.sh runs the full suite (static +
+      # unit + headless-Chrome XSS + all-pages UI smoke). If Chrome were ever absent
+      # it self-skips the browser parts; escaping stays covered by the unit test.
+      - name: bash frontend/tests/run.sh
+        run: bash frontend/tests/run.sh

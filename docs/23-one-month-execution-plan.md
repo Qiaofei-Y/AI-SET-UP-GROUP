@@ -54,7 +54,7 @@
 |---|---|---|---|---|
 | ☐ | 外部 | **静态站上托管**:Cloudflare Pages/Vercel + 域名 + CSP 响应头 | 生产域名可访问;CSP 头符合 docs/19 | P0-11 |
 | ☐ | 外部 | **后端生产部署 + TLS 反代**:进程管理 + `/v1/*` 反代 + HTTPS | 生产域名 `/v1/health` 200 over TLS | P0-12 |
-| ☐ | 代码 | **CI/CD**:GitHub Actions 跑 `frontend/tests/run.sh` + `backend/tests/api.test.py` | PR 触发全测;红则挡合并(docs/13 §9.1 模板) | P1 CI/CD |
+| ☑ | 代码 | **CI/CD**:GitHub Actions 跑 `frontend/tests/run.sh` + `backend/tests/api.test.py` | ✅ `.github/workflows/tests.yml`:backend / frontend 两个并行 job,PR + push-to-main 触发;backend 起真实服务跑真实 HTTP,frontend 在 ubuntu-latest(自带 Chrome)跑完整套(静态 + 单元 + XSS + 全页 smoke)。**待办(外部一步)**:在 GitHub 仓库设置对 `main` 开 branch protection 并把这两个 check 设为 required,才真正「红则挡合并」 | P1 CI/CD |
 | ☐ | 混合 | **数据库备份**:Litestream→S3 或定时 `.backup`+加密上传 | users.db 有连续/定时备份;演练一次恢复 | P1 备份 |
 | ☐ | 代码 | **监控/告警/安全事件日志**:结构化日志(不记 body,红线不破)+ 5xx/429 告警 | 关键事件可查;body 仍不落盘 | P1 监控 |
 | ☐ | 代码 | **代码签名申请启动**(证书周期长,与本月并行)+ 下载中心页占位 | EV/OV 证书申请已提交;`downloads.html` 骨架 | P1 签名/下载中心 |
