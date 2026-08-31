@@ -56,6 +56,7 @@ import os
 import re
 import secrets
 import sqlite3
+import sys
 import threading
 import time
 import urllib.request
@@ -753,6 +754,21 @@ def rate_limited(bucket, ip):
         return slot[1] > limit
 
 
+# ---------- structured ops/security logging (P1: 不记 body,红线不破) ----------
+# A single body-free JSON line per response. By construction it can only carry
+# method/path/status/timing/ip — never a request body, need_text, email, token or
+# any header — so the privacy red line (docs/19 §4) holds in the logs too. Levels
+# let an alerting pipeline trip on 5xx (error) and auth/abuse 401/403/429 (warn).
+
+def log_record(method, path, status, ms, ip):
+    level = ('error' if status >= 500
+             else 'warn' if status in (401, 403, 429)
+             else 'info')
+    return {'ts': int(time.time()), 'level': level, 'event': 'http',
+            'method': method, 'path': (path or '').split('?', 1)[0],  # query dropped
+            'status': status, 'ms': ms, 'ip': ip}
+
+
 # ---------- HTTP ----------
 
 class Api(BaseHTTPRequestHandler):
@@ -775,6 +791,19 @@ class Api(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+        self._log(status)
+
+    def _log(self, status):
+        """Emit one structured, body-free log line per response (BMA_LOG=0 to mute).
+        Goes to stderr so a container/platform captures it without touching a db."""
+        if os.environ.get('BMA_LOG', '1') == '0':
+            return
+        ms = int((time.time() - getattr(self, '_t0', time.time())) * 1000)
+        try:
+            sys.stderr.write(json.dumps(
+                log_record(self.command, self.path, status, ms, self.client_address[0])) + '\n')
+        except Exception:
+            pass  # logging must never break a response
 
     def _body(self):
         try:
@@ -820,6 +849,7 @@ class Api(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        self._t0 = time.time()
         path, _, query = self.path.partition('?')
         if path == '/v1/health':
             return self._json(200, {'ok': True, 'service': 'buildmyai-api', 'version': '0.1'})
@@ -844,6 +874,7 @@ class Api(BaseHTTPRequestHandler):
         return self._json(404, {'error': 'not_found'})
 
     def do_POST(self):
+        self._t0 = time.time()
         bucket = RATE_BUCKETS.get(self.path)
         if bucket and rate_limited(bucket, self.client_address[0]):
             return self._json(429, {'error': 'rate_limited'})

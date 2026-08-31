@@ -26,6 +26,9 @@ os.environ['BMA_USERS_DB'] = os.path.join(_TMP, 'users.db')
 os.environ['BMA_RATE_AUTH'] = '300/60'
 # dev mailer: keep its stdout echo out of the test output (OUTBOX is still populated)
 os.environ['BMA_MAIL_QUIET'] = '1'
+# structured request logging is on by default in prod; mute it so it doesn't
+# interleave with the test runner's own output (log_record is unit-tested directly)
+os.environ['BMA_LOG'] = '0'
 import server  # noqa: E402
 
 
@@ -680,6 +683,22 @@ class ApiTest(unittest.TestCase):
                           ({'password': 'longenough1', 'new_email': 'ok@example.com', 'x': 1}, 'unknown_field:x')):
             s, j = self._call_auth('/v1/account/email', bad, token=tok)
             self.assertEqual((s, j['error']), (400, want), bad)
+
+    # ---- structured ops/security logging (P1: body-free) ----
+    def test_log_record_is_body_free_and_leveled(self):
+        r = server.log_record('POST', '/v1/advise?secret=SECRET-MARKER', 200, 5, '1.2.3.4')
+        # query is dropped, and the record's keys are a fixed body-free set
+        self.assertEqual(r['path'], '/v1/advise')
+        self.assertEqual((r['method'], r['status'], r['level'], r['ip']),
+                         ('POST', 200, 'info', '1.2.3.4'))
+        self.assertEqual(set(r), {'ts', 'level', 'event', 'method', 'path', 'status', 'ms', 'ip'})
+        # by construction it cannot carry request content
+        self.assertNotIn('SECRET-MARKER', json.dumps(r))
+        # levels: 5xx -> error, auth/abuse -> warn, else info
+        self.assertEqual(server.log_record('GET', '/v1/health', 503, 1, 'x')['level'], 'error')
+        for code in (401, 403, 429):
+            self.assertEqual(server.log_record('POST', '/v1/auth/login', code, 1, 'x')['level'], 'warn')
+        self.assertEqual(server.log_record('GET', '/v1/health', 200, 1, 'x')['level'], 'info')
 
     # ---- transport hardening ----
     def test_cors_localhost_only(self):

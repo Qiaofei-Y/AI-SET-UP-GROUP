@@ -56,8 +56,8 @@
 | ☐ | 外部 | **后端生产部署 + TLS 反代**:进程管理 + `/v1/*` 反代 + HTTPS | 生产域名 `/v1/health` 200 over TLS | P0-12 |
 | ☑ | 代码 | **CI/CD**:GitHub Actions 跑 `frontend/tests/run.sh` + `backend/tests/api.test.py` | ✅ `.github/workflows/tests.yml`:backend / frontend 两个并行 job,PR + push-to-main 触发;backend 起真实服务跑真实 HTTP,frontend 在 ubuntu-latest(自带 Chrome)跑完整套(静态 + 单元 + XSS + 全页 smoke)。**待办(外部一步)**:在 GitHub 仓库设置对 `main` 开 branch protection 并把这两个 check 设为 required,才真正「红则挡合并」 | P1 CI/CD |
 | ☐ | 混合 | **数据库备份**:Litestream→S3 或定时 `.backup`+加密上传 | users.db 有连续/定时备份;演练一次恢复 | P1 备份 |
-| ☐ | 代码 | **监控/告警/安全事件日志**:结构化日志(不记 body,红线不破)+ 5xx/429 告警 | 关键事件可查;body 仍不落盘 | P1 监控 |
-| ☐ | 代码 | **代码签名申请启动**(证书周期长,与本月并行)+ 下载中心页占位 | EV/OV 证书申请已提交;`downloads.html` 骨架 | P1 签名/下载中心 |
+| ☑ | 代码 | **监控/告警/安全事件日志**:结构化日志(不记 body,红线不破)+ 5xx/429 告警 | ✅ 每个响应一行 body-free JSON 到 stderr(平台可采集,不落库):纯函数 `log_record()` 只带 method/path(去 query)/status/ms/ip,结构上不可能含 body/need_text/email/token/header;level 映射 5xx→error、401/403/429→warn 供告警管道触发;`BMA_LOG=0` 可静音(测试用),默认开。测试:`test_log_record_is_body_free_and_leveled` + 真机验证已发出。**待办(外部)**:把 warn/error 接入实际告警系统(PagerDuty/邮件等) | P1 监控 |
+| ◐ | 混合 | **代码签名申请启动**(证书周期长,与本月并行)+ 下载中心页占位 | ✅ `downloads.html` 骨架已上线:按「今天可用/即将推出」诚实标注(引导式 Ollama 安装/手册/云手册=现已可用,Windows 签名桌面应用/macOS=即将推出),说明「安装包由向导按配置生成」不放假下载按钮;入 sitemap + smoke + deploy 页入口。**待办(外部)**:EV/OV 代码签名证书申请(周期长) | P1 签名/下载中心 |
 
 ---
 
