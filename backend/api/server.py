@@ -14,7 +14,10 @@ Endpoints (drafts from the plan, minimal but real):
   POST /v1/auth/signup                create account -> session token
   POST /v1/auth/login                 email + password -> session token
   POST /v1/auth/logout                invalidate the presented session token
-  GET  /v1/auth/me                    Bearer token -> {name, email, plan}
+  POST /v1/auth/forgot                email -> constant 200; mails a reset link if it exists
+  POST /v1/auth/reset                 reset token + new password -> set password, revoke sessions
+  POST /v1/auth/verify                verification token -> mark email confirmed
+  GET  /v1/auth/me                    Bearer token -> {name, email, plan, email_verified}
 
 Identity vs telemetry stay in SEPARATE databases: users/sessions live in
 data/users.db, anonymous events in data/events.db — so the "telemetry is
@@ -41,7 +44,9 @@ Env:   BMA_LICENSE_SECRET (default dev secret; binding a non-loopback --host
        BMA_ADVISOR_LLM (opt-in: loopback URL of an OpenAI-compatible LLM, e.g.
        http://127.0.0.1:8080 — upgrades /v1/advise classification from keyword
        rules to the local model; non-loopback URLs are ignored, failures fall
-       back to rules)
+       back to rules),
+       mailer.py env (BMA_MAIL_FROM / BMA_SITE_URL / BMA_SMTP_* ) drives the
+       reset & verification emails — unset SMTP => dev stdout, nothing sent
 """
 import argparse
 import hashlib
@@ -56,6 +61,8 @@ import time
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+import mailer  # zero-dependency outbound email (dev-stdout / SMTP), P0-15
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 REGISTRY_PATH = os.path.join(ROOT, 'registry.json')
 DB_PATH = os.environ.get('BMA_DB', os.path.join(ROOT, 'data', 'events.db'))
@@ -65,6 +72,8 @@ LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
 TOS_VERSION = 'draft-2026-08-25'  # clickwrap record (P0-5): stamped per signup, bump on policy change
 SESSION_DAYS = 30
+RESET_TTL_S = 3600               # password-reset link lives one hour (short: it grants a password change)
+VERIFY_TTL_S = 48 * 3600         # email-verification link lives 48 hours (longer: low-risk, better UX)
 SQLITE_BUSY_TIMEOUT_MS = 5000     # WAL lets readers and one writer coexist; on a busy-lock, wait this long before erroring
 GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
@@ -294,6 +303,8 @@ USERS_MIGRATIONS = (
     ('ALTER TABLE users ADD COLUMN stripe_customer_id TEXT',),
     ('ALTER TABLE users ADD COLUMN subscription_status TEXT',),
     ('ALTER TABLE users ADD COLUMN plan_period_end INTEGER',),
+    # email verification (P0-15): 0/NULL = unverified, 1 = confirmed via emailed link
+    ('ALTER TABLE users ADD COLUMN email_verified INTEGER',),
 )
 
 
@@ -305,8 +316,14 @@ def init_users_db(path=None):
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
         company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
         plan_intent TEXT, stripe_customer_id TEXT, subscription_status TEXT,
-        plan_period_end INTEGER)''')
+        plan_period_end INTEGER, email_verified INTEGER)''')
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
+        token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
+    # one-time link tokens (P0-15). Same shape as sessions: only the sha256 of the
+    # token is stored, so a leaked users.db can't be replayed into a reset/verify.
+    con.execute('''CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
+    con.execute('''CREATE TABLE IF NOT EXISTS email_verifications (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
     run_migrations(con, USERS_MIGRATIONS)
     con.close()
@@ -432,14 +449,63 @@ def create_session(con, user_id):
 
 
 def session_user(con, token):
-    """token -> (id, name, email, plan) or None (unknown / expired)."""
+    """token -> (id, name, email, plan, email_verified) or None (unknown / expired).
+    email_verified is appended last so the many callers that index [0..3] are
+    untouched; only responses that surface verification status read [4]."""
     if not token:
         return None
     row = con.execute(
-        'SELECT u.id, u.name, u.email, u.plan FROM sessions s JOIN users u ON u.id = s.user_id '
-        'WHERE s.token_hash = ? AND s.expires > ?',
+        'SELECT u.id, u.name, u.email, u.plan, u.email_verified FROM sessions s '
+        'JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires > ?',
         (_token_hash(token), int(time.time()))).fetchone()
     return row
+
+
+# ---------- one-time link tokens (P0-15: password reset / email verification) ----------
+# Same secret discipline as sessions: mint an opaque token, hand it to the user in
+# an email link, store only its sha256. Single-use (consumed row is deleted) and
+# time-boxed. Table names come from module constants only — never request input.
+
+def new_link_token(con, table, user_id, ttl):
+    token = secrets.token_hex(24)                 # 48 hex chars, like a session token
+    now = int(time.time())
+    con.execute('DELETE FROM %s WHERE expires <= ?' % table, (now,))  # opportunistic sweep
+    con.execute('INSERT INTO %s (token_hash, user_id, ts, expires) VALUES (?,?,?,?)' % table,
+                (_token_hash(token), user_id, now, now + ttl))
+    return token
+
+
+def consume_link_token(con, table, token):
+    """Resolve a still-valid token to its user_id and delete it (single-use).
+    Returns None for unknown / expired / already-used tokens. Caller commits."""
+    if not token:
+        return None
+    row = con.execute('SELECT user_id FROM %s WHERE token_hash = ? AND expires > ?' % table,
+                      (_token_hash(token), int(time.time()))).fetchone()
+    if not row:
+        return None
+    con.execute('DELETE FROM %s WHERE token_hash = ?' % table, (_token_hash(token),))
+    return row[0]
+
+
+def send_verification_email(email, token):
+    link = mailer.site_url() + '/verify-email.html?token=' + token
+    mailer.send(email, 'Verify your Build My AI email',
+                'Welcome to Build My AI.\n\n'
+                'Confirm this email address by opening the link below:\n\n'
+                '    ' + link + '\n\n'
+                'This link expires in 48 hours. If you did not create an account, '
+                'you can safely ignore this email.\n')
+
+
+def send_reset_email(email, token):
+    link = mailer.site_url() + '/reset-password.html?token=' + token
+    mailer.send(email, 'Reset your Build My AI password',
+                'We received a request to reset your Build My AI password.\n\n'
+                'Choose a new password with the link below:\n\n'
+                '    ' + link + '\n\n'
+                'This link expires in 1 hour. If you did not request this, ignore this '
+                'email — your password will not change.\n')
 
 
 # ---------- schema whitelist (the privacy red line, executable) ----------
@@ -541,6 +607,25 @@ LOGIN_SCHEMA = {
     'password': (True, _password_shape),
 }
 
+
+def _opaque_token(v):  # a minted link token: exactly the shape new_link_token() emits
+    return isinstance(v, str) and re.match(r'^[0-9a-f]{48}$', v) is not None
+
+
+# password reset (P0-15): request by email (constant response), then set a new
+# password by presenting the emailed one-time token
+FORGOT_SCHEMA = {
+    'email': (True, _email_shape),
+}
+RESET_SCHEMA = {
+    'token':        (True, _opaque_token),
+    'new_password': (True, _password_shape),
+}
+# email verification (P0-15): confirm ownership by presenting the emailed token
+VERIFY_SCHEMA = {
+    'token': (True, _opaque_token),
+}
+
 # account self-service (docs/22 P1: password change / logout-all / CCPA delete+export)
 PASSWORD_CHANGE_SCHEMA = {
     'current_password': (True, _password_shape),
@@ -607,6 +692,8 @@ def insert(table, cols, vals, path=DB_PATH):
 
 RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated (events)
     '/v1/auth/signup': 'auth', '/v1/auth/login': 'auth', '/v1/auth/logout': 'auth',
+    # reset/verify burn PBKDF2 (reset) or spray email (forgot); both need a lid
+    '/v1/auth/forgot': 'auth', '/v1/auth/reset': 'auth', '/v1/auth/verify': 'auth',
     '/v1/account/password': 'auth', '/v1/account/logout-all': 'auth',
     '/v1/account/delete': 'auth',
     '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
@@ -745,6 +832,9 @@ class Api(BaseHTTPRequestHandler):
             '/v1/auth/signup': self._auth_signup,
             '/v1/auth/login': self._auth_login,
             '/v1/auth/logout': self._auth_logout,
+            '/v1/auth/forgot': self._auth_forgot,
+            '/v1/auth/reset': self._auth_reset,
+            '/v1/auth/verify': self._auth_verify,
             '/v1/account/password': self._account_password,
             '/v1/account/logout-all': self._account_logout_all,
             '/v1/account/delete': self._account_delete,
@@ -813,21 +903,25 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             cur = con.execute(
-                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos, plan_intent) '
-                'VALUES (?,?,?,?,?,?,?,?,?)',
+                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos, '
+                'plan_intent, email_verified) VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (int(time.time()), body['name'].strip(), email,
                  (body.get('company') or '').strip() or None,
                  'free',  # P0-3: entitlements are server-authoritative — see set_plan()
-                 salt, pw, TOS_VERSION, body.get('plan')))
-            token = create_session(con, cur.lastrowid)
+                 salt, pw, TOS_VERSION, body.get('plan'), 0))  # unverified until the link is clicked
+            uid = cur.lastrowid
+            token = create_session(con, uid)
+            verify_token = new_link_token(con, 'email_verifications', uid, VERIFY_TTL_S)
             con.commit()
         except sqlite3.IntegrityError:
             return self._json(409, {'error': 'email_taken'})
         finally:
             con.close()
+        # best-effort: a failed verification email must never fail the signup itself
+        send_verification_email(email, verify_token)
         return self._json(200, {'ok': True, 'token': token,
                                 'user': {'name': body['name'].strip(), 'email': email,
-                                         'plan': 'free'}})
+                                         'plan': 'free', 'email_verified': False}})
 
     def _auth_login(self, body):
         err = validate(body, LOGIN_SCHEMA)
@@ -837,7 +931,7 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             row = con.execute(
-                'SELECT id, name, plan, pw_salt, pw_hash FROM users WHERE email = ?',
+                'SELECT id, name, plan, pw_salt, pw_hash, email_verified FROM users WHERE email = ?',
                 (email,)).fetchone()
             # unknown email still runs the hash: same timing, same error either way
             salt = row[3] if row else b'\x00' * 16
@@ -849,7 +943,8 @@ class Api(BaseHTTPRequestHandler):
         finally:
             con.close()
         return self._json(200, {'ok': True, 'token': token,
-                                'user': {'name': row[1], 'email': email, 'plan': row[2]}})
+                                'user': {'name': row[1], 'email': email, 'plan': row[2],
+                                         'email_verified': bool(row[5])}})
 
     def _auth_logout(self, body):
         token = self._bearer()
@@ -863,6 +958,64 @@ class Api(BaseHTTPRequestHandler):
             con.close()
         return self._json(200, {'ok': True})
 
+    # -- password reset (P0-15): forgot mints a one-time link; reset spends it --
+    def _auth_forgot(self, body):
+        err = validate(body, FORGOT_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        email = body['email'].strip().lower()
+        token = None
+        con = users_con()
+        try:
+            row = con.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+            if row:
+                token = new_link_token(con, 'password_resets', row[0], RESET_TTL_S)
+                con.commit()
+        finally:
+            con.close()
+        if token:
+            send_reset_email(email, token)
+        # constant response whether or not the email exists — no account enumeration.
+        # (The mail is sent only for a real account; a stranger learns nothing here.)
+        return self._json(200, {'ok': True})
+
+    def _auth_reset(self, body):
+        err = validate(body, RESET_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        con = users_con()
+        try:
+            uid = consume_link_token(con, 'password_resets', body['token'])
+            if not uid:
+                return self._json(400, {'error': 'invalid_token'})
+            salt, pw = hash_password(body['new_password'])
+            # a completed reset proves the user controls the inbox, so the address is
+            # verified as a side effect; revoke every session — a reset must lock out
+            # anyone who held the old password (the whole point of a reset).
+            con.execute('UPDATE users SET pw_salt = ?, pw_hash = ?, email_verified = 1 WHERE id = ?',
+                        (salt, pw, uid))
+            con.execute('DELETE FROM sessions WHERE user_id = ?', (uid,))
+            con.commit()
+        finally:
+            con.close()
+        return self._json(200, {'ok': True})
+
+    # -- email verification (P0-15): confirm ownership via the emailed one-time link --
+    def _auth_verify(self, body):
+        err = validate(body, VERIFY_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        con = users_con()
+        try:
+            uid = consume_link_token(con, 'email_verifications', body['token'])
+            if not uid:
+                return self._json(400, {'error': 'invalid_token'})
+            con.execute('UPDATE users SET email_verified = 1 WHERE id = ?', (uid,))
+            con.commit()
+        finally:
+            con.close()
+        return self._json(200, {'ok': True, 'verified': True})
+
     def _auth_me(self):
         con = users_con()
         try:
@@ -872,7 +1025,8 @@ class Api(BaseHTTPRequestHandler):
         if not row:
             return self._json(401, {'error': 'not_logged_in'})
         return self._json(200, {'ok': True,
-                                'user': {'name': row[1], 'email': row[2], 'plan': row[3]},
+                                'user': {'name': row[1], 'email': row[2], 'plan': row[3],
+                                         'email_verified': bool(row[4])},
                                 # server-authoritative capability set: the frontend
                                 # shows/hides against this, never against a client guess
                                 'entitlements': entitlements_for(row[3])})
@@ -970,8 +1124,8 @@ class Api(BaseHTTPRequestHandler):
             row = session_user(con, token)
             if not row:
                 return self._json(401, {'error': 'not_logged_in'})
-            u = con.execute('SELECT ts, name, email, company, plan, plan_intent, tos '
-                            'FROM users WHERE id = ?', (row[0],)).fetchone()
+            u = con.execute('SELECT ts, name, email, company, plan, plan_intent, tos, '
+                            'email_verified FROM users WHERE id = ?', (row[0],)).fetchone()
             sess = con.execute('SELECT ts, expires, token_hash FROM sessions WHERE user_id = ? '
                                'ORDER BY ts', (row[0],)).fetchall()
         finally:
@@ -980,7 +1134,8 @@ class Api(BaseHTTPRequestHandler):
             'ok': True,
             'exported_at': int(time.time()),
             'user': {'created_ts': u[0], 'name': u[1], 'email': u[2], 'company': u[3],
-                     'plan': u[4], 'plan_intent': u[5], 'tos_accepted': u[6]},
+                     'plan': u[4], 'plan_intent': u[5], 'tos_accepted': u[6],
+                     'email_verified': bool(u[7])},
             'sessions': [{'created_ts': s[0], 'expires_ts': s[1],
                           'current': s[2] == _token_hash(token)} for s in sess],
             'note': 'Telemetry and feedback are anonymous, schema-whitelisted events '

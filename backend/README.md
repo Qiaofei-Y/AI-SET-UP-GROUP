@@ -23,7 +23,7 @@ python3 backend/tests/api.test.py          # 53 项测试(起真实服务打真�
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
 | `POST /v1/billing/checkout` `portal` + `POST /v1/billing/webhook` | ✅ v0 代码侧 | Stripe **托管**结账/门户(卡数据不进本进程)+ 签名校验 webhook(纯 stdlib HMAC-SHA256 + 时间戳防重放);`apply_subscription()`(按 customer id)是付费账号改 plan 的唯一自动路径(P0-1/2/3);密钥/价格走 `BMA_STRIPE_*` 环境变量,未配置时诚实 503。剩:接真实 Stripe 账户 + 公网 webhook + 前端结账 UI(见 [docs/23](../docs/23-one-month-execution-plan.md)) |
-| `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` + **账号自助**(改密/全登出/导出/删除,`/v1/account/*`) | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」;**plan 服务端权威**(注册一律 free,自报仅记意向,改套餐唯一入口 `set_plan()`/`--set-plan`,P0-3) |
+| `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` + **找回/验证**(`/v1/auth/forgot` `reset` `verify`)+ **账号自助**(改密/全登出/导出/删除,`/v1/account/*`) | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」;**plan 服务端权威**(注册一律 free,自报仅记意向,改套餐唯一入口 `set_plan()`/`--set-plan`,P0-3);**密码找回/邮箱验证**(P0-15)走一次性链接令牌(只存 sha256、单次使用、限时),发信抽象层 `mailer.py`(dev-stdout / SMTP-SES 双后端),forgot 恒定响应防枚举 |
 
 **前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时);signup 页注册/登录走 `/v1/auth/*`(经 `local-llm.js` 的 `__bmaAuth`,session token 存 sessionStorage、随标签页关闭清除)。向导/遥测/反馈离线自动回退纯前端;**auth 是唯一例外**——离线时注册/登录显式报错、dashboard 无 session 出登录墙,不假装成功(docs/22 P0-14)。
 
@@ -63,7 +63,7 @@ python3 backend/tests/api.test.py          # 53 项测试(起真实服务打真�
 
 | 需求 | 选型 | 说明 |
 |------|------|------|
-| 注册/登录 | ~~Clerk 或 Supabase Auth~~ → **已自建 v0**(`/v1/auth/*`,见上表) | signup.html 已区分 Free(免注册)/ Pro / Business(收公司名),照 [docs/05](../docs/05-business-model.md) 分层;正式上线若需社交登录/邮箱验证再评估 Clerk/Supabase |
+| 注册/登录 | ~~Clerk 或 Supabase Auth~~ → **已自建 v0**(`/v1/auth/*`,含密码找回 + 邮箱验证,见上表) | signup.html 已区分 Free(免注册)/ Pro / Business(收公司名),照 [docs/05](../docs/05-business-model.md) 分层;找回/验证已自建(一次性令牌 + `mailer.py`),正式上线若需社交登录再评估 Clerk/Supabase |
 | 支付 | Stripe(Payment Links 起步)| 免代码收款;正式后换 Checkout + Webhook |
 | license 校验 | **自建小 API**(第一个) | 安装器/Control Center 激活 Pro 功能时验一次 license;离线宽限期设计,不能让断网用户被锁 |
 

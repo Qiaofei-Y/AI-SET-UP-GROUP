@@ -155,7 +155,17 @@ key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secr
 Header `Authorization: Bearer <token>` → 删除该 session → `200 {"ok": true}`;无 token 401。
 
 ### GET /v1/auth/me
-Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}, "entitlements": {"plan", "rank", "capabilities": [...]}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。**entitlements 是服务端权威能力集**——前端只按它显隐,绝不信浏览器侧的猜测。
+Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {name, email, plan, email_verified}, "entitlements": {"plan", "rank", "capabilities": [...]}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。**entitlements 是服务端权威能力集**——前端只按它显隐,绝不信浏览器侧的猜测。`email_verified` 是布尔(signup/login 响应的 user 同样带此字段)。
+
+### 密码找回 / 邮箱验证(docs/22 P0-15;一次性链接令牌 + 发信抽象层)
+
+发信走 `backend/api/mailer.py`(零依赖 stdlib):**dev 后端**(默认,无 SMTP env)把邮件写进内存 `OUTBOX` 并回显 stdout,什么也不外发,后端测试据此驱动整个找回/验证流;**SMTP 后端**(设 `BMA_SMTP_HOST`)走 STARTTLS 真实投递——Amazon SES 暴露 SMTP 端点,把 `BMA_SMTP_*` 指向 SES 即生产路径(即计划里的「SES(env)」实现,仍零依赖)。链接基址 `BMA_SITE_URL`(默认 `http://localhost:8931`)。发信一律**尽力而为**:验证信发失败绝不拖垮注册本身。
+
+一次性令牌与 session 同一套保密纪律:铸造不透明 `token_hex(24)`(48 hex)放进邮件链接,库里**只存 `sha256(token)`**(泄库不可重放),单次使用(命中即删行)、有时效。两张表 `password_resets` / `email_verifications`(结构同 sessions),`new_link_token()` 铸造、`consume_link_token()` 兑付。
+
+- **POST /v1/auth/forgot** `{"email"}`(auth 限速桶)→ **恒定** `200 {"ok": true}`,不区分邮箱是否存在(防账号枚举);仅当账号真实存在时才发一封含 `reset-password.html?token=…` 的重置信。令牌时效 **1 小时**(RESET_TTL_S)。
+- **POST /v1/auth/reset** `{"token"(48hex), "new_password"(8–128)}` → 令牌有效则换盐换哈希、**撤销该用户全部 session**(重置即锁死持旧密码的人)、并把 `email_verified` 顺带置 1(能收信即证明持有该邮箱)→ `200 {"ok": true}`;令牌未知/过期/已用 `400 invalid_token`。
+- **POST /v1/auth/verify** `{"token"(48hex)}` → 令牌有效则 `users.email_verified=1`(单次使用)→ `200 {"ok": true, "verified": true}`;否则 `400 invalid_token`。注册时自动铸造一枚验证令牌并发信,时效 **48 小时**(VERIFY_TTL_S)。
 
 ### 门禁 / entitlements(docs/22 P0-3;plan 网关的可执行形式)
 
@@ -168,7 +178,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}, "ent
 
 - **POST /v1/account/password** `{"current_password", "new_password"}`(均 8–128)→ 校验当前密码(恒定工作量 PBKDF2)→ 换盐换哈希 → **轮换全部 session(含当前——被盗的现 token 也不能活过改密),同一事务内铸造新 token 返回** → `200 {"ok": true, "revoked_sessions": N, "token": "<新 48hex>"}`(前端换入 sessionStorage);当前密码错 `403 bad_credentials`。
 - **POST /v1/account/logout-all** `{}`(空体,未知键仍 400)→ 撤销该用户全部 session(含当前)→ `200 {"ok": true, "revoked_sessions": N}`。
-- **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
+- **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted, email_verified}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
 - **POST /v1/account/delete** `{"password"}`(破坏性操作需重认证)→ 删除 sessions + user,**文件级抹除**:`PRAGMA secure_delete=ON`(释放页清零)+ `VACUUM`(压缩),测试直接扫库文件字节断言邮箱/姓名零痕迹;密码错 `403`。
 
 配套:`create_session` 顺手清扫过期 session(`DELETE WHERE expires <= now`),sessions 表有界。

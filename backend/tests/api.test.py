@@ -24,7 +24,21 @@ os.environ['BMA_USERS_DB'] = os.path.join(_TMP, 'users.db')
 # the suite makes many auth-bucket calls in one window; the rate-limit tests
 # override this with tiny windows and clean up after themselves
 os.environ['BMA_RATE_AUTH'] = '300/60'
+# dev mailer: keep its stdout echo out of the test output (OUTBOX is still populated)
+os.environ['BMA_MAIL_QUIET'] = '1'
 import server  # noqa: E402
+
+
+def outbox_token_for(email, prefix):
+    """Pull the most recent one-time link token the dev mailer captured for a
+    recipient. `prefix` is the page the link points at (reset-password / verify-email)."""
+    import re
+    for entry in reversed(server.mailer.OUTBOX):
+        if entry['to'] == email and prefix in entry['text']:
+            m = re.search(prefix + r'\?token=([0-9a-f]{48})', entry['text'])
+            if m:
+                return m.group(1)
+    return None
 
 
 def call(port, path, body=None, method=None, origin=None):
@@ -332,9 +346,10 @@ class ApiTest(unittest.TestCase):
             'password': 'correct-horse-9', 'plan': 'pro', 'accept_tos': True})
         self.assertEqual((s, j['ok']), (200, True))
         self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
-        # P0-3: the requested plan never becomes the actual plan at signup
+        # P0-3: the requested plan never becomes the actual plan at signup;
+        # P0-15: a fresh account starts unverified until the emailed link is clicked
         self.assertEqual(j['user'], {'name': 'Ada Lovelace', 'email': 'ada@example.com',
-                                     'plan': 'free'})
+                                     'plan': 'free', 'email_verified': False})
         s, j = self._call_auth('/v1/auth/me', token=j['token'])
         self.assertEqual((s, j['user']['email']), (200, 'ada@example.com'))
 
@@ -517,6 +532,101 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(before, db_count('telemetry') + db_count('feedback'))
         with open(os.environ['BMA_DB'], 'rb') as f:
             self.assertNotIn(b'keeper@example.com', f.read())  # identity never in events.db
+
+    # ---- email: dev mailer + password reset + verification (P0-15) ----
+    def test_mailer_dev_backend_uses_outbox(self):
+        # no SMTP env in the test env → dev backend, nothing leaves the machine
+        self.assertFalse(server.mailer.smtp_configured())
+        server.mailer.reset_outbox()
+        self.assertTrue(server.mailer.send('sink@example.com', 'Subj', 'Body here'))
+        self.assertEqual(server.mailer.OUTBOX[-1],
+                         {'to': 'sink@example.com', 'subject': 'Subj', 'text': 'Body here'})
+
+    def test_signup_sends_verification_and_starts_unverified(self):
+        server.mailer.reset_outbox()
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Verify Me', 'email': 'verify@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        self.assertEqual((s, j['user']['email_verified']), (200, False))
+        token = j['token']
+        # a verification email was queued with a one-time link token
+        vtok = outbox_token_for('verify@example.com', 'verify-email.html')
+        self.assertRegex(vtok or '', r'^[0-9a-f]{48}$')
+        # me/login reflect the unverified state
+        s, j = self._call_auth('/v1/auth/me', token=token)
+        self.assertEqual(j['user']['email_verified'], False)
+        # verifying flips it, and the token is single-use
+        s, j = self._call_auth('/v1/auth/verify', {'token': vtok})
+        self.assertEqual((s, j['ok'], j['verified']), (200, True, True))
+        s, j = self._call_auth('/v1/auth/me', token=token)
+        self.assertEqual(j['user']['email_verified'], True)
+        s, j = self._call_auth('/v1/auth/verify', {'token': vtok})   # replay
+        self.assertEqual((s, j['error']), (400, 'invalid_token'))
+
+    def test_verify_rejects_bad_token(self):
+        for bad, want in (({'token': '0' * 48}, 'invalid_token'),       # well-shaped, unknown
+                          ({'token': 'nothex'}, 'invalid_field:token'),  # wrong shape
+                          ({'wat': 1}, 'unknown_field:wat')):
+            s, j = self._call_auth('/v1/auth/verify', bad)
+            self.assertEqual((s, j['error']), (400, want), bad)
+
+    def test_forgot_password_no_account_enumeration(self):
+        server.mailer.reset_outbox()
+        self._call_auth('/v1/auth/signup', {'name': 'Real', 'email': 'real@example.com',
+                                            'password': 'old-password-1', 'accept_tos': True})
+        # both a real and an unknown address get the exact same 200 {ok:true}
+        for email in ('real@example.com', 'ghost@example.com'):
+            s, j = self._call_auth('/v1/auth/forgot', {'email': email})
+            self.assertEqual((s, j), (200, {'ok': True}), email)
+        # ...but a reset email is only actually sent for the real one
+        recipients = [e['to'] for e in server.mailer.OUTBOX
+                      if 'reset-password.html' in e['text']]
+        self.assertIn('real@example.com', recipients)
+        self.assertNotIn('ghost@example.com', recipients)
+
+    def test_reset_password_flow_and_revokes_sessions(self):
+        server.mailer.reset_outbox()
+        self._call_auth('/v1/auth/signup', {'name': 'Reset Me', 'email': 'reset@example.com',
+                                            'password': 'old-password-1', 'accept_tos': True})
+        # an existing session that must die when the password is reset
+        s, j = self._call_auth('/v1/auth/login', {'email': 'reset@example.com', 'password': 'old-password-1'})
+        old_tok = j['token']
+        # request + spend the reset link
+        self._call_auth('/v1/auth/forgot', {'email': 'reset@example.com'})
+        rtok = outbox_token_for('reset@example.com', 'reset-password.html')
+        self.assertRegex(rtok or '', r'^[0-9a-f]{48}$')
+        s, j = self._call_auth('/v1/auth/reset', {'token': rtok, 'new_password': 'new-password-2'})
+        self.assertEqual((s, j['ok']), (200, True))
+        # old session revoked; old password dead; new password works
+        s, _ = self._call_auth('/v1/auth/me', token=old_tok)
+        self.assertEqual(s, 401)
+        s, _ = self._call_auth('/v1/auth/login', {'email': 'reset@example.com', 'password': 'old-password-1'})
+        self.assertEqual(s, 401)
+        s, j = self._call_auth('/v1/auth/login', {'email': 'reset@example.com', 'password': 'new-password-2'})
+        self.assertEqual((s, j['ok']), (200, True))
+        # spending the reset link also verified the email (inbox ownership proven)
+        self.assertEqual(j['user']['email_verified'], True)
+        # the token is single-use
+        s, j = self._call_auth('/v1/auth/reset', {'token': rtok, 'new_password': 'third-password-3'})
+        self.assertEqual((s, j['error']), (400, 'invalid_token'))
+
+    def test_reset_rejects_bad_shapes(self):
+        for bad, want in (({'token': '0' * 48, 'new_password': 'short'}, 'invalid_field:new_password'),
+                          ({'token': 'nothex', 'new_password': 'longenough1'}, 'invalid_field:token'),
+                          ({'token': '0' * 48}, 'missing_field:new_password'),
+                          ({'token': '0' * 48, 'new_password': 'longenough1'}, 'invalid_token')):
+            s, j = self._call_auth('/v1/auth/reset', bad)
+            self.assertEqual((s, j['error']), (400, want), bad)
+
+    def test_reset_token_never_stored_in_cleartext(self):
+        # like sessions, only sha256(token) is persisted — a leaked users.db can't be replayed
+        server.mailer.reset_outbox()
+        self._call_auth('/v1/auth/signup', {'name': 'Hash Me', 'email': 'hashme@example.com',
+                                            'password': 'longenough1', 'accept_tos': True})
+        self._call_auth('/v1/auth/forgot', {'email': 'hashme@example.com'})
+        rtok = outbox_token_for('hashme@example.com', 'reset-password.html')
+        with open(os.environ['BMA_USERS_DB'], 'rb') as f:
+            self.assertNotIn(rtok.encode(), f.read())
 
     # ---- transport hardening ----
     def test_cors_localhost_only(self):

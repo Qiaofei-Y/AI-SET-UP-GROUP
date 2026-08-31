@@ -31,9 +31,9 @@
 | ☐ | 代码 | **定价页三档 CTA 接结账**:Pro/Business 按钮→`/v1/billing/checkout`→跳转 | 登录态点 Pro→落 Stripe 测试结账页;成功回跳解锁 | P0-7 |
 | ☐ | 代码 | **成功/取消回跳页** `checkout-success.html` / `checkout-cancel.html` | 成功页轮询 `/v1/auth/me` 直到 plan 更新;双语 | P0-7 |
 | ☐ | 代码 | **Billing Portal 入口**:dashboard「管理订阅」→`POST /v1/billing/portal` | 返回 Stripe 托管门户 URL(升/降/退订/发票全托管) | P0-2 |
-| ☐ | 代码 | **发信抽象层** `mailer.py`:接口 + dev(stdout)/SES(env)双实现 | 无凭据走 stdout 可测;有 `BMA_SMTP_*`/SES 走真实 | P0-15 |
-| ☐ | 代码 | **密码找回**:`/v1/auth/forgot` + `/v1/auth/reset` | 恒定响应(不泄露邮箱是否存在)+ 短时效 token + 限速;测试断言 | P0-15 |
-| ☐ | 代码 | **邮箱验证**:`/v1/auth/verify` + 注册后发验证信 | 未验证标记;验证链接一次性;测试断言 | P0-15 |
+| ☑ | 代码 | **发信抽象层** `mailer.py`:接口 + dev(stdout)/SES(env)双实现 | ✅ 零依赖 stdlib:无 SMTP env 走 dev 后端(写内存 `OUTBOX` + stdout,零外发,测试据此驱动流程);设 `BMA_SMTP_HOST` 走 STARTTLS 真实投递(SES SMTP 端点即生产路径);发信尽力而为,失败不拖垮触发它的注册/找回。测试:`test_mailer_dev_backend_uses_outbox` | P0-15 |
+| ☑ | 代码 | **密码找回**:`/v1/auth/forgot` + `/v1/auth/reset` | ✅ forgot 恒定 `200 {ok:true}`(防枚举),仅真实账号才发含一次性令牌的重置信;reset 兑付令牌(只存 `sha256`,单次使用,1h 时效)→ 换哈希 + **撤销全部 session** + 顺带 `email_verified=1`。测试:no_enumeration / flow_and_revokes_sessions / bad_shapes / token_never_stored_cleartext | P0-15 |
+| ☑ | 代码 | **邮箱验证**:`/v1/auth/verify` + 注册后发验证信 | ✅ `users.email_verified` 版本化迁移新列,注册即置 0 并铸造 48h 一次性验证令牌发信;verify 兑付即置 1(单次使用);`me`/`login`/`signup`/`export` 响应均带 `email_verified`。测试:signup_sends_verification_and_starts_unverified / verify_rejects_bad_token | P0-15 |
 | ☐ | 外部 | **FTC click-to-cancel 复核**:确认 Billing Portal 取消路径无摩擦 | 测试账户能一键取消并收确认信 | P0-2 |
 
 ## 第 3 周 · 合规上线 + 卖点对齐 + 账号自助(混合)
