@@ -28,7 +28,7 @@ SRV=$!
 trap 'kill "$SRV" 2>/dev/null' EXIT
 sleep 0.6
 
-PAGES="index.html privacy.html terms.html refunds.html how-it-works.html capabilities.html templates.html deploy.html pricing.html signup.html signup.html?mode=login build.html chat.html dashboard.html forgot-password.html reset-password.html reset-password.html?token=demo verify-email.html verify-email.html?token=demo 404.html"
+PAGES="index.html privacy.html terms.html refunds.html how-it-works.html capabilities.html templates.html deploy.html pricing.html signup.html signup.html?mode=login build.html chat.html dashboard.html forgot-password.html reset-password.html reset-password.html?token=demo verify-email.html verify-email.html?token=demo checkout-success.html checkout-cancel.html 404.html"
 PASS=0; FAIL=0
 for p in $PAGES; do
   LOG="$(mktemp)"

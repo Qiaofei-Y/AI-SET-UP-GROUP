@@ -28,9 +28,9 @@
 
 | 状态 | 侧 | 条目 | 验收信号 | 关联 |
 |---|---|---|---|---|
-| ☐ | 代码 | **定价页三档 CTA 接结账**:Pro/Business 按钮→`/v1/billing/checkout`→跳转 | 登录态点 Pro→落 Stripe 测试结账页;成功回跳解锁 | P0-7 |
-| ☐ | 代码 | **成功/取消回跳页** `checkout-success.html` / `checkout-cancel.html` | 成功页轮询 `/v1/auth/me` 直到 plan 更新;双语 | P0-7 |
-| ☐ | 代码 | **Billing Portal 入口**:dashboard「管理订阅」→`POST /v1/billing/portal` | 返回 Stripe 托管门户 URL(升/降/退订/发票全托管) | P0-2 |
+| ◐ | 代码 | **三档 CTA 接结账**:登录态升级→`/v1/billing/checkout`→整页跳转 | ✅ dashboard「你的套餐」卡:free 账号「升级到专业版」按钮 enhance 成真实结账(`__bmaBilling.checkout`→Stripe URL 整页跳转;未配密钥时 503→诚实提示「Beta 免费」,不显示坏支付流)。**待办**:营销 `pricing.html` 三档按钮仍走 Beta 免费注册,翻成付费入口留待 go-live 拍板(见 §依赖) | P0-7 |
+| ☑ | 代码 | **成功/取消回跳页** `checkout-success.html` / `checkout-cancel.html` | ✅ 成功页 `checkout.js` 轮询 `/v1/auth/me`(6×2s)直到 plan 翻新,翻新即显套餐名 + 控制中心 CTA;webhook 未落地则诚实提示「稍后更新」不假解锁;取消页明示「未扣款」。均双语 + noindex + robots Disallow;egress 锁内(经 `__bmaAuth`)。smoke 覆盖两页 | P0-7 |
+| ☑ | 代码 | **Billing Portal 入口**:dashboard「管理订阅」→`POST /v1/billing/portal` | ✅ 付费账号(pro/business)显「管理订阅」按钮→`__bmaBilling.portal`→Stripe 托管门户整页跳转(升/降/退订/发票全托管,契合 FTC click-to-cancel);无订阅 409→「无可管理订阅」、未配密钥 503→Beta 提示。卡数据永不进浏览器(整页跳转非 fetch) | P0-2 |
 | ☑ | 代码 | **发信抽象层** `mailer.py`:接口 + dev(stdout)/SES(env)双实现 | ✅ 零依赖 stdlib:无 SMTP env 走 dev 后端(写内存 `OUTBOX` + stdout,零外发,测试据此驱动流程);设 `BMA_SMTP_HOST` 走 STARTTLS 真实投递(SES SMTP 端点即生产路径);发信尽力而为,失败不拖垮触发它的注册/找回。测试:`test_mailer_dev_backend_uses_outbox` | P0-15 |
 | ☑ | 代码 | **密码找回**:`/v1/auth/forgot` + `/v1/auth/reset` | ✅ forgot 恒定 `200 {ok:true}`(防枚举),仅真实账号才发含一次性令牌的重置信;reset 兑付令牌(只存 `sha256`,单次使用,1h 时效)→ 换哈希 + **撤销全部 session** + 顺带 `email_verified=1`。测试:no_enumeration / flow_and_revokes_sessions / bad_shapes / token_never_stored_cleartext | P0-15 |
 | ☑ | 代码 | **邮箱验证**:`/v1/auth/verify` + 注册后发验证信 | ✅ `users.email_verified` 版本化迁移新列,注册即置 0 并铸造 48h 一次性验证令牌发信;verify 兑付即置 1(单次使用);`me`/`login`/`signup`/`export` 响应均带 `email_verified`。测试:signup_sends_verification_and_starts_unverified / verify_rejects_bad_token | P0-15 |

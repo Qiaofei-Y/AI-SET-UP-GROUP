@@ -104,7 +104,12 @@
         <div class="ch"><h3>🎫 <span data-en="Your plan" data-zh="你的套餐">Your plan</span></h3><span class="badge teal" id="planBadge" data-en="● live" data-zh="● 真实">● live</span></div>
         <p style="font-size:12.5px;color:var(--ink-2);margin:2px 0 8px" data-en="What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims." data-zh="你的套餐当前解锁了哪些能力。这直接来自服务端——套餐一变功能即解锁,绝不听浏览器一面之词。">What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims.</p>
         <ul id="planCaps" style="list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:13px"></ul>
+        <!-- free users: start a Stripe-hosted checkout (falls back to the pricing
+             page with no JS / if billing isn't live yet). paid users: open the
+             Stripe Billing Portal to manage or cancel (FTC click-to-cancel). -->
         <a class="btn primary fx-btn-sweep hidden" id="planUpgrade" href="pricing.html" style="margin-top:10px;justify-content:center" data-en="Upgrade to Pro →" data-zh="升级到专业版 →">Upgrade to Pro →</a>
+        <button type="button" class="btn ghost hidden" id="planManage" style="margin-top:10px;justify-content:center" data-en="Manage subscription" data-zh="管理订阅">Manage subscription</button>
+        <div class="acct-msg" id="planMsg" role="alert" style="margin-top:8px"></div>
       </div>
 
       <!-- account self-service: the LIVE card on this preview page (privacy policy, executable) -->
@@ -221,9 +226,11 @@
       li.appendChild(mark); li.appendChild(label);
       list.appendChild(li);
     });
-    // upgrade CTA only for free accounts (checkout wiring lands next; for now it
-    // points at pricing so the path is honest, never a dead unlock)
-    document.getElementById('planUpgrade').classList.toggle('hidden', (ent && ent.plan) !== 'free');
+    // free accounts get the upgrade CTA (starts a hosted checkout); paying
+    // accounts get the Billing Portal entry to manage/cancel. Never both.
+    var plan = ent && ent.plan;
+    document.getElementById('planUpgrade').classList.toggle('hidden', plan !== 'free');
+    document.getElementById('planManage').classList.toggle('hidden', plan !== 'pro' && plan !== 'business');
   }
 
   if (!token || !window.__bmaAuth) { showLogin(); }
@@ -359,6 +366,43 @@
       }
       renderErr('delMsg', res, 'Password is incorrect.', '密码不正确。');
     });
+  });
+
+  // ---- billing (P0-1/2/7): Stripe-hosted checkout & Billing Portal ----
+  // We never touch card data — both endpoints return a Stripe URL and we do a
+  // full-page redirect (no fetch to Stripe from the browser, so the egress lock
+  // holds). While billing is un-provisioned (beta), the server answers 503 and
+  // we say so honestly instead of showing a broken payment flow.
+  var BETA_EN = "Paid plans aren't open yet — everything that's live is free during beta.";
+  var BETA_ZH = '付费套餐尚未开放——Beta 期间已上线的功能全部免费。';
+  var billingBusy = false;
+  function billingGo(call) {
+    if (billingBusy) return;
+    if (!window.__bmaBilling) { setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+    billingBusy = true;
+    call(function (err, res) {
+      billingBusy = false;
+      if (err) { setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH); return; }
+      if (res.status === 200 && res.json && res.json.url) { location.href = res.json.url; return; }
+      if (res.status === 401) { clearSession(); showLogin(); return; }  // fail closed
+      if (res.status === 503) { setMsg('planMsg', BETA_EN, BETA_ZH); return; }
+      if (res.status === 409) {  // portal only: no subscription to manage
+        setMsg('planMsg', 'No active subscription to manage yet.', '目前没有可管理的订阅。');
+        return;
+      }
+      if (res.status === 429) {
+        setMsg('planMsg', 'Too many attempts — wait a minute and try again.', '尝试次数过多,请稍等一分钟再试。');
+        return;
+      }
+      setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH);
+    });
+  }
+  document.getElementById('planUpgrade').addEventListener('click', function (e) {
+    e.preventDefault();  // enhance the pricing-page link into a real checkout
+    billingGo(function (cb) { window.__bmaBilling.checkout(token, 'pro', cb); });
+  });
+  document.getElementById('planManage').addEventListener('click', function () {
+    billingGo(function (cb) { window.__bmaBilling.portal(token, cb); });
   });
 })();
 
