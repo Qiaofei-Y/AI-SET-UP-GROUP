@@ -35,11 +35,31 @@ Restart=on-failure
 RestartSec=2
 
 # --- sandboxing: the process only needs to write its two SQLite dbs ---
+# ReadWritePaths must already exist (ProtectSystem=strict makes its parent
+# read-only, so the server can't create it): mkdir -p it as user bma first.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/srv/buildmyai/backend/api/data
+# Extra hardening — all safe for a pure-stdlib CPython HTTP server (no device
+# access, no kernel tuning, no privilege changes; it still needs IPv4/IPv6 for
+# the reverse proxy + outbound Stripe/SMTP, and AF_UNIX for DNS/journald).
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target

@@ -8,6 +8,18 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: these jobs only read the checked-out tree — no writes to the
+# repo, no packages, no deployments. Narrowing the default GITHUB_TOKEN here caps
+# the blast radius if a step (or a future dependency) is ever compromised.
+permissions:
+  contents: read
+
+# One in-flight run per ref: a new push to the same branch/PR cancels the older,
+# now-superseded run instead of queueing behind it (faster feedback, less CI load).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend API tests

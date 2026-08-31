@@ -262,7 +262,13 @@ def run_migrations(con, migrations):
     count — so repeat launches don't re-run migrations (the acceptance signal). The
     per-statement try/except stays as defense: a DB created by an older build already
     has these columns from its CREATE TABLE, and swallowing the duplicate-column error
-    keeps that first versioned pass a no-op instead of a crash."""
+    keeps that first versioned pass a no-op instead of a crash.
+
+    Forward-only: if an OLDER build opens a DB a newer one already migrated
+    (stored version > len(migrations)), we neither re-run nor rewrite the version
+    DOWN — silently lowering it would make the next newer-build launch re-run
+    migrations that were already applied (safe only while every step is idempotent;
+    a data migration would not be). The recorded high-water mark is preserved."""
     con.execute('CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)')
     row = con.execute('SELECT version FROM schema_version').fetchone()
     if row is None:
@@ -276,7 +282,8 @@ def run_migrations(con, migrations):
                 con.execute(stmt)
             except sqlite3.OperationalError:
                 pass  # already applied on a DB that predates schema_version
-    con.execute('UPDATE schema_version SET version = ?', (len(migrations),))
+    if len(migrations) > current:   # forward-only: never record a lower version
+        con.execute('UPDATE schema_version SET version = ?', (len(migrations),))
     con.commit()
 
 

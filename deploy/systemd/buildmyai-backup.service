@@ -18,9 +18,25 @@ Environment=BMA_BACKUP_KEEP=48
 # Set to push each snapshot off-box (needs the aws CLI on PATH + credentials):
 # Environment=BMA_BACKUP_S3=s3://your-bucket/bma
 ExecStart=/usr/bin/python3 /srv/buildmyai/backend/ops/backup.py
+# --- sandboxing: reads the two dbs, writes only the snapshot dir ---
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadOnlyPaths=/srv/buildmyai/backend/api/data
 ReadWritePaths=/var/backups/bma
+# Extra hardening — safe even though this oneshot may fork openssl (encrypt) and
+# the aws CLI (off-box push): both are ordinary userspace tools. Keep AF_INET*
+# so the optional S3 upload works, and AF_UNIX for DNS resolution.
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

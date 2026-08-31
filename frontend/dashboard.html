@@ -137,8 +137,8 @@
         <div class="acct-grid">
           <div class="acct-col">
             <div class="acct-lbl" data-en="CHANGE PASSWORD" data-zh="修改密码">CHANGE PASSWORD</div>
-            <input id="pwCur" type="password" autocomplete="current-password" data-en-ph="Current password" data-zh-ph="当前密码" placeholder="Current password">
-            <input id="pwNew" type="password" autocomplete="new-password" data-en-ph="New password (min 8 characters)" data-zh-ph="新密码(至少 8 位)" placeholder="New password (min 8 characters)">
+            <input id="pwCur" type="password" autocomplete="current-password" data-en-ph="Current password" data-zh-ph="当前密码" placeholder="Current password" data-en-al="Current password" data-zh-al="当前密码" aria-label="Current password">
+            <input id="pwNew" type="password" autocomplete="new-password" data-en-ph="New password (min 8 characters)" data-zh-ph="新密码(至少 8 位)" placeholder="New password (min 8 characters)" data-en-al="New password (min 8 characters)" data-zh-al="新密码(至少 8 位)" aria-label="New password (min 8 characters)">
             <button type="button" class="btn ghost" id="pwBtn" data-en="Change password" data-zh="修改密码">Change password</button>
             <div class="acct-msg" id="pwMsg" role="alert"></div>
           </div>
@@ -150,7 +150,7 @@
             <div class="acct-msg" id="acctMsg" role="alert"></div>
             <div class="acct-danger hidden" id="delConfirm">
               <p data-en="This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm." data-zh="这将把你的账号与登录记录从本地数据库中永久抹除(文件级清零并压缩),无法撤销。输入密码以确认。">This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm.</p>
-              <input id="delPw" type="password" autocomplete="current-password" data-en-ph="Your password" data-zh-ph="你的密码" placeholder="Your password">
+              <input id="delPw" type="password" autocomplete="current-password" data-en-ph="Your password" data-zh-ph="你的密码" placeholder="Your password" data-en-al="Your password to confirm account deletion" data-zh-al="用于确认删除账号的密码" aria-label="Your password to confirm account deletion">
               <div class="acct-danger-row">
                 <button type="button" class="btn ghost" id="delCancel" data-en="Cancel" data-zh="取消">Cancel</button>
                 <button type="button" class="btn ghost danger" id="delGo" data-en="Permanently delete" data-zh="永久删除">Permanently delete</button>

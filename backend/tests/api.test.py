@@ -904,6 +904,222 @@ class ApiTest(unittest.TestCase):
         finally:
             del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
 
+    def test_billing_webhook_subscription_created_maps_price_and_propagates_period(self):
+        """customer.subscription.created: the price id maps to a plan and the
+        subscription's status + current_period_end are mirrored into users.db so
+        the app can gate offline without a round-trip to Stripe."""
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
+        os.environ['BMA_STRIPE_PRICE_BUSINESS'] = 'price_biz_456'
+        try:
+            s, j = self._call_auth('/v1/auth/signup', {
+                'name': 'Sub Create', 'email': 'subcreate@example.com',
+                'password': 'longenough1', 'accept_tos': True})
+            token = j['token']
+            cust = 'cus_subcreate'
+            # link the customer first (checkout completed with no plan metadata)
+            s, _ = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
+                'client_reference_id': 'subcreate@example.com', 'customer': cust}}})
+            self.assertEqual(s, 200)
+            # subscription.created carries the price -> plan mapping and a period end
+            period = 1999999999
+            s, _ = self._webhook({'type': 'customer.subscription.created', 'data': {'object': {
+                'customer': cust, 'status': 'active',
+                'items': {'data': [{'price': {'id': 'price_biz_456'}}]},
+                'current_period_end': period}}})
+            self.assertEqual(s, 200)
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'business')   # price_biz_456 -> business
+            import sqlite3
+            con = sqlite3.connect(os.environ['BMA_USERS_DB'])
+            row = con.execute('SELECT subscription_status, plan_period_end FROM users '
+                              'WHERE stripe_customer_id = ?', (cust,)).fetchone()
+            con.close()
+            self.assertEqual(row, ('active', period), 'status + current_period_end must mirror')
+        finally:
+            for k in ('BMA_STRIPE_WEBHOOK_SECRET', 'BMA_STRIPE_PRICE_PRO', 'BMA_STRIPE_PRICE_BUSINESS'):
+                os.environ.pop(k, None)
+
+    def test_billing_webhook_past_due_and_unpaid_drop_to_free(self):
+        """A subscription that goes past_due/unpaid loses its paid entitlement even
+        though its price still maps to a plan — only active/trialing keeps it — while
+        the real subscription status is preserved for support/ops."""
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
+        try:
+            s, j = self._call_auth('/v1/auth/signup', {
+                'name': 'Past Due', 'email': 'pastdue@example.com',
+                'password': 'longenough1', 'accept_tos': True})
+            token = j['token']
+            cust = 'cus_pastdue'
+            self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
+                'client_reference_id': 'pastdue@example.com', 'customer': cust}}})
+            # active first -> pro
+            self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
+                'customer': cust, 'status': 'active',
+                'items': {'data': [{'price': {'id': 'price_pro_123'}}]}}}})
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'pro')
+            # each dunning state drops entitlement to free but records the true status
+            for status in ('past_due', 'unpaid'):
+                self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
+                    'customer': cust, 'status': status,
+                    'items': {'data': [{'price': {'id': 'price_pro_123'}}]}}}})
+                s, j = self._call_auth('/v1/auth/me', token=token)
+                self.assertEqual(j['user']['plan'], 'free', '%s must lose entitlement' % status)
+                import sqlite3
+                con = sqlite3.connect(os.environ['BMA_USERS_DB'])
+                got = con.execute('SELECT subscription_status FROM users WHERE stripe_customer_id = ?',
+                                  (cust,)).fetchone()[0]
+                con.close()
+                self.assertEqual(got, status)
+        finally:
+            os.environ.pop('BMA_STRIPE_WEBHOOK_SECRET', None)
+            os.environ.pop('BMA_STRIPE_PRICE_PRO', None)
+
+    def test_billing_webhook_unknown_price_active_is_noop(self):
+        """An active subscription whose price maps to no configured plan must not
+        change the account (apply_subscription rejects plan=None) — a mis-configured
+        or foreign price can't silently up/down-grade someone."""
+        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
+        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
+        try:
+            s, j = self._call_auth('/v1/auth/signup', {
+                'name': 'Unknown Price', 'email': 'unkprice@example.com',
+                'password': 'longenough1', 'accept_tos': True})
+            token = j['token']
+            cust = 'cus_unkprice'
+            self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
+                'client_reference_id': 'unkprice@example.com', 'customer': cust}}})
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'free')
+            s, _ = self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
+                'customer': cust, 'status': 'active',
+                'items': {'data': [{'price': {'id': 'price_unknown_999'}}]}}}})
+            self.assertEqual(s, 200)   # acked, but nothing moved
+            s, j = self._call_auth('/v1/auth/me', token=token)
+            self.assertEqual(j['user']['plan'], 'free')
+        finally:
+            os.environ.pop('BMA_STRIPE_WEBHOOK_SECRET', None)
+            os.environ.pop('BMA_STRIPE_PRICE_PRO', None)
+
+    # ---- migrations: forward-only version tracking (SQLite hardening) -----------
+    def test_run_migrations_forward_only_no_downgrade_or_rerun(self):
+        """schema_version is a high-water mark: an older build opening a DB a newer
+        build already migrated must NOT lower the recorded version (which would make
+        the next newer-build launch re-run already-applied steps)."""
+        import shutil
+        import sqlite3
+        d = tempfile.mkdtemp(prefix='bma-mig-')
+        path = os.path.join(d, 'mig.db')
+        con = server.connect_db(path)
+        try:
+            con.execute('CREATE TABLE t (id INTEGER PRIMARY KEY)')
+            migs = (('ALTER TABLE t ADD COLUMN a TEXT',),
+                    ('ALTER TABLE t ADD COLUMN b TEXT',))
+            server.run_migrations(con, migs)
+            ver = lambda: con.execute('SELECT version FROM schema_version').fetchone()[0]
+            self.assertEqual(ver(), 2)
+            server.run_migrations(con, migs)           # idempotent: no re-run, no error
+            self.assertEqual(ver(), 2)
+            # an OLDER build (fewer known migrations) must not downgrade the record
+            server.run_migrations(con, (migs[0],))
+            self.assertEqual(ver(), 2, 'older build must not lower schema_version')
+            # so the newer build re-running finds nothing to do (proves no re-run)
+            server.run_migrations(con, migs)
+            self.assertEqual(ver(), 2)
+            # a genuinely new step still applies and moves the version forward
+            server.run_migrations(con, migs + (('ALTER TABLE t ADD COLUMN c TEXT',),))
+            self.assertEqual(ver(), 3)
+            cols = {r[1] for r in con.execute('PRAGMA table_info(t)')}
+            self.assertLessEqual({'a', 'b', 'c'}, cols)
+        finally:
+            con.close()
+            shutil.rmtree(d, ignore_errors=True)
+
+    # ---- one-time link tokens: expiry + single-use + cross-account -------------
+    def test_reset_endpoint_rejects_expired_token(self):
+        """An expired reset token is rejected (expires must be strictly in the
+        future) and leaves the password unchanged — the TTL boundary is real."""
+        import time as _t
+        self._call_auth('/v1/auth/signup', {'name': 'Expiry', 'email': 'expired-reset@example.com',
+                                            'password': 'orig-password-1', 'accept_tos': True})
+        con = server.users_con()
+        try:
+            uid = con.execute('SELECT id FROM users WHERE email = ?',
+                              ('expired-reset@example.com',)).fetchone()[0]
+            tok = 'c' * 48
+            now = int(_t.time())
+            con.execute('INSERT INTO password_resets (token_hash, user_id, ts, expires) VALUES (?,?,?,?)',
+                        (server._token_hash(tok), uid, now - 7200, now - 3600))  # expired an hour ago
+            con.commit()
+        finally:
+            con.close()
+        s, j = self._call_auth('/v1/auth/reset', {'token': tok, 'new_password': 'brand-new-pass-2'})
+        self.assertEqual((s, j['error']), (400, 'invalid_token'))
+        # password never changed: the original still logs in, the attempted new one does not
+        s, _ = self._call_auth('/v1/auth/login',
+                               {'email': 'expired-reset@example.com', 'password': 'orig-password-1'})
+        self.assertEqual(s, 200)
+        s, _ = self._call_auth('/v1/auth/login',
+                               {'email': 'expired-reset@example.com', 'password': 'brand-new-pass-2'})
+        self.assertEqual(s, 401)
+
+    def test_link_token_single_use_and_cross_account(self):
+        """consume_link_token resolves to the exact minting user (never a neighbour)
+        and is single-use: the row is deleted on first spend."""
+        import time as _t
+        for email in ('linka@example.com', 'linkb@example.com'):
+            self._call_auth('/v1/auth/signup', {'name': 'L', 'email': email,
+                                                'password': 'longenough1', 'accept_tos': True})
+        con = server.users_con()
+        try:
+            uid_a = con.execute('SELECT id FROM users WHERE email = ?', ('linka@example.com',)).fetchone()[0]
+            uid_b = con.execute('SELECT id FROM users WHERE email = ?', ('linkb@example.com',)).fetchone()[0]
+            self.assertNotEqual(uid_a, uid_b)
+            tok_a = server.new_link_token(con, 'password_resets', uid_a, server.RESET_TTL_S)
+            con.commit()
+            # resolves to A only, then is gone (single-use)
+            self.assertEqual(server.consume_link_token(con, 'password_resets', tok_a), uid_a)
+            con.commit()
+            self.assertIsNone(server.consume_link_token(con, 'password_resets', tok_a))
+            # an unknown token never resolves to some other account
+            self.assertIsNone(server.consume_link_token(con, 'password_resets', 'd' * 48))
+        finally:
+            con.close()
+
+    # ---- account email: same-address casing is a true no-op --------------------
+    def test_account_email_same_address_different_casing_is_noop(self):
+        """Re-submitting the SAME address in different casing must not reset the
+        verified flag or send a fresh verification email (no busy-work, no downgrade)."""
+        server.mailer.reset_outbox()
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Same Addr', 'email': 'Same@Example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        vtok = outbox_token_for('same@example.com', 'verify-email.html')
+        self._call_auth('/v1/auth/verify', {'token': vtok})
+        server.mailer.reset_outbox()
+        s, j = self._call_auth('/v1/account/email',
+                               {'password': 'longenough1', 'new_email': 'SAME@example.COM'}, token=tok)
+        self.assertEqual((s, j['ok'], j['email'], j['email_verified']),
+                         (200, True, 'same@example.com', True))
+        self.assertIsNone(outbox_token_for('same@example.com', 'verify-email.html'),
+                          'a no-op email change must not queue a verification mail')
+
+    # ---- mailer: SMTP config toggle + URL helpers ------------------------------
+    def test_mailer_smtp_config_toggle_and_url_helpers(self):
+        self.assertFalse(server.mailer.smtp_configured())   # test env has no SMTP
+        os.environ['BMA_SMTP_HOST'] = 'smtp.example.com'
+        self.addCleanup(os.environ.pop, 'BMA_SMTP_HOST', None)
+        self.assertTrue(server.mailer.smtp_configured())
+        os.environ['BMA_SITE_URL'] = 'https://buildmyai.example/'
+        self.addCleanup(os.environ.pop, 'BMA_SITE_URL', None)
+        self.assertEqual(server.mailer.site_url(), 'https://buildmyai.example')  # trailing slash stripped
+        os.environ['BMA_MAIL_FROM'] = 'BMA <hi@example.com>'
+        self.addCleanup(os.environ.pop, 'BMA_MAIL_FROM', None)
+        self.assertEqual(server.mailer.from_addr(), 'BMA <hi@example.com>')
+
     # ---- entitlements / plan gate (P0-3) ---------------------------------------
     def test_entitlements_reflect_plan_and_gate_flips_with_it(self):
         """The plan gate is server-authoritative and honest: a free user is denied

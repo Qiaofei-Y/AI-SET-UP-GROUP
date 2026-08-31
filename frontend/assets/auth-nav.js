@@ -25,7 +25,9 @@
       };
       apply();
       // Keep the label correct across language switches (only while logged in).
-      window.addEventListener('langchange', apply);
+      // i18n.js dispatches 'langchange' on `document` (bubbles:false), so the
+      // listener must be on document — a window listener would never fire.
+      document.addEventListener('langchange', apply);
     });
   });
 })();

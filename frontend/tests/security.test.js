@@ -103,6 +103,26 @@ for (const f of htmlFiles) {
   ok(rel(f) + ': loads base.css', /assets\/base\.css/.test(h));
 }
 
+// ---------- 2b. i18n bilingual parity ----------
+// Every visible string must carry BOTH languages: an element with data-en needs
+// data-zh (and vice-versa), and the same for placeholder (-ph) and aria-label
+// (-al) pairs. A one-sided attribute is a defect — this locks the invariant so a
+// half-translated element fails here instead of shipping.
+for (const f of htmlFiles) {
+  const h = read(f);
+  const tags = h.match(/<[^>]*\bdata-(?:en|zh)(?:-ph|-al)?\b[^>]*>/g) || [];
+  let bad = 0;
+  for (const tag of tags) {
+    const pairs = [['data-en', 'data-zh'], ['data-en-ph', 'data-zh-ph'], ['data-en-al', 'data-zh-al']];
+    for (const [en, zh] of pairs) {
+      const hasEn = new RegExp('\\b' + en + '\\b(?![-\\w])').test(tag);
+      const hasZh = new RegExp('\\b' + zh + '\\b(?![-\\w])').test(tag);
+      if (hasEn !== hasZh) { bad++; }
+    }
+  }
+  ok(rel(f) + ': i18n data-en/zh (+ -ph/-al) attributes are always bilingual', bad === 0);
+}
+
 // ---------- 3. no hardcoded real secrets ----------
 // (The masked placeholder "sk-local-****3a9f" in the demo UI is not a real key.)
 const secretPat = /(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk-(?!local-)[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})/;

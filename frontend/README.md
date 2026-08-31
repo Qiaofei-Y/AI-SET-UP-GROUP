@@ -16,6 +16,10 @@
 | `dashboard.html` | **Control Center 预览**:装好后的管理界面(模型/运行状态/知识库/API/Teach My AI),**全页示例数据并明确标注**;唯一真实卡是**「账号」自助卡**(改密并撤销其他 session、全设备登出、导出 JSON、文件级删除账号——隐私政策的可执行形式);未登录出登录墙(P0-14) |
 | `chat.html` | **可交互对话演示**:输入或点建议问题 → AI 流式回答 + 来源引用(小样本知识库,示例内容明确标注;纠正/拖放为预览,不假装学习或索引) |
 | `signup.html` | **注册/登录页**:Pro/Business 创建免费账号(Beta 期已上线功能全部免费,无门禁宣称);`?plan=business` 时多一个公司名字段,`?mode=login` 切登录;注册需勾选条款(clickwrap,服务端留痕);账号走本机 API(users.db),**API 离线时显式报错、不假装成功** |
+| `account.html` | **账号设置页**:改邮箱/改密码、匿名统计开关、导出数据、全设备登出、删除账号——全部走本机 API(`__bmaAuth`/`__bmaConsent`);默认出登录墙,仅在 `/v1/auth/me` 确认会话后放行(P0-14) |
+| `forgot-password.html` / `reset-password.html` / `verify-email.html` | **账号找回三件套(P0-15)**:申请重置链接 / 用链接设新密码 / 邮箱验证;链接 token 客户端校验形态,走本机 API;不泄露账号是否存在,离线显式报错、视图切换时移焦到新标题 |
+| `checkout-success.html` / `checkout-cancel.html` | **Stripe 托管结账回跳页**:成功页轮询 `/v1/auth/me` 直到套餐生效再放出「前往控制中心」CTA(webhook 未落地/未登录/401 时诚实说明,绝不假升级);取消页给回价格入口 |
+| `404.html` | **未找到页**:双语,回首页/主要入口 |
 | `privacy.html` / `terms.html` / `refunds.html` | **法律三件套(草案)**:隐私政策 / 服务条款 / 退款政策,双语,带「待律师审阅」横幅;全站页脚可达(docs/22 P0-5) |
 
 ## 代码分割(CSS / JS 各司其职)
@@ -39,7 +43,11 @@ HTML 只放内容,样式和逻辑全部拆到 `assets/`,每个页面只加载自
 | `assets/build.js` | 向导逻辑 + **真实 Ollama 安装包/指南/云端手册生成器**(纯 cmd batch,零 PowerShell;Llama 模型自动附 "Built with Llama" 许可注记);内置 registry 镜像 `MODELS` 表(含 `ollama` 钉版标签),`pickModel(vram, need)` 按需求加权选模型(与后端同规则,测试锁同步) | build |
 | `assets/chat.js` | 聊天逻辑 + 小样本 RAG 知识库(流式回答 + 引用) | chat |
 | `assets/signup.js` | 注册/登录逻辑:本地校验 + `__bmaAuth` 真实注册/登录;API 不可达时显式报错(无假通行,P0-14) | signup |
-| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(llm-lab 只连 `127.0.0.1`,后端 API 本地页连 `127.0.0.1:8940`、部署页走同源 `/v1/*`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态与账号自助四端点;chat 回退档接 Ollama 11434) | chat + build + signup + dashboard |
+| `assets/account.js` | 账号设置控制器:`__bmaAuth`/`__bmaConsent` 驱动改邮箱/改密码/导出/全设备登出/删除;单飞防抖(`acctBusy`)、401 失败回登录墙、全 textContent 渲染 | account |
+| `assets/auth-recovery.js` | 找回三页逻辑(forgot/reset/verify):token 形态校验、防重复提交、离线/限流/过期分支、视图切换移焦 | forgot-password + reset-password + verify-email |
+| `assets/checkout.js` | 结账成功页:轮询 `/v1/auth/me` 确认套餐(webhook 迟到/未登录/401 诚实降级),终态移焦 | checkout-success |
+| `assets/auth-nav.js` | 全站导航登录态:有效会话时把「Log in」换成「Account」,失败/离线保持「Log in」(fail-closed) | 多数含导航的页面 |
+| `assets/local-llm.js` | 可选:本地连接器,全站唯一联网文件(llm-lab 只连 `127.0.0.1`,后端 API 本地页连 `127.0.0.1:8940`、部署页走同源 `/v1/*`;chat:项目 RAG > 通用聊天 > 演示,👍/👎 上报后端;build:需求框由本地 AI 分类选卡,方案步骤走后端 `/v1/advise`;auth:`__bmaAuth` 供注册/登录/登录态/找回/账号自助端点,`__bmaBilling` 供 Stripe 托管结账/账单门户,`__bmaConsent` 管本机匿名统计开关;chat 回退档接 Ollama 11434) | chat + build + signup + dashboard + account + 找回三页 + 结账回跳页 |
 
 原则:**共享的进 `base.css`;页面专属的进各自的 CSS;不同功能的 JS 拆成独立文件。** 加新页面时,加载 `base.css` + 一个页面专属 CSS 即可。完整工程约定(i18n 规则、全局钩子清单、文档镜像规则)见 [docs/17](../docs/17-repo-architecture-and-conventions.md)。
 
@@ -66,7 +74,7 @@ open http://localhost:8931/chat.html
 - **build.html 的需求框也接了本地 AI**:输入一句话,由本地模型分类到六个模板之一并自动选卡。分类优先走**预留顾问端口 `127.0.0.1:8092`**(在这个端口起任意 OpenAI 兼容服务即可接管,如 `llama-server --port 8092`),没有则回退 8080 聊天模型;两个都不在就保持纯演示(手动选卡)。
 - **后端 API(可选,`python3 backend/api/server.py`,127.0.0.1:8940)**:在线时向导"推荐方案"改由 `/v1/advise` + 模型库 registry 给出(方案卡带"✦ 实时推荐 · 模型库"标识,生成文件与其一致);点"生成文件"匿名上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`);聊天页 👍/👎 上报 `/v1/feedback`(只传 评分+模板+模型 id,**绝不传内容**,且仅在真实本地模型回答时上报);注册/登录/登录态走 `/v1/auth/*`(账号落本机 `users.db`)。向导/遥测/反馈离线自动回退纯前端、页面功能不变;**auth 例外**——离线显式报错、dashboard 出登录墙,不假通行(docs/22 P0-14)。
 - 文档改动后更新知识库:`ai ingest ~/AI-SET-UP-GROUP`;彻底重建:`ai reindex ~/AI-SET-UP-GROUP`。
-- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,131 项)。需求框文本只会发往 `127.0.0.1`,且永远不会进入生成的安装包/手册(`build.js` 不读框值,由测试强制)。
+- 安全边界由测试保证:`local-llm.js` 是全站唯一允许网络请求的文件(按精确路径豁免),且只许指向 `127.0.0.1`(见 `tests/security.test.js`,192 项;含全站 i18n 双语配对断言)。需求框文本只会发往 `127.0.0.1`,且永远不会进入生成的安装包/手册(`build.js` 不读框值,由测试强制)。
 
 ## 说明
 

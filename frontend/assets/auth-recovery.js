@@ -13,6 +13,16 @@
 
   function show(id) { var el = document.getElementById(id); if (el) el.classList.remove('hidden'); }
   function hide(id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); }
+  // Move focus to a freshly-revealed view so screen-reader / keyboard users land
+  // on the new content (a11y: focus follows the view swap). Targets the heading if
+  // present, else the container; makes it programmatically focusable first.
+  function focusView(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var target = el.querySelector('h1, h2, [role="alert"]') || el;
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+    try { target.focus(); } catch (e) {}
+  }
   function txt(id, en, zh) {  // set bilingual text via textContent, keep attrs for langchange
     var el = document.getElementById(id);
     if (!el) return;
@@ -63,7 +73,7 @@
         if (res.status === 429) { errs.throttled = true; render(); return; }
         // any real answer (the server returns a constant 200 either way): show
         // the same confirmation and reveal nothing about the account's existence
-        hide('formView'); show('sentView');
+        hide('formView'); show('sentView'); focusView('sentView');
       });
     });
   }
@@ -72,7 +82,7 @@
   function initReset() {
     var token = urlToken();
     if (!token) {  // missing/broken link: don't call the API, point back to forgot
-      hide('formView'); show('invalidView');
+      hide('formView'); show('invalidView'); focusView('invalidView');
       return;
     }
     var form = document.getElementById('resetForm');
@@ -108,7 +118,7 @@
         busy = false;
         if (err) { errs.api = true; render(); return; }
         if (res.status === 200 && res.json && res.json.ok) {
-          hide('formView'); show('successView');
+          hide('formView'); show('successView'); focusView('successView');
           return;
         }
         if (res.status === 429) { errs.throttled = true; render(); return; }
@@ -135,14 +145,16 @@
     }
     document.addEventListener('langchange', render);
     render();
+    // announce the terminal outcome to SR/keyboard users (once, not on langchange)
+    function settle(s) { state = s; render(); focusView('verifyStatus'); }
     var token = urlToken();
-    if (!token) { state = 'invalid'; render(); return; }
-    if (!window.__bmaAuth) { state = 'offline'; render(); return; }
+    if (!token) { settle('invalid'); return; }
+    if (!window.__bmaAuth) { settle('offline'); return; }
     window.__bmaAuth.verify({ token: token }, function (err, res) {
-      if (err) { state = 'offline'; render(); return; }
-      if (res.status === 200 && res.json && res.json.verified) { state = 'ok'; render(); return; }
-      if (res.status === 429) { state = 'throttled'; render(); return; }
-      state = 'invalid'; render();
+      if (err) { settle('offline'); return; }
+      if (res.status === 200 && res.json && res.json.verified) { settle('ok'); return; }
+      if (res.status === 429) { settle('throttled'); return; }
+      settle('invalid');
     });
   }
 })();

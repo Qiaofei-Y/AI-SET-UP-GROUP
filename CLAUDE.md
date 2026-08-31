@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的演示站 + 零依赖后端 API v0**(前端离线可独立运行,后端在线时自动增强):
 
-- `docs/01–22`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)、**20 后端技术文档**(端点规格、分库设计、红线→断言映射,改 `server.py` 前必读)。
+- `docs/01–23`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)、**20 后端技术文档**(端点规格、分库设计、红线→断言映射,改 `server.py` 前必读)。
 - `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示 + 法律三件套草案)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
-- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py`,零依赖 stdlib):advise/registry/license/telemetry/feedback/auth/billing 七组端点(billing 为 Stripe 托管结账/门户/webhook,卡数据不进本进程),隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session 只存 token 哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定。
+- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py` + 零依赖发信层 `api/mailer.py` + 备份脚本 `ops/backup.py`,全 stdlib):advise/registry/license/telemetry/feedback/auth/billing 七组端点。auth 含密码找回/邮箱验证(`/v1/auth/forgot|reset|verify`,一次性令牌只存哈希、单次使用、有时效)与账号自助(`/v1/account/password|email|logout-all|delete|export`);billing 为 Stripe 托管结账/门户/webhook(checkout 强制 `accept_terms` 续费 clickwrap + 落 consent 留痕,卡数据不进本进程)。隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘;结构化日志 `BMA_LOG` 只记 path/status,永不含请求体);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session/令牌只存哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`——遥测/反馈是 opt-in,先过 `window.__bmaConsent`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定、SQLite WAL + 版本化迁移、`deploy/` 反代与备份脚本。
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
 硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(131 项,含 pickModel↔registry 同步校验与生成物实跑断言)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(192 项,含 pickModel↔registry 同步校验与生成物实跑断言)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931
@@ -27,8 +27,10 @@ open http://localhost:8931/chat.html
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
 python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(53 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(73 项,起真实服务)
+python3 backend/ops/backup.py --selftest # 备份+恢复演练(sqlite ONLINE backup,退出 0 即通过;CI 每次跑)
 # 可选:BMA_ADVISOR_LLM=http://127.0.0.1:8080 让 /v1/advise 用本地 LLM 分类(仅回环,失败回退规则)
+# 可选:BMA_SMTP_HOST=… 让找回/验证信走真实 SMTP(如 SES);不设则邮件只进内存 OUTBOX + stdout
 
 # 可选:接真实本地模型(llm-lab,在 ~/llm-lab)
 ai                                 # 启动:8080 聊天模型 / 8081 向量 / 8090 RAG 门户(8092 为预留顾问端口,用户可自行起服务)

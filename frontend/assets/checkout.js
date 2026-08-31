@@ -43,20 +43,33 @@
     document.addEventListener('langchange', render);
     render();
 
+    // reveal a terminal state once, moving focus to the status so SR/keyboard
+    // users hear the outcome (not called from render(), so a langchange toggle
+    // never steals focus).
+    function settle(key, plan) {
+      state.key = key; if (plan) state.plan = plan;
+      render();
+      if (!statusEl.hasAttribute('tabindex')) statusEl.setAttribute('tabindex', '-1');
+      try { statusEl.focus(); } catch (e) {}
+    }
+
     var token = null;
     try { token = sessionStorage.getItem('bma-session'); } catch (ignore) {}
-    if (!token || !window.__bmaAuth) { state.key = 'signedout'; render(); return; }
+    if (!token || !window.__bmaAuth) { settle('signedout'); return; }
 
     var left = TRIES;
     function poll() {
       window.__bmaAuth.me(token, function (err, res) {
-        if (err) { state.key = 'signedout'; render(); return; }  // offline: stop, be honest
+        if (err) { settle('signedout'); return; }  // offline: stop, be honest
+        // expired/rotated session: don't keep polling or imply a pending upgrade —
+        // send them to sign in (P0-14 honesty).
+        if (res && res.status === 401) { settle('signedout'); return; }
         var plan = res && res.json && res.json.user && res.json.user.plan;
         if (res.status === 200 && plan && plan !== 'free') {
-          state.key = 'active'; state.plan = plan; render(); return;
+          settle('active', plan); return;
         }
         if (--left > 0) { setTimeout(poll, DELAY_MS); return; }
-        state.key = 'pending'; render();   // webhook hasn't landed yet — say so truthfully
+        settle('pending');   // webhook hasn't landed yet — say so truthfully
       });
     }
     poll();
