@@ -71,6 +71,7 @@ DEFAULT_SECRET = 'dev-secret-change-me'  # fine on loopback, fatal on a public b
 LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
 TOS_VERSION = 'draft-2026-08-25'  # clickwrap record (P0-5): stamped per signup, bump on policy change
+BILLING_TOS_VERSION = 'billing-draft-2026-08-25'  # auto-renewal disclosure (P0-4): stamped at checkout, bump on terms change
 SESSION_DAYS = 30
 RESET_TTL_S = 3600               # password-reset link lives one hour (short: it grants a password change)
 VERIFY_TTL_S = 48 * 3600         # email-verification link lives 48 hours (longer: low-risk, better UX)
@@ -305,6 +306,9 @@ USERS_MIGRATIONS = (
     ('ALTER TABLE users ADD COLUMN plan_period_end INTEGER',),
     # email verification (P0-15): 0/NULL = unverified, 1 = confirmed via emailed link
     ('ALTER TABLE users ADD COLUMN email_verified INTEGER',),
+    # auto-renewal clickwrap (P0-4): accepted terms version + unix time, stamped at checkout
+    ('ALTER TABLE users ADD COLUMN billing_consent TEXT',),
+    ('ALTER TABLE users ADD COLUMN billing_consent_ts INTEGER',),
 )
 
 
@@ -316,7 +320,8 @@ def init_users_db(path=None):
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
         company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
         plan_intent TEXT, stripe_customer_id TEXT, subscription_status TEXT,
-        plan_period_end INTEGER, email_verified INTEGER)''')
+        plan_period_end INTEGER, email_verified INTEGER,
+        billing_consent TEXT, billing_consent_ts INTEGER)''')
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
     # one-time link tokens (P0-15). Same shape as sessions: only the sha256 of the
@@ -386,6 +391,20 @@ def link_customer(email, customer_id):
     try:
         con.execute('UPDATE users SET stripe_customer_id = ? WHERE email = ?',
                     (customer_id, (email or '').strip().lower()))
+        con.commit()
+    finally:
+        con.close()
+
+
+def record_billing_consent(user_id):
+    """Stamp the auto-renewal clickwrap acceptance (P0-4): the terms version the
+    user agreed to, plus when. Called the moment they confirm the disclosure and
+    proceed to checkout — the record stands even if billing is un-provisioned, so
+    there is always proof the recurring-billing terms were shown and accepted."""
+    con = users_con()
+    try:
+        con.execute('UPDATE users SET billing_consent = ?, billing_consent_ts = ? WHERE id = ?',
+                    (BILLING_TOS_VERSION, int(time.time()), user_id))
         con.commit()
     finally:
         con.close()
@@ -643,6 +662,9 @@ EMAIL_CHANGE_SCHEMA = {  # sensitive: re-auth, then the new address must be veri
 
 BILLING_CHECKOUT_SCHEMA = {  # which paid tier to start a hosted checkout for
     'plan': (True, _enum('pro', 'business')),
+    # auto-renewal clickwrap (P0-4): the disclosure must be shown and accepted
+    # before a recurring subscription can begin — the server records it (version+time)
+    'accept_terms': (True, lambda v: v is True),
 }
 
 EMPTY_SCHEMA = {}  # body must be {} — unknown keys still 400
@@ -1162,7 +1184,8 @@ class Api(BaseHTTPRequestHandler):
             if not row:
                 return self._json(401, {'error': 'not_logged_in'})
             u = con.execute('SELECT ts, name, email, company, plan, plan_intent, tos, '
-                            'email_verified FROM users WHERE id = ?', (row[0],)).fetchone()
+                            'email_verified, billing_consent, billing_consent_ts '
+                            'FROM users WHERE id = ?', (row[0],)).fetchone()
             sess = con.execute('SELECT ts, expires, token_hash FROM sessions WHERE user_id = ? '
                                'ORDER BY ts', (row[0],)).fetchall()
         finally:
@@ -1172,7 +1195,8 @@ class Api(BaseHTTPRequestHandler):
             'exported_at': int(time.time()),
             'user': {'created_ts': u[0], 'name': u[1], 'email': u[2], 'company': u[3],
                      'plan': u[4], 'plan_intent': u[5], 'tos_accepted': u[6],
-                     'email_verified': bool(u[7])},
+                     'email_verified': bool(u[7]),
+                     'billing_consent': u[8], 'billing_consent_ts': u[9]},
             'sessions': [{'created_ts': s[0], 'expires_ts': s[1],
                           'current': s[2] == _token_hash(token)} for s in sess],
             'note': 'Telemetry and feedback are anonymous, schema-whitelisted events '
@@ -1225,6 +1249,9 @@ class Api(BaseHTTPRequestHandler):
         row = self._session_user()
         if not row:
             return self._json(401, {'error': 'not_logged_in'})
+        # the user confirmed the auto-renewal disclosure (accept_terms, enforced by
+        # the schema) — record that acceptance before anything else (P0-4)
+        record_billing_consent(row[0])
         cfg = stripe_cfg()
         price = cfg['prices'].get(body['plan'])
         if not cfg['secret'] or not price:

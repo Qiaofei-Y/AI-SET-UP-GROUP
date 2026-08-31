@@ -186,7 +186,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {name, emai
 
 ### 计费(docs/22 P0-1/2/3;卡数据永不进本进程——结账与门户都是 Stripe 托管页)
 
-- **POST /v1/billing/checkout** `{"plan": "pro"|"business"}`(Bearer 认证 + auth 限速桶)→ 向 Stripe 建 subscription 模式 Checkout 会话,回 `200 {"ok": true, "url": "<stripe 托管结账页>"}`,前端整页跳转;`client_reference_id`=用户邮箱、`metadata[plan]` 随会话下发,供 webhook 回链。未登录 401;`BMA_STRIPE_SECRET` 或该档 Price id 未配置 `503 billing_unavailable`;Stripe 调用失败 `502 stripe_error`。
+- **POST /v1/billing/checkout** `{"plan": "pro"|"business", "accept_terms": true}`(Bearer 认证 + auth 限速桶)→ **自动续费 clickwrap(P0-4)**:`accept_terms` 必须为 `true`(缺失/为 false → 400),登录后先经 `record_billing_consent()` 落库(`billing_consent`=`BILLING_TOS_VERSION` + `billing_consent_ts`,即使随后 503 也留痕,证明已展示并接受续费条款),再向 Stripe 建 subscription 模式 Checkout 会话,回 `200 {"ok": true, "url": "<stripe 托管结账页>"}`,前端整页跳转;`client_reference_id`=用户邮箱、`metadata[plan]` 随会话下发,供 webhook 回链。未登录 401;`BMA_STRIPE_SECRET` 或该档 Price id 未配置 `503 billing_unavailable`;Stripe 调用失败 `502 stripe_error`。前端 dashboard「升级」按钮先弹显式续费披露 + 勾选框,勾选后才发起。
 - **POST /v1/billing/portal** `{}`(Bearer 认证)→ 用 `users.stripe_customer_id` 建 Billing Portal 会话(升/降/退订/发票全托管,契合 FTC click-to-cancel),回 `200 {"ok": true, "url": …}`。未配置 503;从未结账(无 customer)`409 no_customer`。
 - **POST /v1/billing/webhook**(公开,无 Bearer;`events` 限速桶)→ 读**原始字节**(不走 JSON body 解析)校验 `Stripe-Signature`:纯 stdlib HMAC-SHA256 over `<t>.<payload>` + 时间戳容差 300s(防重放),不匹配/过期一律 `400 bad_signature`。处理 `checkout.session.completed`(回链 customer + 升档)、`customer.subscription.updated/created`(按 Price id→档位、非 active/trialing 落 free)、`customer.subscription.deleted`(落 free),经 `apply_subscription(customer_id, …)` 写库,快速 200 ack(非 2xx 触发 Stripe 重试)。
 

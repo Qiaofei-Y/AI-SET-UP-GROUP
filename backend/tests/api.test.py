@@ -758,8 +758,34 @@ class ApiTest(unittest.TestCase):
         self.assertLessEqual({'stripe_customer_id', 'subscription_status', 'plan_period_end'}, cols)
 
     def test_billing_checkout_requires_login(self):
-        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'})
+        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro', 'accept_terms': True})
         self.assertEqual((s, j['error']), (401, 'not_logged_in'))
+
+    def test_billing_checkout_requires_consent(self):
+        # P0-4: no recurring subscription without the auto-renewal clickwrap
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'No Consent', 'email': 'noconsent@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'}, token=tok)
+        self.assertEqual((s, j['error']), (400, 'missing_field:accept_terms'))
+        s, j = self._call_auth('/v1/billing/checkout',
+                               {'plan': 'pro', 'accept_terms': False}, token=tok)
+        self.assertEqual((s, j['error']), (400, 'invalid_field:accept_terms'))
+
+    def test_billing_checkout_records_consent(self):
+        # accepting the disclosure is recorded (version + time) even if billing is
+        # un-provisioned — there is always proof the terms were shown and accepted
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Consenter', 'email': 'consent@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        s, j = self._call_auth('/v1/billing/checkout',
+                               {'plan': 'pro', 'accept_terms': True}, token=tok)
+        self.assertEqual((s, j['error']), (503, 'billing_unavailable'))  # beta: no keys
+        s, j = self._call_auth('/v1/account/export', token=tok)
+        self.assertEqual(j['user']['billing_consent'], server.BILLING_TOS_VERSION)
+        self.assertGreater(j['user']['billing_consent_ts'], 0)
 
     def test_billing_checkout_unprovisioned_503(self):
         # no BMA_STRIPE_SECRET/price in the test env → honest 503, not a half-checkout
@@ -767,7 +793,8 @@ class ApiTest(unittest.TestCase):
         s, j = self._call_auth('/v1/auth/signup', {
             'name': 'Buyer One', 'email': 'buyer1@example.com',
             'password': 'longenough1', 'accept_tos': True})
-        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'}, token=j['token'])
+        s, j = self._call_auth('/v1/billing/checkout',
+                               {'plan': 'pro', 'accept_terms': True}, token=j['token'])
         self.assertEqual((s, j['error']), (503, 'billing_unavailable'))
 
     def test_billing_checkout_rejects_bad_plan(self):

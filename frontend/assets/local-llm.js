@@ -522,8 +522,13 @@
   // We never handle card data: these return a Stripe URL and the page does a
   // full-page redirect to it. authCall already pins to the API prefix, so no new
   // network target is introduced (the security test's egress lock stays intact).
+  // checkout carries accept_terms: the caller MUST obtain the auto-renewal
+  // clickwrap consent first (dashboard shows the disclosure + checkbox); the
+  // server records the acceptance (version + time) before starting a subscription.
   window.__bmaBilling = {
-    checkout: function (token, plan, cb) { authCall('/v1/billing/checkout', { plan: plan }, token, cb); },
+    checkout: function (token, plan, cb) {
+      authCall('/v1/billing/checkout', { plan: plan, accept_terms: true }, token, cb);
+    },
     portal: function (token, cb) { authCall('/v1/billing/portal', {}, token, cb); }
   };
 

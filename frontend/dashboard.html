@@ -109,6 +109,25 @@
              Stripe Billing Portal to manage or cancel (FTC click-to-cancel). -->
         <a class="btn primary fx-btn-sweep hidden" id="planUpgrade" href="pricing.html" style="margin-top:10px;justify-content:center" data-en="Upgrade to Pro →" data-zh="升级到专业版 →">Upgrade to Pro →</a>
         <button type="button" class="btn ghost hidden" id="planManage" style="margin-top:10px;justify-content:center" data-en="Manage subscription" data-zh="管理订阅">Manage subscription</button>
+        <!-- auto-renewal disclosure + clickwrap (P0-4): shown before checkout starts;
+             the checkbox gates the call, the server records the acceptance. Draft
+             terms pending legal review, consistent with the legal-page banners. -->
+        <div class="acct-danger hidden" id="billingDisclosure" style="margin-top:12px">
+          <p style="font-size:12.5px" data-en="This is a recurring subscription: your card is charged automatically each billing period until you cancel. You can cancel anytime from “Manage subscription”. See the current amount on Pricing, and our Terms and Refund Policy. (Draft terms — under legal review.)" data-zh="这是一项周期性订阅:在你取消前,每个计费周期都会自动向你的卡扣款。你可随时通过「管理订阅」取消。当前金额见价格页,另见服务条款与退款政策。(条款为草案,正在法律审阅中。)">This is a recurring subscription: your card is charged automatically each billing period until you cancel. You can cancel anytime from “Manage subscription”. See the current amount on Pricing, and our Terms and Refund Policy. (Draft terms — under legal review.)</p>
+          <div style="font-size:12px;margin:2px 0 8px">
+            <a href="pricing.html" data-en="Pricing" data-zh="价格">Pricing</a> ·
+            <a href="terms.html" data-en="Terms" data-zh="服务条款">Terms</a> ·
+            <a href="refunds.html" data-en="Refund Policy" data-zh="退款政策">Refund Policy</a>
+          </div>
+          <label for="billingAgree" style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.5;cursor:pointer">
+            <input type="checkbox" id="billingAgree" style="margin-top:2px;width:15px;height:15px;flex:none;accent-color:var(--accent)">
+            <span data-en="I understand and agree to this recurring, auto-renewing subscription." data-zh="我已理解并同意此项自动续费的周期性订阅。">I understand and agree to this recurring, auto-renewing subscription.</span>
+          </label>
+          <div class="acct-danger-row">
+            <button type="button" class="btn ghost" id="billingCancel" data-en="Cancel" data-zh="取消">Cancel</button>
+            <button type="button" class="btn primary" id="billingContinue" data-en="Agree &amp; continue →" data-zh="同意并继续 →">Agree &amp; continue →</button>
+          </div>
+        </div>
         <div class="acct-msg" id="planMsg" role="alert" style="margin-top:8px"></div>
       </div>
 
@@ -405,8 +424,27 @@
       setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH);
     });
   }
+  // upgrade → show the auto-renewal disclosure first (P0-4); checkout only starts
+  // after the user ticks the clickwrap checkbox and confirms.
+  var disclosure = document.getElementById('billingDisclosure');
+  var agree = document.getElementById('billingAgree');
   document.getElementById('planUpgrade').addEventListener('click', function (e) {
-    e.preventDefault();  // enhance the pricing-page link into a real checkout
+    e.preventDefault();  // enhance the pricing-page link into a gated checkout
+    setMsg('planMsg', '', '');
+    disclosure.classList.remove('hidden');
+    if (agree) agree.focus();
+  });
+  document.getElementById('billingCancel').addEventListener('click', function () {
+    disclosure.classList.add('hidden');
+    if (agree) agree.checked = false;
+    setMsg('planMsg', '', '');
+  });
+  document.getElementById('billingContinue').addEventListener('click', function () {
+    if (!agree || !agree.checked) {
+      setMsg('planMsg', 'Please agree to the auto-renewal terms to continue.',
+             '请先同意自动续费条款以继续。');
+      return;
+    }
     billingGo(function (cb) { window.__bmaBilling.checkout(token, 'pro', cb); });
   });
   document.getElementById('planManage').addEventListener('click', function () {
