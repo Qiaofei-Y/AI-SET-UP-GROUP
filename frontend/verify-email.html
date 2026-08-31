@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Confirm your Build My AI email address.">
+<meta name="robots" content="noindex">
+<title data-en="Verify your email — Build My AI" data-zh="验证邮箱 — Build My AI">Verify your email — Build My AI</title>
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/signup.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
+</head>
+<body>
+
+<header class="topbar"><div class="wrap"><div class="row">
+  <a class="brand" href="index.html"><span class="logo">◆</span> Build My AI</a>
+  <div class="rt">
+    <div class="langsw">
+      <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
+    </div>
+    <a class="btn ghost" href="signup.html?mode=login" data-en="← Back to log in" data-zh="← 返回登录">← Back to log in</a>
+  </div>
+</div></div></header>
+
+<div class="signup-wrap">
+  <div class="signup-card fx-reveal">
+    <div class="eyebrow" data-en="EMAIL VERIFICATION" data-zh="邮箱验证">EMAIL VERIFICATION</div>
+    <h1 data-en="Email verification" data-zh="邮箱验证">Email verification</h1>
+    <p id="verifyStatus" data-en="Verifying your email…" data-zh="正在验证你的邮箱…">Verifying your email…</p>
+
+    <div id="verifyDone" class="hidden">
+      <a class="btn primary lg fx-btn-sweep" href="dashboard.html" data-en="Go to your Control Center →" data-zh="前往控制中心 →">Go to your Control Center →</a>
+      <a class="btn ghost lg" href="signup.html?mode=login" style="margin-top:8px" data-en="Log in" data-zh="登录">Log in</a>
+    </div>
+
+    <!-- demo notice -->
+    <div class="alt-link"><span class="mono" data-en="Demo · everything stays on this machine: accounts and email verification run against a local API (127.0.0.1). If the local API is offline, this page reports an error instead of pretending to work." data-zh="演示 · 一切都留在这台电脑上:账号与邮箱验证都走本机 API(127.0.0.1)。本机 API 离线时,本页会明确报错,而不会假装成功。">Demo · everything stays on this machine: accounts and email verification run against a local API (127.0.0.1). If the local API is offline, this page reports an error instead of pretending to work.</span></div>
+  </div>
+</div>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/local-llm.js"></script>
+<script src="assets/auth-recovery.js"></script>
+<script src="assets/fx.js" defer></script>
+</body>
+</html>

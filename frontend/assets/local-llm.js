@@ -482,6 +482,11 @@
     login: function (body, cb) { authCall('/v1/auth/login', body, null, cb); },
     me: function (token, cb) { authCall('/v1/auth/me', null, token, cb); },
     logout: function (token, cb) { authCall('/v1/auth/logout', {}, token, cb); },
+    // password recovery + email verification (P0-15) — all unauthenticated:
+    // the emailed one-time token is the credential, carried in the body
+    forgot: function (body, cb) { authCall('/v1/auth/forgot', body, null, cb); },
+    reset: function (body, cb) { authCall('/v1/auth/reset', body, null, cb); },
+    verify: function (body, cb) { authCall('/v1/auth/verify', body, null, cb); },
     // account self-service (dashboard) — the privacy policy's promises, live
     changePassword: function (token, body, cb) { authCall('/v1/account/password', body, token, cb); },
     logoutAll: function (token, cb) { authCall('/v1/account/logout-all', {}, token, cb); },
