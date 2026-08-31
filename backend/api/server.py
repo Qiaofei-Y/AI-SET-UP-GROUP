@@ -636,6 +636,11 @@ DELETE_ACCOUNT_SCHEMA = {  # destructive: re-authenticate with the password
     'password': (True, _password_shape),
 }
 
+EMAIL_CHANGE_SCHEMA = {  # sensitive: re-auth, then the new address must be verified
+    'password':  (True, _password_shape),
+    'new_email': (True, _email_shape),
+}
+
 BILLING_CHECKOUT_SCHEMA = {  # which paid tier to start a hosted checkout for
     'plan': (True, _enum('pro', 'business')),
 }
@@ -695,7 +700,7 @@ RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated
     # reset/verify burn PBKDF2 (reset) or spray email (forgot); both need a lid
     '/v1/auth/forgot': 'auth', '/v1/auth/reset': 'auth', '/v1/auth/verify': 'auth',
     '/v1/account/password': 'auth', '/v1/account/logout-all': 'auth',
-    '/v1/account/delete': 'auth',
+    '/v1/account/delete': 'auth', '/v1/account/email': 'auth',
     '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
     # billing checkout/portal mint Stripe sessions (outbound cost); webhook is
     # public and signature-gated — bucket it too so a bad-sig flood can't hammer us
@@ -838,6 +843,7 @@ class Api(BaseHTTPRequestHandler):
             '/v1/account/password': self._account_password,
             '/v1/account/logout-all': self._account_logout_all,
             '/v1/account/delete': self._account_delete,
+            '/v1/account/email': self._account_email,
             '/v1/billing/checkout': self._billing_checkout,
             '/v1/billing/portal': self._billing_portal,
         }
@@ -1098,6 +1104,37 @@ class Api(BaseHTTPRequestHandler):
                                     'token': new_token})
         finally:
             con.close()
+
+    def _account_email(self, body):
+        """Change the account email (P1 account settings). Re-auth with the
+        password, then the NEW address is set immediately but marked UNVERIFIED and
+        a verification link is mailed to it — same one-time-token flow as signup
+        (P0-15). The unique constraint rejects an address already in use."""
+        err = validate(body, EMAIL_CHANGE_SCHEMA)
+        if err:
+            return self._json(400, {'error': err})
+        new_email = body['new_email'].strip().lower()
+        con = users_con()
+        try:
+            row = session_user(con, self._bearer())
+            if not row:
+                return self._json(401, {'error': 'not_logged_in'})
+            if not self._verify_password(con, row[0], body['password']):
+                return self._json(403, {'error': 'bad_credentials'})
+            if new_email == row[2]:   # no change: don't reset verification for nothing
+                return self._json(200, {'ok': True, 'email': new_email,
+                                        'email_verified': bool(row[4])})
+            try:
+                con.execute('UPDATE users SET email = ?, email_verified = 0 WHERE id = ?',
+                            (new_email, row[0]))
+            except sqlite3.IntegrityError:
+                return self._json(409, {'error': 'email_taken'})
+            vtoken = new_link_token(con, 'email_verifications', row[0], VERIFY_TTL_S)
+            con.commit()
+        finally:
+            con.close()
+        send_verification_email(new_email, vtoken)   # best-effort, to the new address
+        return self._json(200, {'ok': True, 'email': new_email, 'email_verified': False})
 
     def _account_logout_all(self, body):
         err = validate(body, EMPTY_SCHEMA)

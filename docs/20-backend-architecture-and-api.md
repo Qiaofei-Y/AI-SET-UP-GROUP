@@ -177,6 +177,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {name, emai
 ### 账号自助(docs/22 P1 三件套,隐私政策承诺的可执行形式;全部 Bearer 认证 + auth 限速桶)
 
 - **POST /v1/account/password** `{"current_password", "new_password"}`(均 8–128)→ 校验当前密码(恒定工作量 PBKDF2)→ 换盐换哈希 → **轮换全部 session(含当前——被盗的现 token 也不能活过改密),同一事务内铸造新 token 返回** → `200 {"ok": true, "revoked_sessions": N, "token": "<新 48hex>"}`(前端换入 sessionStorage);当前密码错 `403 bad_credentials`。
+- **POST /v1/account/email** `{"password", "new_email"}`(P1 设置页改邮箱)→ 密码重认证 → 新邮箱**立即生效但置为未验证**并向新地址补发验证信(复用 P0-15 一次性令牌流)→ `200 {"ok": true, "email": "<小写新址>", "email_verified": false}`;新址与旧址相同则原样返回不重置验证;密码错 `403`;新址已被占用(UNIQUE)`409 email_taken`。session 不撤销(改邮箱非改密)。
 - **POST /v1/account/logout-all** `{}`(空体,未知键仍 400)→ 撤销该用户全部 session(含当前)→ `200 {"ok": true, "revoked_sessions": N}`。
 - **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted, email_verified}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
 - **POST /v1/account/delete** `{"password"}`(破坏性操作需重认证)→ 删除 sessions + user,**文件级抹除**:`PRAGMA secure_delete=ON`(释放页清零)+ `VACUUM`(压缩),测试直接扫库文件字节断言邮箱/姓名零痕迹;密码错 `403`。

@@ -7,6 +7,9 @@ Allow: /
 # The account Control Center is login-gated and has no indexable content.
 Disallow: /dashboard.html
 
+# Account settings are login-gated (like the dashboard) — no indexable content.
+Disallow: /account.html
+
 # Token-gated recovery pages — no indexable content.
 Disallow: /reset-password.html
 Disallow: /verify-email.html

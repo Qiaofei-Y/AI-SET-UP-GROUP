@@ -511,8 +511,9 @@
     forgot: function (body, cb) { authCall('/v1/auth/forgot', body, null, cb); },
     reset: function (body, cb) { authCall('/v1/auth/reset', body, null, cb); },
     verify: function (body, cb) { authCall('/v1/auth/verify', body, null, cb); },
-    // account self-service (dashboard) — the privacy policy's promises, live
+    // account self-service (dashboard + account.html) — the privacy policy's promises, live
     changePassword: function (token, body, cb) { authCall('/v1/account/password', body, token, cb); },
+    changeEmail: function (token, body, cb) { authCall('/v1/account/email', body, token, cb); },
     logoutAll: function (token, cb) { authCall('/v1/account/logout-all', {}, token, cb); },
     exportData: function (token, cb) { authCall('/v1/account/export', null, token, cb); },
     deleteAccount: function (token, body, cb) { authCall('/v1/account/delete', body, token, cb); }

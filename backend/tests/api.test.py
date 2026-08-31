@@ -628,6 +628,59 @@ class ApiTest(unittest.TestCase):
         with open(os.environ['BMA_USERS_DB'], 'rb') as f:
             self.assertNotIn(rtok.encode(), f.read())
 
+    # ---- account: change email (re-auth + re-verify, P1 settings) ----
+    def test_account_email_change_flow(self):
+        server.mailer.reset_outbox()
+        s, j = self._call_auth('/v1/auth/signup', {
+            'name': 'Mover', 'email': 'old@example.com',
+            'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        # verify the original address so we can prove the change resets it
+        vtok = outbox_token_for('old@example.com', 'verify-email.html')
+        self._call_auth('/v1/auth/verify', {'token': vtok})
+        s, j = self._call_auth('/v1/auth/me', token=tok)
+        self.assertEqual(j['user']['email_verified'], True)
+        # wrong password -> 403; unauthenticated -> 401
+        s, j = self._call_auth('/v1/account/email',
+                               {'password': 'wrong-password-x', 'new_email': 'new@example.com'}, token=tok)
+        self.assertEqual((s, j['error']), (403, 'bad_credentials'))
+        s, _ = self._call_auth('/v1/account/email',
+                               {'password': 'longenough1', 'new_email': 'new@example.com'})
+        self.assertEqual(s, 401)
+        # real change (mixed case normalises): email updated, back to unverified,
+        # a verification link mailed to the NEW address
+        s, j = self._call_auth('/v1/account/email',
+                               {'password': 'longenough1', 'new_email': 'New@Example.com'}, token=tok)
+        self.assertEqual((s, j['ok'], j['email'], j['email_verified']), (200, True, 'new@example.com', False))
+        self.assertRegex(outbox_token_for('new@example.com', 'verify-email.html') or '', r'^[0-9a-f]{48}$')
+        # me reflects the new email + unverified; the session stays valid
+        s, j = self._call_auth('/v1/auth/me', token=tok)
+        self.assertEqual((j['user']['email'], j['user']['email_verified']), ('new@example.com', False))
+        # login works with the new email, not the old one
+        s, _ = self._call_auth('/v1/auth/login', {'email': 'old@example.com', 'password': 'longenough1'})
+        self.assertEqual(s, 401)
+        s, j = self._call_auth('/v1/auth/login', {'email': 'new@example.com', 'password': 'longenough1'})
+        self.assertEqual((s, j['ok']), (200, True))
+
+    def test_account_email_rejects_taken_and_bad_shapes(self):
+        self._call_auth('/v1/auth/signup', {'name': 'A', 'email': 'taken@example.com',
+                                            'password': 'longenough1', 'accept_tos': True})
+        s, j = self._call_auth('/v1/auth/signup', {'name': 'B', 'email': 'mover2@example.com',
+                                                   'password': 'longenough1', 'accept_tos': True})
+        tok = j['token']
+        # moving to an address already in use -> 409, and the old email still works
+        s, j = self._call_auth('/v1/account/email',
+                               {'password': 'longenough1', 'new_email': 'taken@example.com'}, token=tok)
+        self.assertEqual((s, j['error']), (409, 'email_taken'))
+        s, j = self._call_auth('/v1/auth/me', token=tok)
+        self.assertEqual(j['user']['email'], 'mover2@example.com')
+        for bad, want in (({'password': 'longenough1', 'new_email': 'not-an-email'}, 'invalid_field:new_email'),
+                          ({'password': 'short', 'new_email': 'ok@example.com'}, 'invalid_field:password'),
+                          ({'new_email': 'ok@example.com'}, 'missing_field:password'),
+                          ({'password': 'longenough1', 'new_email': 'ok@example.com', 'x': 1}, 'unknown_field:x')):
+            s, j = self._call_auth('/v1/account/email', bad, token=tok)
+            self.assertEqual((s, j['error']), (400, want), bad)
+
     # ---- transport hardening ----
     def test_cors_localhost_only(self):
         _, _, h = call(self.port, '/v1/health', origin='http://localhost:8931')

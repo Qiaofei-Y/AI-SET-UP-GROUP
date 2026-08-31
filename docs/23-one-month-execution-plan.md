@@ -42,7 +42,7 @@
 |---|---|---|---|---|
 | ☐ | 外部 | **法律三件套律师审阅**:主体名/联系方式/管辖州/退款窗口落定,去掉「待审阅」横幅 | 三页去草案横幅;退款窗口业务拍板写入 refunds | P0-5 |
 | ☐ | 代码 | **自动续费明示披露 + 同意记录**:结账前显著展示续费条款 + 落库 | 结账 clickwrap 记录 `billing_consent` 版本+时间 | P0-4 |
-| ☐ | 代码 | **账号设置页** `account.html`:改邮箱/改密/登出所有/导出/删除 + 全站登录态 | 各操作接现有端点;改邮箱走验证流 | P1 账号设置 |
+| ☑ | 代码 | **账号设置页** `account.html`:改邮箱/改密/登出所有/导出/删除 + 全站登录态 | ✅ 登录墙守护的独立设置页(noindex + robots Disallow):Profile(姓名/邮箱/套餐 + 验证徽章)、改邮箱、改密、匿名统计开关、导出/全登出/删除——均接现有端点,`account.js` 复用 dashboard 账号逻辑。**新增改邮箱端点** `POST /v1/account/email`(密码重认证→新址立即生效但置未验证 + 向新址补发验证信;占用 409;后端 2 项测试)。**全站登录态**:`auth-nav.js` 在营销 6 页据有效 session 把「登录」换成「账号」→account.html(离线/401 fail-closed 保持「登录」;node 行为测试 4 例全过)。security 161 项 + smoke 23 页全绿 | P1 账号设置 |
 | ☑ | 代码 | **遥测同意/opt-out 开关**:设置页开关 + 前端尊重 + 兑现 opt-in 承诺 | ✅ 兑现隐私页两处「opt-in」承诺(此前 telemetry/feedback 自动发送=承诺未兑现,P0-6 缺口):`local-llm.js` 新增设备级 `window.__bmaConsent`(localStorage,默认关),`reportPlan` 与 `chat-feedback` 均在 fetch 前门控 `consented()`——不勾选零外发。开关两处:build 向导生成前的勾选框、dashboard 账号卡「匿名使用统计」toggle(默认关,随时改)。并修正 pricing/index 与隐私页矛盾的「is collected」文案为「仅在你选择开启后」。测试:security 新增两条静态门控断言;真机验证默认 off + set 持久化(PASS=true) | P1 遥测同意 |
 | ☐ | 代码 | **Llama 合规网站层展示**:模型页/下载处显著 "Built with Llama" + 协议链接 | 选 Llama 系模型的路径均可见协议;测试断言 | P0-10 |
 | ☐ | 代码 | **卖点对齐复查**:对新增支付/账号功能再查一遍无新假象 | 无「未实现却宣称可用」文案;security 测试全绿 | P0-6 |
