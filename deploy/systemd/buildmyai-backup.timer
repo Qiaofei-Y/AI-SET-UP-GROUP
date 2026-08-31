@@ -1,0 +1,11 @@
+# Build My AI — run the database backup every 30 minutes.
+# Enable with: sudo systemctl enable --now buildmyai-backup.timer
+[Unit]
+Description=Run Build My AI database backup every 30 minutes
+
+[Timer]
+OnCalendar=*:0/30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
