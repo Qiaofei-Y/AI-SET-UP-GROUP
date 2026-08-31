@@ -138,6 +138,14 @@
               </div>
               <div class="acct-msg" id="delMsg" role="alert"></div>
             </div>
+            <!-- usage analytics: OPT-IN (privacy.html). Reflects/writes the
+                 device-local consent that local-llm.js gates telemetry on. -->
+            <div class="acct-lbl" style="margin-top:14px" data-en="ANONYMOUS USAGE STATISTICS" data-zh="匿名使用统计">ANONYMOUS USAGE STATISTICS</div>
+            <label for="usageToggle" style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--ink-2);line-height:1.5;cursor:pointer">
+              <input type="checkbox" id="usageToggle" style="margin-top:2px;width:15px;height:15px;flex:none;accent-color:var(--accent)">
+              <span data-en="Share anonymous install &amp; usage statistics to improve recommendations — hardware tier, template and model only, never any content. Off by default; change it anytime." data-zh="分享匿名安装与使用统计以改进推荐——仅含硬件档位、模板与模型,绝不含任何内容。默认关闭,可随时更改。">Share anonymous install &amp; usage statistics to improve recommendations — hardware tier, template and model only, never any content. Off by default; change it anytime.</span>
+            </label>
+            <div class="acct-msg" id="usageMsg" role="alert"></div>
           </div>
         </div>
       </div>
@@ -404,6 +412,19 @@
   document.getElementById('planManage').addEventListener('click', function () {
     billingGo(function (cb) { window.__bmaBilling.portal(token, cb); });
   });
+
+  // ---- anonymous usage statistics: opt-in toggle (privacy.html) ----
+  // Consent is device-local via window.__bmaConsent (local-llm.js); the toggle
+  // just reflects and flips it. Nothing is sent until it's on.
+  var usageToggle = document.getElementById('usageToggle');
+  if (usageToggle && window.__bmaConsent) {
+    usageToggle.checked = window.__bmaConsent.get();
+    usageToggle.addEventListener('change', function () {
+      window.__bmaConsent.set(usageToggle.checked);
+      if (usageToggle.checked) setMsg('usageMsg', 'Thanks — anonymous statistics are on.', '谢谢——匿名统计已开启。', true);
+      else setMsg('usageMsg', 'Anonymous statistics are off. Nothing is sent.', '匿名统计已关闭,不会发送任何数据。', true);
+    });
+  }
 })();
 
 // Dashboard demo interactions: visual switches + API-key copy. No network, no timers-as-strings.

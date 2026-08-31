@@ -393,6 +393,14 @@
       })
       .catch(function () { clearTimeout(timer); });
   }
+  // reflect + capture the opt-in checkbox wherever it appears (build wizard).
+  // The dashboard toggle uses window.__bmaConsent directly in its own script.
+  function wireConsent() {
+    var cb = document.getElementById('usageOptIn');
+    if (!cb) return;
+    cb.checked = consented();
+    cb.addEventListener('change', function () { setConsent(cb.checked); });
+  }
   function wireBuildPage() {
     var box = document.getElementById('needText');
     if (!box || !window.__buildAdvisor) return; // not the build wizard
@@ -433,10 +441,25 @@
       .then(function (j) { clearTimeout(timer); cb(j && j.model ? j : null); })
       .catch(function () { clearTimeout(timer); apiUp = false; cb(null); });
   }
+  // ---- usage-analytics consent (privacy.html promises OPT-IN) ----
+  // The anonymous install/plan/feedback stats are sent ONLY after the user opts
+  // in. Consent is device-local (the data carries no identity, so no account is
+  // needed) in localStorage; the default (unset) is OFF. Both senders below gate
+  // on consented(), and the build wizard / dashboard toggles flip it.
+  var CONSENT_KEY = 'bma-usage-consent';
+  function consented() {
+    try { return localStorage.getItem(CONSENT_KEY) === 'on'; } catch (e) { return false; }
+  }
+  function setConsent(on) {
+    try { localStorage.setItem(CONSENT_KEY, on ? 'on' : 'off'); } catch (e) {}
+  }
+  window.__bmaConsent = { get: consented, set: setConsent };
+
   // wizard "Generate" → /v1/telemetry/deploy. Fire-and-forget; payload is
   // built by build.js from slugs/tiers/booleans only (schema-whitelisted server-side).
+  // Gated on opt-in consent — no consent, nothing sent (the privacy promise).
   function reportPlan(payload) {
-    if (!apiUp || !payload) return;
+    if (!apiUp || !payload || !consented()) return;
     fetch(API + '/v1/telemetry/deploy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -444,9 +467,10 @@
     }).catch(function () { apiUp = false; });
   }
   // chat 👍/👎 → /v1/feedback. Structurally content-free: rating + template +
-  // model id only. Sent only when a real local model answered (isReady).
+  // model id only. Sent only when a real local model answered (isReady) AND the
+  // user has opted in to anonymous usage analytics.
   document.addEventListener('chat-feedback', function (e) {
-    if (!isReady || !apiUp || !e.detail) return;
+    if (!isReady || !apiUp || !e.detail || !consented()) return;
     var modelId = String(modelName).replace(/[^A-Za-z0-9.\-]/g, '-');
     if (!/^[A-Za-z0-9.\-]{4,64}$/.test(modelId)) return;
     fetch(API + '/v1/feedback', {
@@ -527,5 +551,5 @@
     if (!modelName) return;
     if (isReady) setChip(); else setChipOffline();
   });
-  document.addEventListener('DOMContentLoaded', function () { probe(); probeApi(); wireBuildPage(); });
+  document.addEventListener('DOMContentLoaded', function () { probe(); probeApi(); wireBuildPage(); wireConsent(); });
 })();

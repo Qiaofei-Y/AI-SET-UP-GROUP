@@ -84,6 +84,14 @@ ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',
   !/XMLHttpRequest|new\s+WebSocket|new\s+EventSource|sendBeacon|new\s+Image\s*\(|\bimport\s*\(/.test(conn));
 ok('local-llm.js: no innerHTML use', !/innerHTML/.test(conn));
 
+// telemetry/feedback are OPT-IN (privacy.html promises this): both senders must
+// gate on the consent check BEFORE the fetch, so nothing anonymous leaves the
+// machine without the user opting in.
+ok('local-llm.js: reportPlan gates /v1/telemetry/deploy on consented()',
+  /function reportPlan[\s\S]*?consented\(\)[\s\S]*?\/v1\/telemetry\/deploy/.test(conn));
+ok('local-llm.js: chat-feedback gates /v1/feedback on consented()',
+  /chat-feedback[\s\S]*?consented\(\)[\s\S]*?\/v1\/feedback/.test(conn));
+
 // ---------- 2. HTML resource surface ----------
 for (const f of htmlFiles) {
   const h = read(f);

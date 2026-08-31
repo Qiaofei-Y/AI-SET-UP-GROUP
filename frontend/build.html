@@ -114,7 +114,13 @@
     </div>
     <div class="privacy"><span>🔒</span><span data-en="For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center." data-zh="对于私密的公司资料我们推荐本地——文件留在这台电脑。云端会把你的文档发送到美国数据中心。">For private company data we recommend local — your files stay on this computer. Cloud sends your documents to a US data center.</span></div>
 
-    <div class="wizard-nav" style="margin-top:22px">
+    <!-- usage-analytics consent (privacy.html promises OPT-IN): unchecked by
+         default; local-llm.js only sends anonymous install stats when ticked -->
+    <label for="usageOptIn" style="display:flex;align-items:flex-start;gap:9px;margin-top:20px;font-size:12.5px;color:var(--ink-2);line-height:1.5;cursor:pointer">
+      <input type="checkbox" id="usageOptIn" style="margin-top:2px;width:15px;height:15px;flex:none;accent-color:var(--accent)">
+      <span data-en="Share anonymous install statistics to help improve recommendations — hardware tier, template and model only. No content, ever, and you can turn this off anytime in your Control Center." data-zh="分享匿名安装统计以帮助改进推荐——仅含硬件档位、模板与模型。绝不含任何内容,且可随时在控制中心关闭。">Share anonymous install statistics to help improve recommendations — hardware tier, template and model only. No content, ever, and you can turn this off anytime in your Control Center.</span>
+    </label>
+    <div class="wizard-nav" style="margin-top:16px">
       <button class="btn ghost" id="b2" data-en="← Back" data-zh="← 返回">← Back</button>
       <button class="btn primary fx-btn-sweep" id="gen" data-en="Generate my files →" data-zh="生成我的文件 →">Generate my files →</button>
     </div>
