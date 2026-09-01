@@ -538,6 +538,20 @@ def send_verification_email(email, token):
                 'you can safely ignore this email.\n')
 
 
+def dispatch_reset_email(email, user_id):
+    """Mint a one-time reset token and mail it — the whole side effect that a
+    real account triggers. Runs off the request thread in production (see
+    _auth_forgot) so this extra work is not a timing oracle for account
+    enumeration. Opens its own connection: safe to run on a background thread."""
+    con = users_con()
+    try:
+        token = new_link_token(con, 'password_resets', user_id, RESET_TTL_S)
+        con.commit()
+    finally:
+        con.close()
+    send_reset_email(email, token)
+
+
 def send_reset_email(email, token):
     link = mailer.site_url() + '/reset-password.html?token=' + token
     mailer.send(email, 'Reset your Build My AI password',
@@ -1043,19 +1057,24 @@ class Api(BaseHTTPRequestHandler):
         if err:
             return self._json(400, {'error': err})
         email = body['email'].strip().lower()
-        token = None
         con = users_con()
         try:
             row = con.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
-            if row:
-                token = new_link_token(con, 'password_resets', row[0], RESET_TTL_S)
-                con.commit()
         finally:
             con.close()
-        if token:
-            send_reset_email(email, token)
-        # constant response whether or not the email exists — no account enumeration.
-        # (The mail is sent only for a real account; a stranger learns nothing here.)
+        # Constant response body whether or not the email exists — but a constant
+        # body is not enough: the token mint (a durable write) + synchronous SMTP
+        # round-trip only happen for a real account, which is a timing oracle. In
+        # production (real SMTP) run the whole side effect off the request thread
+        # so both the hit and miss paths return after just the SELECT above — no
+        # enumeration by timing. In dev/test (in-memory OUTBOX, no network) keep
+        # it inline so the token and OUTBOX are immediately observable.
+        if row:
+            if mailer.smtp_configured():
+                threading.Thread(target=dispatch_reset_email, args=(email, row[0]),
+                                 daemon=True).start()
+            else:
+                dispatch_reset_email(email, row[0])
         return self._json(200, {'ok': True})
 
     def _auth_reset(self, body):

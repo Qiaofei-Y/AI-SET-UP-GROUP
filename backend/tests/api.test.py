@@ -587,6 +587,35 @@ class ApiTest(unittest.TestCase):
         self.assertIn('real@example.com', recipients)
         self.assertNotIn('ghost@example.com', recipients)
 
+    def test_forgot_dispatches_email_off_request_thread(self):
+        # No enumeration by *timing*: in SMTP mode the token mint + synchronous
+        # send (done only for a real account) must not run on the request thread,
+        # or a real address would answer measurably slower than an unknown one.
+        # Prove it structurally — with the send wedged open, the request still
+        # returns promptly, so it isn't inline. Were it inline, this would hang.
+        import time
+        server.mailer.reset_outbox()
+        self._call_auth('/v1/auth/signup', {'name': 'Async', 'email': 'async@example.com',
+                                            'password': 'longenough1', 'accept_tos': True})
+        release, started = threading.Event(), threading.Event()
+        orig_send, orig_cfg = server.send_reset_email, server.mailer.smtp_configured
+        server.mailer.smtp_configured = lambda: True          # pretend prod SMTP is on
+        def blocking_send(email, token):
+            started.set()
+            release.wait(5)                                    # hold the "network" send open
+        server.send_reset_email = blocking_send
+        try:
+            t0 = time.time()
+            s, j = self._call_auth('/v1/auth/forgot', {'email': 'async@example.com'})
+            elapsed = time.time() - t0
+            self.assertEqual((s, j), (200, {'ok': True}))
+            self.assertTrue(started.wait(2), 'reset email was never dispatched')
+            self.assertFalse(release.is_set())                 # send still open on a bg thread
+            self.assertLess(elapsed, 3, 'forgot blocked on the email send (timing oracle)')
+        finally:
+            release.set()
+            server.send_reset_email, server.mailer.smtp_configured = orig_send, orig_cfg
+
     def test_reset_password_flow_and_revokes_sessions(self):
         server.mailer.reset_outbox()
         self._call_auth('/v1/auth/signup', {'name': 'Reset Me', 'email': 'reset@example.com',
