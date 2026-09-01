@@ -46,7 +46,7 @@
 | ☑ | 代码 | **遥测同意/opt-out 开关**:设置页开关 + 前端尊重 + 兑现 opt-in 承诺 | ✅ 兑现隐私页两处「opt-in」承诺(此前 telemetry/feedback 自动发送=承诺未兑现,P0-6 缺口):`local-llm.js` 新增设备级 `window.__bmaConsent`(localStorage,默认关),`reportPlan` 与 `chat-feedback` 均在 fetch 前门控 `consented()`——不勾选零外发。开关两处:build 向导生成前的勾选框、dashboard 账号卡「匿名使用统计」toggle(默认关,随时改)。并修正 pricing/index 与隐私页矛盾的「is collected」文案为「仅在你选择开启后」。测试:security 新增两条静态门控断言;真机验证默认 off + set 持久化(PASS=true) | P1 遥测同意 |
 | ☑ | 代码 | **Llama 合规网站层展示**:模型页/下载处显著 "Built with Llama" + 协议链接 | ✅ 此前只有生成物(.bat/.md)带 Llama 声明;现补齐**网站层**:`build.js` 新增 `llamaNoticeHtml()`,当推荐/所选模型为 Llama 系时,**方案步骤**与**下载步骤**都显著展示「Built with Llama」+ Llama 3.1 社区许可协议链接 + 可接受使用政策链接(纯静态串 + 固定 llama.com 链接,innerHTML 安全)。security 新增逐模型 UI 断言(Llama present、其余 absent),167 项 + smoke 23 页全绿 | P0-10 |
 | ☑ | 代码 | **卖点对齐复查**:对新增支付/账号功能再查一遍无新假象 | ✅ 双面审查(营销页 + app/新功能页,含 build/chat/account/checkout JS 文案,中英双语):支付/账号/同意面均诚实(dormant 计费显示 503 不假装扣款、离线操作 fail-closed、遥测 opt-in、dashboard 全 sample/preview 标注)。修正 3 处自相矛盾——「One-click local install」(Free 档 + 首页第 4 步)与 deploy 页自评「一键=即将推出」冲突,改为「引导式安装(Ollama)」;并给自动续费披露加 Beta 前置说明(不再在免费期声称「已在扣款」)。无「未实现却宣称可用」残留;security 167 + smoke 23 全绿 | P0-6 |
-| ☐ | 外部 | **支持/联系渠道**:真实 support 邮箱/表单替换现「链到注册页」 | 页脚 support 指向真实收件渠道 | P1 支持渠道 |
+| ☑ | 代码 | **支持/联系渠道**:真实 support 邮箱替换现「链到注册页」 | ✅ 全站页脚新增「Support」链接(8 页,`mailto:michael.yan@purehd.com`,双语),三处「Reach out anytime →」CTA(首页/pricing/how-it-works)从 `signup.html?plan=business` 改指真实收件箱;terms §12 / privacy §10 / refunds 退款入口三处「上线前公布」占位替换为真实邮箱(诚实标注:Beta 期间即此邮箱,公司域名上线后再公布专用 `support@`)。`mailto:` 不触发安全测试的远端资源断言(仅拦 `http(s)://`/`//`);security 192 + smoke 24 页全绿。**待办(外部)**:公司域名上线后换 `support@` 别名 | P1 支持渠道 |
 
 ## 第 4 周 · 部署上线 + 运维护栏(混合)
 
