@@ -850,6 +850,23 @@ class ApiTest(unittest.TestCase):
         finally:
             del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
 
+    def test_verify_stripe_signature_accepts_any_v1_during_rotation(self):
+        """Stripe includes one v1 signature per active secret during a signing-secret
+        rotation; verification must accept the event if ANY v1 matches — not only the
+        last one in the header. A valid v1 followed by a bogus v1 must still verify."""
+        import hashlib
+        import hmac
+        import time as _t
+        secret, raw = 'whsec_test', b'{"type":"x"}'
+        ts = str(int(_t.time()))
+        good = hmac.new(secret.encode(), (ts + '.').encode() + raw, hashlib.sha256).hexdigest()
+        # good signature is FIRST, a bogus one is LAST (the old last-wins parse rejected this)
+        hdr = 't=%s,v1=%s,v1=%s' % (ts, good, 'deadbeef' * 8)
+        self.assertTrue(server.verify_stripe_signature(raw, hdr, secret))
+        # sanity: the single-signature happy path and an all-bogus header still behave
+        self.assertTrue(server.verify_stripe_signature(raw, 't=%s,v1=%s' % (ts, good), secret))
+        self.assertFalse(server.verify_stripe_signature(raw, 't=%s,v1=%s' % (ts, 'ff' * 32), secret))
+
     def test_billing_webhook_drives_plan_lifecycle(self):
         """The webhook is the ONLY thing that moves a paying user's plan (P0-3):
         checkout completes → pro; subscription canceled → back to free."""

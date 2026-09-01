@@ -438,19 +438,32 @@ def apply_subscription(customer_id, plan, status, period_end):
 def verify_stripe_signature(payload, header, secret, now=None, tolerance=300):
     """Stripe's scheme: header is 't=<unix>,v1=<hex hmac>,...'; the signed message
     is '<t>.<raw payload>' under HMAC-SHA256(secret). Reject on missing parts, bad
-    digest, or a timestamp outside the tolerance window (replay lid). Pure stdlib."""
+    digest, or a timestamp outside the tolerance window (replay lid). Pure stdlib.
+
+    A single header can carry MORE THAN ONE v1 signature — Stripe includes one per
+    active secret during a signing-secret rotation — so we collect every v1 and
+    accept if ANY matches (mirrors Stripe's own libraries). Keying by the last v1
+    alone would spuriously reject a valid event mid-rotation."""
     if not secret or not header:
         return False
-    parts = dict(p.split('=', 1) for p in header.split(',') if '=' in p)
-    ts, sig = parts.get('t'), parts.get('v1')
-    if not ts or not sig or not ts.isdigit():
+    ts = None
+    v1s = []
+    for p in header.split(','):
+        if '=' not in p:
+            continue
+        k, v = p.split('=', 1)
+        if k == 't':
+            ts = v
+        elif k == 'v1':
+            v1s.append(v)
+    if not ts or not v1s or not ts.isdigit():
         return False
     now = int(time.time()) if now is None else now
     if abs(now - int(ts)) > tolerance:
         return False
     expected = hmac.new(secret.encode(), (ts + '.').encode() + payload,
                         hashlib.sha256).hexdigest()
-    return hmac.compare_digest(expected, sig)
+    return any(hmac.compare_digest(expected, s) for s in v1s)
 
 
 def stripe_post(cfg, path, fields):
