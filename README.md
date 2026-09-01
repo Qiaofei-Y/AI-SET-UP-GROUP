@@ -54,6 +54,7 @@
 | [21 Lambda 云一键部署集成设计](docs/21-lambda-cloud-integration.md) | Lambda API 调研事实、一键部署 UX/架构/key 安全/bootstrap、端点清单、费用透明、分期与实测清单 |
 | [22 商用化差距审计与路线图](docs/22-commercial-readiness-audit.md) | 演示版→商用版全项目审计:17 条 P0 确认清单、P1/P2、资产与演示壳盘点、按依赖排批的执行路线 |
 | [23 一个月执行计划](docs/23-one-month-execution-plan.md) | 按周排的商用化落地清单(Stripe 计费、找回/验证邮件、SQLite 生产化、部署与备份),逐条勾对已交付项 |
+| [24 批次 2 执行计划](docs/24-batch-2-execution-plan.md) | 付费交付物本体:Tauri 真安装器(P0-8)+ 代码签名、本地 RAG(P0-9)、Control Center 桌面化 + 硬件真检测 + 安装漏斗,按依赖排的可勾选清单 |
 | [figma/ 界面原型](figma/) | 7 个 MVP 核心界面的高保真原型(浏览器打开) |
 | [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示 + 账号中心(account.html)+ 下载页(downloads.html)+ 结账/找回/验证页 |
 | [backend/ 后端演进计划 + API v0](backend/) | 分阶段计划、SaaS 选型与自建边界、隐私红线;已含零依赖 API v0(advise/registry/license/telemetry/feedback/auth/billing + 找回/验证发信)与备份脚本(ops/backup.py) |
