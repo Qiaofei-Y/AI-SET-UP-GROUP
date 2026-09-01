@@ -24,7 +24,7 @@ backend/
 ├── ops/
 │   └── backup.py          # 零依赖备份 + 恢复演练(sqlite ONLINE backup + integrity_check;--selftest,P1 docs/23 Week 4)
 └── tests/
-    └── api.test.py        # 73 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 74 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
 
 生产部署脚本(TLS 反代 + 进程管理 + 定时备份)在仓库根 `deploy/`:`Caddyfile` / `nginx.conf`(同源反代,`/v1/*` 转后端)、`systemd/`(API 服务单元 + 备份 timer),用法见 [deploy/README.md](../deploy/README.md)。
@@ -262,7 +262,7 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {name, emai
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。73 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、密码找回/邮箱验证一次性令牌流、账号自助五端点含改邮箱)、**计费闭环(checkout 需登录/未配置 503/坏档 400、portal 无 customer 409、webhook 坏签名与过期时间戳 400、签名有效驱动 plan 升→降生命周期、伪造事件不改 plan)**、**门禁闭环(entitlements 随 plan 翻转、free 打 Pro 资源 402 upgrade_required、set_plan 升档即放行、两端点需登录)**、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。74 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、密码找回/邮箱验证一次性令牌流、账号自助五端点含改邮箱)、**计费闭环(checkout 需登录/未配置 503/坏档 400、portal 无 customer 409、webhook 坏签名与过期时间戳 400、签名有效驱动 plan 升→降生命周期、伪造事件不改 plan)**、**门禁闭环(entitlements 随 plan 翻转、free 打 Pro 资源 402 upgrade_required、set_plan 升档即放行、两端点需登录)**、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 

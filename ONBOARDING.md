@@ -18,8 +18,8 @@ open http://localhost:8931/index.html
 python3 backend/api/server.py            # 127.0.0.1:8940
 
 # 两套测试(提交前的硬门槛,详见 §3)
-bash frontend/tests/run.sh               # 前端:131 静态/单元 + XSS 实测 + 14 页冒烟(无 Chrome 自动跳过后两项)
-python3 backend/tests/api.test.py        # 后端:43 项,起真实服务打真实 HTTP
+bash frontend/tests/run.sh               # 前端:192 静态/单元 + XSS 实测 + 24 页冒烟(无 Chrome 自动跳过后两项)
+python3 backend/tests/api.test.py        # 后端:74 项,起真实服务打真实 HTTP
 ```
 
 零依赖是刻意的:**没有 npm、没有 pip install、没有构建步骤**。只需要 Python 3 和 Node(跑测试),Chrome 可选(跑浏览器实测)。
@@ -58,7 +58,7 @@ python3 backend/tests/api.test.py        # 后端:43 项,起真实服务打真�
 
 ## 5. 现在做到哪了 / 下一步
 
-- **已完成**:演示站全站(13 页,双语 + FX 动效层,含法律三件套草案 + 注册 clickwrap)、后端六组端点 v0(advise/registry/license/telemetry/feedback/auth)、前后端打通(部署同源拓扑)、生产化地基(限速/fail-closed 密钥/`--host`)、131+43 项测试体系。
+- **已完成**:演示站全站(21 页,双语 + FX 动效层,含账号设置/找回三件套/结账回跳/下载中心 + 法律三件套草案 + 注册 clickwrap)、后端七组端点 v0(advise/registry/license/telemetry/feedback/auth/billing,auth 含找回/验证 + 账号自助五端点)、前后端打通(部署同源拓扑)、生产化地基(WAL/迁移、限速/fail-closed 密钥/`--host`、结构化 body-free 日志、备份+恢复演练、CI 双套件、同源反代+CSP 部署配置)、192+74 项测试体系。
 - **路线图**:[docs/22 §6](docs/22-commercial-readiness-audit.md) 按依赖排批——批次 0 剩余项(公司主体/Stripe 开户、域名/托管/反代落地、CI/备份)依赖外部动作;批次 1 = 能合法收钱;批次 2 = 付费交付物(真实安装器 + RAG 组件)。
 - 工程任务拆解与验收标准:[docs/09](docs/09-mvp-engineering-tasks.md)。
 

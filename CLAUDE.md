@@ -27,7 +27,7 @@ open http://localhost:8931/chat.html
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
 python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(73 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(74 项,起真实服务)
 python3 backend/ops/backup.py --selftest # 备份+恢复演练(sqlite ONLINE backup,退出 0 即通过;CI 每次跑)
 # 可选:BMA_ADVISOR_LLM=http://127.0.0.1:8080 让 /v1/advise 用本地 LLM 分类(仅回环,失败回退规则)
 # 可选:BMA_SMTP_HOST=… 让找回/验证信走真实 SMTP(如 SES);不设则邮件只进内存 OUTBOX + stdout

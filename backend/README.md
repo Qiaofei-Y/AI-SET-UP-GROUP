@@ -11,7 +11,7 @@
 ```bash
 python3 backend/api/server.py              # 127.0.0.1:8940
 python3 backend/api/server.py --mint pro   # 铸造演示 license
-python3 backend/tests/api.test.py          # 53 项测试(起真实服务打真实 HTTP)
+python3 backend/tests/api.test.py          # 74 项测试(起真实服务打真实 HTTP)
 ```
 
 | 端点 | 状态 | 说明 |
@@ -23,11 +23,11 @@ python3 backend/tests/api.test.py          # 53 项测试(起真实服务打真�
 | `POST /v1/telemetry/deploy` | ✅ v0 | 字段白名单(枚举/整数/布尔),未知字段与自由文本一律 400,落 SQLite |
 | `POST /v1/feedback` | ✅ v0 | 同上;**没有任何 content 字段,结构上收不了内容** |
 | `POST /v1/billing/checkout` `portal` + `POST /v1/billing/webhook` | ✅ v0 代码侧 | Stripe **托管**结账/门户(卡数据不进本进程)+ 签名校验 webhook(纯 stdlib HMAC-SHA256 + 时间戳防重放);`apply_subscription()`(按 customer id)是付费账号改 plan 的唯一自动路径(P0-1/2/3);密钥/价格走 `BMA_STRIPE_*` 环境变量,未配置时诚实 503。剩:接真实 Stripe 账户 + 公网 webhook + 前端结账 UI(见 [docs/23](../docs/23-one-month-execution-plan.md)) |
-| `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` + **找回/验证**(`/v1/auth/forgot` `reset` `verify`)+ **账号自助**(改密/全登出/导出/删除,`/v1/account/*`) | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」;**plan 服务端权威**(注册一律 free,自报仅记意向,改套餐唯一入口 `set_plan()`/`--set-plan`,P0-3);**密码找回/邮箱验证**(P0-15)走一次性链接令牌(只存 sha256、单次使用、限时),发信抽象层 `mailer.py`(dev-stdout / SMTP-SES 双后端),forgot 恒定响应防枚举 |
+| `POST /v1/auth/signup` `login` `logout` + `GET /v1/auth/me` + **找回/验证**(`/v1/auth/forgot` `reset` `verify`)+ **账号自助**(改密/改邮箱/全登出/导出/删除,`/v1/account/*` 五端点)+ **门禁**(`GET /v1/entitlements`、`GET /v1/pro/rag-manifest`) | ✅ v0 自建 | 真实用户表:**身份与遥测分库**(`users.db` / `events.db` 文件级隔离,匿名承诺可审计);密码 PBKDF2-HMAC-SHA256 盐哈希、session 只存 token 的 sha256,库泄露也拿不到密码/凭证;邮箱唯一(不区分大小写),登录失败恒定 401 不区分「邮箱不存在/密码错」;**plan 服务端权威**(注册一律 free,自报仅记意向,改套餐的自动入口是 Stripe webhook 的 `apply_subscription()`(按 customer id),运营手动兜底 `set_plan()`/`--set-plan`,P0-3);服务端权威 entitlements 清单 + `_require_capability()` 守卫(free 打 Pro 资源 402 `upgrade_required`);**密码找回/邮箱验证**(P0-15)走一次性链接令牌(只存 sha256、单次使用、限时),发信抽象层 `mailer.py`(dev-stdout / SMTP-SES 双后端),forgot 恒定响应防枚举 |
 
 **前端已接入**(实现见 [docs/16 §9](../docs/16-local-ai-web-integration.md)):API 在线时,向导"推荐方案"走 `/v1/advise` + registry(方案卡带实时标识,生成文件与之一致);点"生成文件"上报 `/v1/telemetry/deploy`(`stage:'plan_generated'`,与真实安装结果区分——飞轮种子数据);聊天 👍/👎 上报 `/v1/feedback`(仅 评分+模板+模型 id,仅在真实本地模型回答时);signup 页注册/登录走 `/v1/auth/*`(经 `local-llm.js` 的 `__bmaAuth`,session token 存 sessionStorage、随标签页关闭清除)。向导/遥测/反馈离线自动回退纯前端;**auth 是唯一例外**——离线时注册/登录显式报错、dashboard 无 session 出登录墙,不假装成功(docs/22 P0-14)。
 
-生产化地基已就位(docs/22 批次 0 的代码部分):`--host` 绑定 + 非回环默认密钥拒启、auth/events 分桶限速(429)、Content-Length/超时加固,详见 [docs/20 §3](../docs/20-backend-architecture-and-api.md)。尚未做(按计划触发条件推进):Stripe **接真实账户**(代码侧闭环已落地——checkout/portal/webhook,见上表;缺真实密钥与公网 webhook 端点)、生产部署(TLS 反代 + 进程管理,托管 Fly.io/Railway)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。注册/登录已自建 v0(见上表),Clerk/Supabase 保留为正式上线时的可选替换。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
+生产化地基已就位(docs/22 批次 0 + docs/23 首月的代码部分):`--host` 绑定 + 非回环默认密钥拒启、auth/events 分桶限速(429)、Content-Length/超时加固、**SQLite 生产化**(两库走 `connect_db()` 开 WAL + `busy_timeout` + `synchronous=NORMAL`,`run_migrations()` 版本化幂等迁移)、**结构化 body-free 日志**(`BMA_LOG`,每响应一行 JSON 只记 method/path/status/ms/ip,红线不破)、**在线备份 + 恢复演练**(`ops/backup.py --selftest`,CI 每次跑),详见 [docs/20 §3/§11](../docs/20-backend-architecture-and-api.md)。**部署配置就绪**(仓库根 `deploy/`:同源反代 Caddyfile/nginx.conf + systemd 服务/备份单元 + CSP/HSTS 安全头 + 运行手册)、**CI 就绪**(`.github/workflows/tests.yml` 双套件并行)。尚未做(等外部动作,不阻塞代码):Stripe **接真实账户**(代码侧闭环已落地——checkout/portal/webhook,见上表;缺真实密钥与公网 webhook 端点)、**上真实服务器 + 注入真实密钥 + 域名/TLS**(反代与进程单元已写好,待部署)、云端托管版 LLM 顾问(本地 opt-in 版已可用,见上表;云端版仍按 P3 触发)。注册/登录已自建 v0(见上表),Clerk/Supabase 保留为正式上线时的可选替换。registry 测录流程已有第一步:数据文件 schema 校验(后端测试)+ 与 frontend `pickModel` 的同步断言(前端测试),改一侧不改另一侧会直接挂测试;持续测录新模型的流程待建。
 
 隐私红线是代码结构而非承诺:schema 白名单 + 测试断言(见 `tests/api.test.py` 的 red-line 用例),照 [docs/18 §6](../docs/18-testing-and-quality.md)。
 
