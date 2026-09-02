@@ -11,6 +11,7 @@
 | `runtime.json` | **运行时决策落成数据**:内嵌运行时 = **llama.cpp**(digest 钉死、单体自包含),来源限官方(github/ghcr `ggml-org/llama.cpp`)。真实 digest 于首个签名构建时测得并冻结此处——**在此之前留空**,绝不伪造。 | `frontend/tests/security.test.js §8c` |
 | `manifest.schema.json` | **安装配置协议**:向导 `installManifest()` 产出的 `install-plan.json` 形状(模型/量化/文件/来源/运行时/RAG 开关/目标硬件),也是安装器将读取的同一份文档。零依赖 JSON-Schema 子集。 | `frontend/tests/security.test.js §8c`(sandbox 实跑 `installManifest` 校验符合) |
 | `fetch-policy.json` | **模型工件拉取策略**:llama.cpp 安装器直接从 Hugging Face 拉 GGUF(有别于今天的 `ollama pull`)——限主机 `huggingface.co`、`resolve/main/<file>` 形状、强制 sha256、幂等可续传。逐模型真实 sha256 于构建测得,不伪造。 | `frontend/tests/security.test.js §8d`(从每个向导 manifest 推导下载 URL 校验白名单+形状) |
+| `code-signing.md` | **代码签名决策**:Azure Trusted Signing vs 传统 EV token 利弊分析、推荐(ATS)、前置与 CI 集成。 | 对应骨架 `.github/workflows/sign-desktop.yml`(`workflow_dispatch`、OIDC、未配则 no-op,不进 PR 门禁) |
 
 ## 契约如何被锁住
 
