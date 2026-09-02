@@ -1,0 +1,48 @@
+# Build My AI — same-origin production self-host (Docker + Caddy).
+#
+#   BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
+#     docker compose -f docker-compose.prod.yml up -d --build
+#
+# One domain serves the site and proxies /v1/* to the API (docs/20 §3.1
+# same-origin topology): the frontend's API constant resolves to '' with zero
+# config, and card/model data never crosses an origin. Caddy gets a real HTTPS
+# cert via ACME for BMA_DOMAIN; leave it unset to smoke-test on https://localhost
+# with Caddy's internal CA.
+#
+# Differences from the dev docker-compose.yml: the API is NOT published to the
+# host (Caddy is its only ingress), and Caddy fronts everything on 80/443.
+# Inject real Stripe/mail secrets via the api service's environment when going live.
+services:
+  api:
+    build: .
+    command: ["python3", "backend/api/server.py", "--host", "0.0.0.0", "--port", "8940"]
+    environment:
+      BMA_LICENSE_SECRET: ${BMA_LICENSE_SECRET:?set BMA_LICENSE_SECRET, e.g. $(openssl rand -hex 32)}
+      # Optional, for live billing / email (see backend/api/server.py + mailer.py):
+      BMA_STRIPE_SECRET: ${BMA_STRIPE_SECRET:-}
+      BMA_STRIPE_WEBHOOK_SECRET: ${BMA_STRIPE_WEBHOOK_SECRET:-}
+      BMA_SMTP_HOST: ${BMA_SMTP_HOST:-}
+    volumes:
+      - bma-data:/app/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    environment:
+      BMA_DOMAIN: ${BMA_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend:/srv/frontend:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  bma-data:
+  caddy-data:
+  caddy-config:

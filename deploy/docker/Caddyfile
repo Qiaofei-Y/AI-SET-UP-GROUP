@@ -1,0 +1,45 @@
+# Build My AI — same-origin production reverse proxy (Docker).
+# One domain serves the static frontend AND proxies /v1/* to the API container;
+# Caddy terminates TLS with automatic HTTPS. This is the docs/20 §3.1 / docs/22
+# P0-13 same-origin topology — served this way, the frontend's API constant is
+# '' and needs zero configuration.
+#
+# Set BMA_DOMAIN to your real domain (its A/AAAA record must point at this host
+# and ports 80/443 must be reachable) → Caddy gets a real cert via ACME.
+# Left unset it defaults to `localhost`, for which Caddy issues an internal-CA
+# cert — handy for a local smoke test of the topology.
+#
+# The proxy target `api:8940` is the compose service; the API is never published
+# to the host, so this reverse proxy is its only ingress.
+{$BMA_DOMAIN:localhost} {
+	encode gzip zstd
+
+	# --- security headers (docs/19: CSP + transport hardening) ---
+	header {
+		# default-src 'self'; script/style 'unsafe-inline' for the pages' inline
+		# handlers (no remote scripts ever load); img 'self' data: for favicon +
+		# data: URIs; connect-src 'self' covers the same-origin /v1/* API, and
+		# http://127.0.0.1:* / http://localhost:* let local-llm.js reach the
+		# visitor's own local model engine (Ollama :11434 / llm-lab :8080/:8090).
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+
+	# --- API: TLS terminates here, forward to the API container ---
+	# The Stripe webhook (POST /v1/billing/webhook) is verified over the raw body
+	# by the app itself, so no special proxy handling is needed.
+	handle /v1/* {
+		reverse_proxy api:8940
+	}
+
+	# --- static site ---
+	handle {
+		root * /srv/frontend
+		file_server
+	}
+}
