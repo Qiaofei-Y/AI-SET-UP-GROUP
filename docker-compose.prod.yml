@@ -1,6 +1,6 @@
 # Build My AI — same-origin production self-host (Docker + Caddy).
 #
-#   BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
+#   BMA_DOMAIN=ai.example.com BMA_ADMIN_SECRET=$(openssl rand -hex 32) \
 #     docker compose -f docker-compose.prod.yml up -d --build
 #
 # One domain serves the site and proxies /v1/* to the API (docs/20 §3.1
@@ -11,16 +11,14 @@
 #
 # Differences from the dev docker-compose.yml: the API is NOT published to the
 # host (Caddy is its only ingress), and Caddy fronts everything on 80/443.
-# Inject real Stripe/mail secrets via the api service's environment when going live.
+# Inject the optional mail secrets via the api service's environment when going live.
 services:
   api:
     build: .
     command: ["python3", "backend/api/server.py", "--host", "0.0.0.0", "--port", "8940"]
     environment:
-      BMA_LICENSE_SECRET: ${BMA_LICENSE_SECRET:?set BMA_LICENSE_SECRET, e.g. $(openssl rand -hex 32)}
-      # Optional, for live billing / email (see backend/api/server.py + mailer.py):
-      BMA_STRIPE_SECRET: ${BMA_STRIPE_SECRET:-}
-      BMA_STRIPE_WEBHOOK_SECRET: ${BMA_STRIPE_WEBHOOK_SECRET:-}
+      BMA_ADMIN_SECRET: ${BMA_ADMIN_SECRET:?set BMA_ADMIN_SECRET, e.g. $(openssl rand -hex 32)}
+      # Optional, for account email — password reset / verification (see mailer.py):
       BMA_SMTP_HOST: ${BMA_SMTP_HOST:-}
     volumes:
       - bma-data:/app/data

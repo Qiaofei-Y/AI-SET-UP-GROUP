@@ -57,12 +57,7 @@
     setMsg(id, OFFLINE_EN, OFFLINE_ZH);
   }
 
-  // ---- profile rendering (name / email / plan / verified badge) ----
-  function planLabel(plan) {
-    var en = plan === 'business' ? 'Business' : (plan === 'pro' ? 'Pro' : 'Free');
-    var zh = plan === 'business' ? '企业版' : (plan === 'pro' ? '专业版' : '免费版');
-    return { en: en, zh: zh };
-  }
+  // ---- profile rendering (name / email / verified badge) ----
   function setBilingual(id, en, zh) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -86,8 +81,6 @@
     var email = String(u.email || '');
     document.getElementById('profName').textContent = name;
     document.getElementById('profEmail').textContent = email;
-    var pl = planLabel(u.plan);
-    setBilingual('profPlan', pl.en, pl.zh);
     renderVerified(!!u.email_verified);
   }
 

@@ -38,27 +38,22 @@
 | CUDA Toolkit | https://developer.nvidia.com/cuda-toolkit | 运行时依赖 |
 | GPU 规格参考 | https://www.techpowerup.com/gpu-specs/ | 设备检测的 VRAM 数据校对 |
 
-## 云 GPU(Phase 1,美国区域)
+## 云 GPU(设备不够时,用户自带账号自付费,美国区域)
+
+> 本地设备跑不动时的出路。这些是用户**自己的**云账号、账单直接付给云厂商——项目不经手、不抽成(见 [21 Lambda 云集成](21-lambda-cloud-integration.md) 的 BYO-key 模式)。
 
 | 资源 | 链接 | 说明 |
 |------|------|------|
 | RunPod | https://www.runpod.io | 按量 GPU,美国数据中心 |
-| Lambda | https://lambda.ai | 美国 GPU 云 |
-| AWS (us-east/us-west) | https://aws.amazon.com/ec2/instance-types/g6/ | 企业客户偏好 |
+| Lambda | https://lambda.ai | 美国 GPU 云(一键集成,用户自付) |
+| AWS (us-east/us-west) | https://aws.amazon.com/ec2/instance-types/g6/ | 通用云 GPU |
 | CoreWeave | https://www.coreweave.com | 规模化 GPU |
 
 ## 合规与 License(美国市场必查)
 
-- 每个上架模型必须核对 License 是否允许**商用与再分发**(Llama 社区协议、Apache 2.0、MIT 各不相同)
+- 每个上架模型必须核对 License 是否允许**再分发/使用**(Llama 社区协议、Apache 2.0、MIT 各不相同);registry 里逐模型标注,用户能看到自己选的模型能不能商用
 - 用户数据默认本地存储;涉及云端时注意美国各州隐私法(如 CCPA/CPRA)
-- 企业版需要 SOC 2 路线图(Business 层卖点之一)
-
-## 分发与支付(商业化)
-
-- 支付:Stripe(https://stripe.com)
-- 官网/文档托管:美国区域 CDN(Vercel / Cloudflare)
-- 安装包分发:美国 CDN + 代码签名(Windows SmartScreen 信任)
 
 ---
 
-相关文档:[03 核心模块](03-core-modules.md) · [04 MVP 范围](04-mvp.md) · [05 商业模式](05-business-model.md)
+相关文档:[03 核心模块](03-core-modules.md) · [04 MVP 范围](04-mvp.md) · [21 Lambda 云集成](21-lambda-cloud-integration.md)

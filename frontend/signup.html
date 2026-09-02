@@ -29,7 +29,7 @@
       <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
       <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
     </div>
-    <a class="btn ghost" href="pricing.html" data-en="← Back to pricing" data-zh="← 返回价格">← Back to pricing</a>
+    <a class="btn ghost" href="index.html" data-en="← Back to home" data-zh="← 返回首页">← Back to home</a>
   </div>
 </div></div></header>
 
@@ -39,10 +39,9 @@
     <div id="formView">
       <div class="eyebrow" id="suEyebrow" data-en="CREATE ACCOUNT" data-zh="创建账号">CREATE ACCOUNT</div>
       <h1 id="suTitle" data-en="Everything that's live, free during beta" data-zh="已上线功能,Beta 期全部免费">Everything that's live, free during beta</h1>
-      <div class="lead" id="suLead" data-en="A free account unlocks everything that's live during beta." data-zh="创建免费账号即可解锁 Beta 期间已上线的全部功能。">A free account unlocks everything that's live during beta.</div>
-      <div class="plan-pill" id="planPill">Pro plan</div>
+      <div class="lead" id="suLead" data-en="A free account unlocks every feature that's live." data-zh="创建免费账号即可解锁所有已上线功能。">A free account unlocks every feature that's live.</div>
 
-      <div class="beta-note" id="betaNote" data-en="It's free during beta — no card, no charge. New features unlock for you as they roll out." data-zh="Beta 期间免费——无需信用卡、不收费。新功能上线后会自动为你解锁。">It's free during beta — no card, no charge. New features unlock for you as they roll out.</div>
+      <div class="beta-note" id="betaNote" data-en="Free and open source — no card, no charge. New features unlock for you as they roll out." data-zh="免费且开源——无需信用卡、不收费。新功能上线后会自动为你解锁。">Free and open source — no card, no charge. New features unlock for you as they roll out.</div>
 
       <form id="signupForm" novalidate>
         <div class="form-field" id="nameField">
@@ -54,11 +53,6 @@
           <label for="fEmail" data-en="Email " data-zh="邮箱 ">Email <span class="req">*</span></label>
           <input id="fEmail" type="email" autocomplete="email" aria-describedby="errEmail" data-en-ph="you@example.com" data-zh-ph="you@example.com" placeholder="you@example.com">
           <div class="form-err" id="errEmail" role="alert"></div>
-        </div>
-        <div class="form-field" id="companyField">
-          <label for="fCompany" data-en="Company name " data-zh="公司名称 ">Company name <span class="req">*</span></label>
-          <input id="fCompany" autocomplete="organization" aria-describedby="errCompany" data-en-ph="Your company" data-zh-ph="你的公司" placeholder="Your company">
-          <div class="form-err" id="errCompany" role="alert"></div>
         </div>
         <div class="form-field">
           <label for="fPassword" data-en="Password " data-zh="密码 ">Password <span class="req">*</span></label>
@@ -82,7 +76,7 @@
         <br><span data-en="Already have an account? " data-zh="已有账号? ">Already have an account? </span><a href="signup.html?mode=login" data-en="Log in →" data-zh="登录 →">Log in →</a>
       </div>
       <div class="alt-link hidden" id="altLogin">
-        <span data-en="New here? " data-zh="还没有账号? ">New here? </span><a href="signup.html?plan=pro" data-en="Create a free account →" data-zh="创建免费账号 →">Create a free account →</a>
+        <span data-en="New here? " data-zh="还没有账号? ">New here? </span><a href="signup.html" data-en="Create a free account →" data-zh="创建免费账号 →">Create a free account →</a>
         <br><span data-en="Forgot your password? " data-zh="忘记密码? ">Forgot your password? </span><a href="forgot-password.html" data-en="Reset it →" data-zh="重置密码 →">Reset it →</a>
       </div>
     </div>

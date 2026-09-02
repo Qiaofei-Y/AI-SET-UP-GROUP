@@ -24,7 +24,7 @@
 |--------|------|
 | 全站唯一可联网文件是 `assets/local-llm.js` | 其余全部 JS 扫描 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(`,命中即失败 |
 | 豁免按**精确路径**,防同名文件混入 | 全仓只允许存在一个 `local-llm.js` 且路径必须是 `assets/` 下 |
-| 只许连 `127.0.0.1` 或同源 | `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092)/`OLLAMA`(11434)各只赋值一次、必须是 `http://127.0.0.1:端口` 字面量;`API` 是被锁形状的条件式——localhost 页面为 `http://127.0.0.1:8940` 字面量,其余页面为 `''`(同源相对,反代转 `/v1/*`,docs/22 P0-13)——`LOCAL_PAGE` 谓词本身也被断言锁定;每个 `fetch(` 必须以五常量之一开头;文件内不得出现其他 URL 字面量 |
+| 只许连 `127.0.0.1` 或同源 | `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092)/`OLLAMA`(11434)各只赋值一次、必须是 `http://127.0.0.1:端口` 字面量;`API` 是被锁形状的条件式——localhost 页面为 `http://127.0.0.1:8940` 字面量,其余页面为 `''`(同源相对,反代转 `/v1/*`)——`LOCAL_PAGE` 谓词本身也被断言锁定;每个 `fetch(` 必须以五常量之一开头;文件内不得出现其他 URL 字面量 |
 
 **B. 资源面**
 | 不变量 | 断言 |
@@ -74,7 +74,7 @@
 
 **默认状态仍然很强**:前端的全部网络目标只有 本机服务(llm-lab/Ollama,127.0.0.1)与 自建 API(本地回环 / 部署同源)——遥测是 schema 白名单的匿名枚举、身份数据只进自己的 users.db,没有任何第三方端点。且遥测/反馈是 **opt-in**(默认关,状态存 `bma-usage-consent`;见 [16 §9](16-local-ai-web-integration.md) 与 §2-E 的断言)。P1 接 SaaS 埋点时按 [18 §3](18-testing-and-quality.md) 白名单流程放宽,并同步修改营销文案的表述边界。
 
-**一次性令牌纪律(密码找回 / 邮箱验证,后端 P0-15)**:重置信、验证信里的令牌是不透明的 `token_hex(24)`,库里**只存 `sha256(token)`**(泄库不可重放),**单次使用**(命中即删行)、**有时效**(重置 1h、验证 48h),与 session token 同一套「只存哈希」纪律。重置成功后**撤销该用户全部 session**(持旧密码者立即锁死)。忘记密码端点 `/v1/auth/forgot` **恒定 200**、不泄露邮箱是否注册(防账号枚举)。详见 [20 §5 密码找回/邮箱验证](20-backend-architecture-and-api.md)。
+**一次性令牌纪律(密码找回 / 邮箱验证)**:重置信、验证信里的令牌是不透明的 `token_hex(24)`,库里**只存 `sha256(token)`**(泄库不可重放),**单次使用**(命中即删行)、**有时效**(重置 1h、验证 48h),与 session token 同一套「只存哈希」纪律。重置成功后**撤销该用户全部 session**(持旧密码者立即锁死)。忘记密码端点 `/v1/auth/forgot` **恒定 200**、不泄露邮箱是否注册(防账号枚举)。详见 [20 §5 密码找回/邮箱验证](20-backend-architecture-and-api.md)。
 
 **日志红线(后端结构化日志)**:后端每个响应打一行结构化 JSON 日志(`BMA_LOG`,默认开)到 stderr,字段只有 `ts/level/method/path/status/ms/ip`——**path 已剥掉 query、永不含请求体**;`need_text`、密码、令牌、邮箱都不进任何日志。这与「need_text 不落盘不回显」是同一条红线在日志面的延伸(对应断言 `test_advise_never_echoes_or_stores_need_text`)。
 

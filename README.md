@@ -2,8 +2,8 @@
 
 <p align="center">
   <b>Own your private AI.</b><br>
-  A self-hostable platform that stands up a private, on-device AI —
-  no model, GPU, RAG, or Docker expertise required.
+  A non-commercial, open-source project for AI enthusiasts and developers who want to
+  own their whole AI stack — a private, on-device AI, no model, GPU, RAG, or Docker expertise required.
 </p>
 
 <p align="center">
@@ -18,12 +18,12 @@
 
 ## What is Build My AI?
 
-Build My AI is an **open-source, self-hostable platform** for running a private AI that lives on your own hardware. You describe what you want your AI to do in plain language; the platform picks a suitable open model, checks your machine, and generates a guided installer — no jargon, no lock-in.
+Build My AI is a **non-commercial, open-source project** for running a private AI that lives on your own hardware — built for AI enthusiasts and developers who want to own their whole stack. You describe what you want your AI to do in plain language; it picks a suitable open model, checks your machine, and generates a guided installer — no jargon, no lock-in.
 
 It ships as two halves you host together:
 
-- **A zero-dependency backend API** (`backend/`) — model advice, accounts & auth, Stripe billing, opt-in telemetry, and licensing. Pure Python **standard library**: no `pip install`, no SDKs, no supply chain.
-- **A ready end-user product** (`frontend/`) — marketing site, a guided setup wizard, an account center, and a chat demo. Zero-build **vanilla JS**: no npm, no bundler.
+- **A zero-dependency backend API** (`backend/`) — model advice, accounts & auth, and opt-in telemetry. Pure Python **standard library**: no `pip install`, no SDKs, no supply chain.
+- **The full frontend** (`frontend/`) — marketing site, a guided setup wizard, an account center, and a chat demo. Zero-build **vanilla JS**: no npm, no bundler.
 
 Everything runs on your box. Your data and inference stay local by default — the browser only ever talks to `127.0.0.1` and your own origin.
 
@@ -32,7 +32,7 @@ Everything runs on your box. Your data and inference stay local by default — t
 - **Own your stack.** All data, accounts, and inference on hardware you control.
 - **Zero dependencies.** stdlib Python + vanilla JS. The base runtime *is* the whole footprint — nothing to audit, nothing to break in a `npm audit`.
 - **A privacy red line that's executable.** The security model is written as test assertions (`frontend/tests/security.test.js`): only one file may make network requests, free-text never hits the wire, structured logs can't contain a request body. Violate an invariant and CI goes red.
-- **Production guardrails included.** Session auth (PBKDF2, hashed tokens), Stripe checkout/portal/webhook, SQLite WAL + versioned migrations, online backups, structured logging, reverse-proxy + CSP config, and CI on every PR.
+- **Production guardrails included.** Session auth (PBKDF2, hashed tokens), SQLite WAL + versioned migrations, online backups, structured logging, reverse-proxy + CSP config, and CI on every PR.
 
 ## Quickstart
 
@@ -41,12 +41,12 @@ Everything runs on your box. Your data and inference stay local by default — t
 ```bash
 git clone https://github.com/Qiaofei-Y/AI-SET-UP-GROUP.git
 cd AI-SET-UP-GROUP
-BMA_LICENSE_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+BMA_ADMIN_SECRET=$(openssl rand -hex 32) docker compose up -d --build
 open http://localhost:8931           # the product
 curl http://localhost:8940/v1/health # the API
 ```
 
-The API binds inside the container, so it **refuses to start with the default secret** — set `BMA_LICENSE_SECRET` (the command above generates one). To stop: `docker compose down`.
+The API binds inside the container, so it **refuses to start with the default secret** — set `BMA_ADMIN_SECRET` (the command above generates one). To stop: `docker compose down`.
 
 ### Local dev (no Docker, no dependencies)
 
@@ -74,7 +74,7 @@ bash   frontend/tests/run.sh             # 218 static+unit + headless-Chrome XSS
 ```
                          ┌─────────────────────────── your machine ───────────────────────────┐
   browser ── http ──►  frontend (static, vanilla JS)  ── /v1/* ──►  backend API (stdlib Python)
-                         wizard · chat · accounts          │           advise · auth · billing · telemetry
+                         wizard · chat · accounts          │           advise · auth · telemetry
                          only talks to 127.0.0.1 / self    │           SQLite (users.db + events.db, split)
                                                            └──► your local model engine (Ollama :11434 / llm-lab)
 ```
@@ -87,8 +87,8 @@ bash   frontend/tests/run.sh             # 218 static+unit + headless-Chrome XSS
 
 | Path | What's there |
 |------|--------------|
-| [`backend/`](backend/) | Zero-dependency stdlib API v0 — advise/registry/license/telemetry/feedback/auth/billing, mailer, backup script |
-| [`frontend/`](frontend/) | Zero-build static site — marketing, guided wizard, chat demo, account center, checkout/recovery pages, and the test suite |
+| [`backend/`](backend/) | Zero-dependency stdlib API v0 — advise/registry/telemetry/feedback/auth, mailer, backup script |
+| [`frontend/`](frontend/) | Zero-build static site — marketing, guided wizard, chat demo, account center, account-recovery pages, and the test suite |
 | [`examples/`](examples/) | Copy-pasteable, dependency-free API tours (`curl` + shell) against the real backend |
 | [`installer/`](installer/) | Desktop-installer contract (Batch-2, planned) — manifest schema, pinned llama.cpp runtime, GGUF fetch policy (all test-verified). Today's shipped install path is Ollama-guided. |
 | [`deploy/`](deploy/) | Production self-host — same-origin Caddy/nginx reverse proxy, systemd units, backup timer, runbook |
@@ -105,7 +105,7 @@ Serve one domain that hosts the site **and** proxies `/v1/*` to the API (the **s
 **Docker + Caddy (automatic HTTPS):**
 
 ```bash
-BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
+BMA_DOMAIN=ai.example.com BMA_ADMIN_SECRET=$(openssl rand -hex 32) \
   docker compose -f docker-compose.prod.yml up -d --build
 ```
 
@@ -139,10 +139,10 @@ Read [`docs/19`](docs/19-security-model.md) before touching anything that talks 
 | Doc | Contents |
 |------|----------|
 | [01 Vision](docs/01-vision.md) · [02 Product](docs/02-product-overview.md) · [03 Modules](docs/03-core-modules.md) · [04 MVP](docs/04-mvp.md) | Vision, users, journey, MVP scope |
-| [05 Business](docs/05-business-model.md) · [06 Moat](docs/06-moat.md) · [07 Roadmap](docs/07-roadmap.md) · [12 Business plan](docs/12-business-plan.md) | Model, moat, roadmap, plan |
+| [06 Moat](docs/06-moat.md) · [07 Roadmap](docs/07-roadmap.md) | Differentiation, roadmap |
 | [11 AI architecture](docs/11-ai-architecture-and-model-routing.md) · [16 Local AI ↔ web](docs/16-local-ai-web-integration.md) | Model routing, chat connector |
 | [17 Repo conventions](docs/17-repo-architecture-and-conventions.md) · [18 Testing & quality](docs/18-testing-and-quality.md) · [19 Security model](docs/19-security-model.md) · [20 Backend & API](docs/20-backend-architecture-and-api.md) | **Engineering must-reads** |
-| [21 Lambda cloud](docs/21-lambda-cloud-integration.md) · [22 Commercial audit](docs/22-commercial-readiness-audit.md) · [23 Month plan](docs/23-one-month-execution-plan.md) · [24 Batch-2 plan](docs/24-batch-2-execution-plan.md) | Cloud, audit, execution plans |
+| [21 Lambda cloud](docs/21-lambda-cloud-integration.md) | Cloud GPU path |
 
 (Full per-doc index: each file in [`docs/`](docs/) is self-describing; 08–10, 13–15 cover resources, testing/experiments, onboarding, and the marketing playbook.)
 

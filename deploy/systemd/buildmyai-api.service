@@ -12,16 +12,8 @@ User=bma
 Group=bma
 WorkingDirectory=/srv/buildmyai
 # --- required: inject a real secret (the default refuses a non-loopback bind and
-#     is unsafe anywhere — it can mint licenses). Keep the API on 127.0.0.1. ---
-Environment=BMA_LICENSE_SECRET=CHANGE_ME_INJECT_A_REAL_SECRET
-# --- billing (leave empty to keep checkout/portal honestly 503 until you go live) ---
-Environment=BMA_STRIPE_SECRET=
-Environment=BMA_STRIPE_WEBHOOK_SECRET=
-Environment=BMA_STRIPE_PRICE_PRO=
-Environment=BMA_STRIPE_PRICE_BUSINESS=
-Environment=BMA_CHECKOUT_SUCCESS_URL=https://buildmyai.example.com/checkout-success.html
-Environment=BMA_CHECKOUT_CANCEL_URL=https://buildmyai.example.com/checkout-cancel.html
-Environment=BMA_PORTAL_RETURN_URL=https://buildmyai.example.com/dashboard.html
+#     is unsafe anywhere). Keep the API on 127.0.0.1. ---
+Environment=BMA_ADMIN_SECRET=CHANGE_ME_INJECT_A_REAL_SECRET
 # --- email (unset => dev/stdout; point BMA_SMTP_* at Amazon SES SMTP for real mail) ---
 Environment=BMA_SITE_URL=https://buildmyai.example.com
 Environment=BMA_MAIL_FROM=Build My AI <no-reply@buildmyai.example.com>
@@ -44,7 +36,7 @@ ProtectHome=true
 ReadWritePaths=/srv/buildmyai/backend/api/data
 # Extra hardening — all safe for a pure-stdlib CPython HTTP server (no device
 # access, no kernel tuning, no privilege changes; it still needs IPv4/IPv6 for
-# the reverse proxy + outbound Stripe/SMTP, and AF_UNIX for DNS/journald).
+# the reverse proxy + optional outbound SMTP, and AF_UNIX for DNS/journald).
 PrivateDevices=true
 ProtectKernelTunables=true
 ProtectKernelModules=true

@@ -12,8 +12,8 @@
   // (sync enforced by tests/security.test.js §8). best_for lists the needs a
   // model is strongest at; pickModel adds NEED_BONUS quality points on a match,
   // so the in-tier specialist wins while a much bigger generalist still takes over.
-  // ollama = FULL pinned quant tag (short tags get re-pointed upstream; docs/22 P0-6 honesty
-  // demands the generated installer pull exactly the model the plan card promised)
+  // ollama = FULL pinned quant tag (short tags get re-pointed upstream; the generated
+  // installer must pull exactly the model the plan card promised)
   var MODELS = [
     { id: 'qwen2.5-32b-instruct', name: 'Qwen2.5 32B Instruct', size: '~20 GB', file: 'qwen2.5-32b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'qwen2.5:32b-instruct-q4_K_M', vram: 24, quality: 92, speed: 62, best_for: ['company', 'legal', 'research', 'data'] },
     { id: 'qwen2.5-14b-instruct', name: 'Qwen2.5 14B Instruct', size: '~9 GB', file: 'qwen2.5-14b-instruct-q4_k_m.gguf', repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF', quant: 'Q4_K_M', ollama: 'qwen2.5:14b-instruct-q4_K_M', vram: 12, quality: 85, speed: 78, best_for: ['company', 'legal', 'research', 'data'] },
@@ -170,7 +170,7 @@
   }
   function row(k, v) { return '<tr><td>' + k + '</td><td>' + v + '</td></tr>'; }
 
-  // Llama attribution for the WEBSITE LAYER (docs/22 P0-10): when the chosen model
+  // Llama attribution for the WEBSITE LAYER: when the chosen model
   // is Llama-family, the plan and download screens must visibly show "Built with
   // Llama" + the license link (the generated files carry it too — see llamaNoticeMd).
   // Static strings + fixed llama.com links only (no user input) → innerHTML-safe.
@@ -189,7 +189,7 @@
   }
 
   // ---- generators ----
-  // The old PowerShell demo installer is retired (docs/22 P0-6): it could never
+  // The old PowerShell demo installer is retired: it could never
   // complete on a real machine. The Ollama path below is REAL — every command
   // works today. Builders are pure (model object in, text out) so the security
   // suite can execute them and assert on the actual artifacts.
@@ -400,7 +400,7 @@
     // generated files must match what the plan step showed: prefer the API plan
     var p = apiPlan ? planFromApi(apiPlan) : buildPlan();
     var isLocal = STATE.mode === 'local', isHybrid = STATE.mode === 'hybrid', isCloud = STATE.mode === 'cloud';
-    STATE.installMethod = isCloud ? 'cloud_manual' : 'ollama_guided'; // one real method per mode (docs/22 P0-6/13)
+    STATE.installMethod = isCloud ? 'cloud_manual' : 'ollama_guided'; // one real method per mode
     $('outTitle').textContent = isLocal ? t('Your installer is ready — this install is real', '你的安装包已生成——这是真实可用的安装')
                               : isHybrid ? t('Your hybrid files are ready — the local install is real', '你的混合部署文件已生成——本地安装真实可用')
                                          : t('Your cloud deployment guide is ready', '你的云端部署手册已生成');
@@ -409,8 +409,8 @@
           '为你的模型定制的分步手册,面向美国 GPU 服务器。需要基础命令行经验——或请人帮忙(30–60 分钟)。')
       : t('Double-click the .bat on your Windows machine. It installs Ollama — a free, open-source AI engine (the official installer opens; click through it) — downloads your model (' + p.model.size + '), and checks your AI is answering. About ' + timeEstimate(p.model.size) + ' minutes, mostly the download.',
           '在 Windows 电脑上双击这个 .bat。它会安装 Ollama——免费开源的 AI 引擎(官方安装程序会弹出,按提示点击)——下载你的模型(' + p.model.size + '),并检查 AI 已正常应答。大约 ' + timeEstimate(p.model.size) + ' 分钟,主要是下载时间。') +
-        (isHybrid ? ' ' + t('The cloud guide sets up the heavy-task half. Hybrid is a Pro feature — free during beta; automatic routing arrives with Pro.',
-                            '云端手册用于搭建处理繁重任务的那一半。混合为 Pro 功能——Beta 期免费;自动分流将随 Pro 推出。') : '');
+        (isHybrid ? ' ' + t('The cloud guide sets up the heavy-task half. You switch between local and cloud manually today; automatic routing is coming soon.',
+                            '云端手册用于搭建处理繁重任务的那一半。目前在本地与云端之间手动切换;自动分流即将推出。') : '');
     if (!isCloud && STATE.gpu === 'none') {
       $('outLead').textContent += ' ' + t('This computer has no NVIDIA graphics card: we recommend the cloud option. If you continue locally, your AI runs on the processor — it works, but noticeably slow.',
                                           '这台电脑没有 NVIDIA 显卡:我们推荐云端方案。如果坚持本地安装,AI 会用处理器运行——能用,但明显偏慢。');

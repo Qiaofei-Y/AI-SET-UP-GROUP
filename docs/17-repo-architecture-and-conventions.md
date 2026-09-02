@@ -9,11 +9,12 @@ AI-SET-UP-GROUP/
 ├── README.md          文档索引(所有新文档必须在这里登记)
 ├── CLAUDE.md          AI 协作说明(命令、安全边界、约定摘要)
 ├── ONBOARDING.md      新成员上手指南(跑起来、门槛、别踩的雷)
-├── docs/01–23         编号文档:01–08 产品/商业,09 工程任务,10 图表,
-│                      11 AI 架构,12–15 商业运营,16 本地 AI 接入,
+├── docs/01–21         编号文档:01–04 愿景/产品/模块/MVP,06 持久价值,
+│                      07 路线图,08 资源,09 工程任务,10 图表,11 AI 架构,
+│                      13 验证与实验,14 引导与激活,15 社区推广,16 本地 AI 接入,
 │                      17 架构约定(本文),18 测试规范,19 安全模型,
-│                      20 后端技术参考,21 Lambda 云部署设计,22 商用化审计,
-│                      23 一个月上线执行计划
+│                      20 后端技术参考,21 Lambda 云部署设计
+│                      (05/12/22/23/24 为已删除的商业化文档,编号留空不复用)
 ├── frontend/          可运行的多页静态站(页面清单见 frontend/README.md)
 │   ├── *.html         每页一个文件,HTML 只放内容
 │   ├── assets/        CSS/JS 按"共享 vs 页面专属 vs 功能"拆分
@@ -43,7 +44,7 @@ AI-SET-UP-GROUP/
 ## 3. 前端三条铁律
 
 1. **零构建、零依赖**:没有 npm、打包器、框架;`<script>`/`<link>`/图片全部本地相对路径。改变这一点是重大架构决策,需先写决策记录(见 §7)。
-2. **单一联网文件**:全站只有 `assets/local-llm.js` 允许任何网络 API;`BASE`/`PORTAL`/`ADVISOR` 钉死 `127.0.0.1`,`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13)。详见 [19 安全模型](19-security-model.md)。
+2. **单一联网文件**:全站只有 `assets/local-llm.js` 允许任何网络 API;`BASE`/`PORTAL`/`ADVISOR` 钉死 `127.0.0.1`,`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,同源部署)。详见 [19 安全模型](19-security-model.md)。
 3. **双语成对**:任何用户可见文案必须同时提供中英文(机制见 §5),只提供一种语言的 PR 视为未完成。
 
 ## 4. 代码分割与命名约定
@@ -76,8 +77,7 @@ AI-SET-UP-GROUP/
 | `window.__buildAdvisor.planProvider(req, cb)` | local-llm.js 注册 | build.js 调用 | 方案步骤向后端 `/v1/advise` 要实时推荐 |
 | `window.__buildAdvisor.reportPlan(payload)` | local-llm.js 注册 | build.js 调用 | "生成文件"上报 `/v1/telemetry/deploy`(slug/档位/布尔,fire-and-forget) |
 | `chat-feedback` 事件(detail.rating) | chat.js | local-llm.js | 👍/👎 转发到后端 `/v1/feedback`(仅评分,无内容) |
-| `window.__bmaAuth`(`signup/login/me/logout`、`forgot/reset/verify`、`changePassword/changeEmail/logoutAll/exportData/deleteAccount`) | local-llm.js | signup.js, dashboard.html, account.js, auth-recovery.js, auth-nav.js, checkout.js | 注册/登录/登录态 + 找回验证 + 账号自助走后端 `/v1/auth/*` 与 `/v1/account/*`(唯一联网文件代发) |
-| `window.__bmaBilling`(`checkout(token,plan,cb)`、`portal(token,cb)`) | local-llm.js | dashboard.html | Stripe 托管结账/账单门户 `/v1/billing/*`;`checkout` 自带 `accept_terms`,调用方须先取得续费同意;返回托管 URL 由页面整页跳转(非 fetch) |
+| `window.__bmaAuth`(`signup/login/me/logout`、`forgot/reset/verify`、`changePassword/changeEmail/logoutAll/exportData/deleteAccount`) | local-llm.js | signup.js, dashboard.html, account.js, auth-recovery.js, auth-nav.js | 注册/登录/登录态 + 找回验证 + 账号自助走后端 `/v1/auth/*` 与 `/v1/account/*`(唯一联网文件代发);账号可选,用于同步/找回,非付费墙 |
 | `window.__bmaConsent`(`get()`、`set(bool)`) | local-llm.js | build.js(向导勾选框), dashboard.html, account.js(匿名统计开关) | 设备级匿名统计 opt-in 开关(存 localStorage `bma-usage-consent`,默认关);`reportPlan`/`chat-feedback` 外发前均门控 `consented()` |
 | `window.FX.decode(el)` + `data-fx` 根属性 | fx.js | 页面标记 / 测试 | 文字解码动效;`data-fx="on"` 是动效层初始化完成的测试锚点 |
 
@@ -89,7 +89,7 @@ AI-SET-UP-GROUP/
 
 | 改了这里 | 必须检查 |
 |----------|----------|
-| 首页/营销页文案(模板、能力、部署、价格) | docs/02、04、05 + 向导 build.html 是否口径一致 |
+| 首页/营销页文案(模板、能力、部署) | docs/02、04 + 向导 build.html 是否口径一致 |
 | 向导流程/选项 | 首页宣传区、docs/09 任务表 |
 | 连接器 local-llm.js | docs/16、CLAUDE.md 安全边界节 |
 | 测试断言数量或规则 | docs/13 §测试、16、18、frontend/tests/README.md 中的计数与描述 |
@@ -104,5 +104,5 @@ AI-SET-UP-GROUP/
 - **为什么零构建**:演示站的价值是"双击就能跑 + 任何人能读懂";引入构建链会把非技术协作者挡在门外,且当前规模(约 21 页)完全不需要。触发重新评估的条件:页面间共享组件开始复制粘贴失控,或需要真实前端框架的交互复杂度。
 - **为什么单一联网文件**:把"数据不出本机"从口号变成可机器验证的断言——审计面收敛到一个文件,测试按精确路径豁免,防同名文件混入(详见 19)。
 - **为什么需求框只写不读(build.js 侧)**:自由文本是攻击者可控输入,隔离在生成链路之外;读框和联网职责收进连接器,自由文本只可能到 127.0.0.1(详见 16 §8、19)。
-- **为什么 API 常量是锁形条件式而非构建时注入**(2026-08-25 拍板同源部署,docs/22 P0-13):零构建约束下没有环境变量/构建期注入点;`LOCAL_PAGE ? 回环字面量 : ''` 让同一份静态文件本地与生产免配置通用,且安全断言能把 API 的可能取值锁到只有两种(回环、同源相对)——比"部署时手改常量"更不可能出错。备选"部署脚本 sed 替换"被否:引入了构建步骤且断言无法锁住产物。
+- **为什么 API 常量是锁形条件式而非构建时注入**(2026-08-25 拍板同源部署):零构建约束下没有环境变量/构建期注入点;`LOCAL_PAGE ? 回环字面量 : ''` 让同一份静态文件本地与生产免配置通用,且安全断言能把 API 的可能取值锁到只有两种(回环、同源相对)——比"部署时手改常量"更不可能出错。备选"部署脚本 sed 替换"被否:引入了构建步骤且断言无法锁住产物。
 - **为什么 backend 长期只有计划、v0 也保持零依赖**:数据没证明需要之前不建(见 [backend/README.md](../backend/README.md) 设计原则);2026-08 决策提前动工的 API v0 沿用前端同一哲学(纯 stdlib、单文件、易审计),上线时机仍按各阶段触发条件。

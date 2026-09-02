@@ -1,6 +1,6 @@
 name: sign-desktop
 
-# Pre-staged Azure Trusted Signing skeleton (docs/24 · installer/code-signing.md).
+# Pre-staged Azure Trusted Signing skeleton (see installer/code-signing.md).
 # NOT active yet and NOT a PR gate: it runs only on manual dispatch, and no-ops
 # (green) with instructions until BOTH (a) the Trusted Signing repo Variables are
 # set and (b) a desktop build produces dist/*.msi. It never runs on push/PR, so it
@@ -53,15 +53,15 @@ jobs:
         if: steps.preflight.outputs.configured == 'true'
         uses: actions/checkout@v4
 
-      # There is nothing to sign until the desktop build (Rust/Tauri, docs/24
-      # batch-2 body) publishes dist/*.msi. Fail loudly if triggered before that
-      # job is wired — honest, not a silent green.
+      # There is nothing to sign until the desktop build (Rust/Tauri) publishes
+      # dist/*.msi. Fail loudly if triggered before that job is wired — honest,
+      # not a silent green.
       - name: Locate installer artifact (dist/*.msi)
         if: steps.preflight.outputs.configured == 'true'
         shell: bash
         run: |
           if ! ls dist/*.msi >/dev/null 2>&1; then
-            echo "::error::No dist/*.msi found. Wire the desktop-build job to produce it first (docs/24)."
+            echo "::error::No dist/*.msi found. Wire the desktop-build job to produce it first (see installer/code-signing.md)."
             exit 1
           fi
 

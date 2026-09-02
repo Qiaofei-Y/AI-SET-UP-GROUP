@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account and plan in one place.">
+<meta name="description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account in one place.">
 <link rel="canonical" href="dashboard.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Build My AI">
 <meta property="og:title" content="Build My AI — Control Center">
-<meta property="og:description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account and plan in one place.">
+<meta property="og:description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account in one place.">
 <meta property="og:locale" content="en_US">
 <meta property="og:locale:alternate" content="zh_CN">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Build My AI — Control Center">
-<meta name="twitter:description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account and plan in one place.">
+<meta name="twitter:description" content="Your private Build My AI Control Center: preview your local model status, knowledge base, and API access, then manage your account in one place.">
 <title data-en="Build My AI — Control Center" data-zh="Build My AI — 控制中心">Build My AI — Control Center</title>
 <link rel="stylesheet" href="assets/base.css">
 <link rel="stylesheet" href="assets/dashboard.css">
@@ -99,35 +99,11 @@
         <p style="font-size:12.5px;color:var(--ink-2);margin-bottom:4px" data-en="When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet." data-zh="Teach My AI 上线后,你的纠正会在这里累积——攒够 500 条,就为你微调一个更聪明的版本。目前尚未收集任何内容。">When Teach My AI ships, your corrections will collect here — at 500, we'll fine-tune a smarter version for you. Nothing is collected yet.</p>
       </div>
 
-      <!-- plan & entitlements: LIVE — reflects the server-authoritative plan gate (P0-3) -->
+      <!-- capabilities: free & open — everything that's live is available to everyone -->
       <div class="dcard span2 fx-card" id="planCard">
-        <div class="ch"><h3>🎫 <span data-en="Your plan" data-zh="你的套餐">Your plan</span></h3><span class="badge teal" id="planBadge" data-en="● live" data-zh="● 真实">● live</span></div>
-        <p style="font-size:12.5px;color:var(--ink-2);margin:2px 0 8px" data-en="What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims." data-zh="你的套餐当前解锁了哪些能力。这直接来自服务端——套餐一变功能即解锁,绝不听浏览器一面之词。">What your plan unlocks right now. This comes straight from the server — features unlock the moment your plan changes, never from anything the browser claims.</p>
+        <div class="ch"><h3>🎫 <span data-en="Your capabilities" data-zh="你的能力">Your capabilities</span></h3><span class="badge teal" id="planBadge" data-en="● free &amp; open" data-zh="● 免费开源">● free &amp; open</span></div>
+        <p style="font-size:12.5px;color:var(--ink-2);margin:2px 0 8px" data-en="Build My AI is free and open source — every capability that's live is available to everyone. A few are still in the works and marked as coming soon." data-zh="Build My AI 免费且开源——每一项已上线的能力都对所有人开放。少数功能仍在开发中,已标注为即将推出。">Build My AI is free and open source — every capability that's live is available to everyone. A few are still in the works and marked as coming soon.</p>
         <ul id="planCaps" style="list-style:none;padding:0;margin:0;display:grid;gap:4px;font-size:13px"></ul>
-        <!-- free users: start a Stripe-hosted checkout (falls back to the pricing
-             page with no JS / if billing isn't live yet). paid users: open the
-             Stripe Billing Portal to manage or cancel (FTC click-to-cancel). -->
-        <a class="btn primary fx-btn-sweep hidden" id="planUpgrade" href="pricing.html" style="margin-top:10px;justify-content:center" data-en="Upgrade to Pro →" data-zh="升级到专业版 →">Upgrade to Pro →</a>
-        <button type="button" class="btn ghost hidden" id="planManage" style="margin-top:10px;justify-content:center" data-en="Manage subscription" data-zh="管理订阅">Manage subscription</button>
-        <!-- auto-renewal disclosure + clickwrap (P0-4): shown before checkout starts;
-             the checkbox gates the call, the server records the acceptance. Draft
-             terms pending legal review, consistent with the legal-page banners. -->
-        <div class="acct-danger hidden" id="billingDisclosure" style="margin-top:12px">
-          <p style="font-size:12.5px" data-en="Paid plans aren’t open during beta yet — everything live is free. This describes billing once it launches: it’s a recurring subscription, so your card would be charged automatically each billing period until you cancel. You can cancel anytime from “Manage subscription”. See the amount on Pricing, and our Terms and Refund Policy. (Draft terms — under legal review.)" data-zh="Beta 期间付费套餐尚未开放——已上线功能全部免费。以下为正式上线后的计费方式:这是一项周期性订阅,在你取消前每个计费周期都会自动向你的卡扣款。你可随时通过「管理订阅」取消。金额见价格页,另见服务条款与退款政策。(条款为草案,正在法律审阅中。)">Paid plans aren’t open during beta yet — everything live is free. This describes billing once it launches: it’s a recurring subscription, so your card would be charged automatically each billing period until you cancel. You can cancel anytime from “Manage subscription”. See the amount on Pricing, and our Terms and Refund Policy. (Draft terms — under legal review.)</p>
-          <div style="font-size:12px;margin:2px 0 8px">
-            <a href="pricing.html" data-en="Pricing" data-zh="价格">Pricing</a> ·
-            <a href="terms.html" data-en="Terms" data-zh="服务条款">Terms</a> ·
-            <a href="refunds.html" data-en="Refund Policy" data-zh="退款政策">Refund Policy</a>
-          </div>
-          <label for="billingAgree" style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.5;cursor:pointer">
-            <input type="checkbox" id="billingAgree" style="margin-top:2px;width:15px;height:15px;flex:none;accent-color:var(--accent)">
-            <span data-en="I understand and agree to this recurring, auto-renewing subscription." data-zh="我已理解并同意此项自动续费的周期性订阅。">I understand and agree to this recurring, auto-renewing subscription.</span>
-          </label>
-          <div class="acct-danger-row">
-            <button type="button" class="btn ghost" id="billingCancel" data-en="Cancel" data-zh="取消">Cancel</button>
-            <button type="button" class="btn primary" id="billingContinue" data-en="Agree &amp; continue →" data-zh="同意并继续 →">Agree &amp; continue →</button>
-          </div>
-        </div>
         <div class="acct-msg" id="planMsg" role="alert" style="margin-top:8px"></div>
       </div>
 
@@ -181,7 +157,7 @@
     <h2 data-en="Log in to open your Control Center" data-zh="登录后进入控制中心">Log in to open your Control Center</h2>
     <p data-en="This page is a preview of your Control Center (sample data for now), tied to your account — so it needs a verified login. Everything stays on this machine." data-zh="此页是你的控制中心预览(目前为示例数据),与你的账号绑定,需要登录后查看。一切都留在这台电脑上。">This page is a preview of your Control Center (sample data for now), tied to your account — so it needs a verified login. Everything stays on this machine.</p>
     <a class="btn primary" href="signup.html?mode=login" data-en="Log in →" data-zh="登录 →">Log in →</a>
-    <a class="btn ghost" href="signup.html?plan=pro" data-en="Create a free account" data-zh="创建免费账号">Create a free account</a>
+    <a class="btn ghost" href="signup.html" data-en="Create a free account" data-zh="创建免费账号">Create a free account</a>
   </div>
 </div>
 
@@ -209,55 +185,43 @@
   }
   function showUser(u) {
     var name = String(u.name || '').slice(0, 40);
-    var en = name + ' · ' + (u.plan === 'business' ? 'Business' : (u.plan === 'pro' ? 'Pro' : 'Free'));
-    var zh = name + ' · ' + (u.plan === 'business' ? '企业版' : (u.plan === 'pro' ? '专业版' : '免费版'));
-    hello.textContent = t(en, zh);
-    hello.setAttribute('data-en', en);
-    hello.setAttribute('data-zh', zh);
+    hello.textContent = name;
+    hello.setAttribute('data-en', name);
+    hello.setAttribute('data-zh', name);
     loginLink.classList.add('hidden');
     box.classList.remove('hidden');
     gate.classList.add('hidden');
   }
 
-  // ---- plan gate reflection (P0-3): render the server's capability set ----
-  // Every capability the product can have, with its plan and bilingual label. We
-  // show unlocked ones as ✓ and everything above the user's plan as a locked hint,
-  // so the card is honest about what buying more would add. Coming-soon features
-  // are labelled as such and never presented as unlocked. Render is textContent-only.
+  // ---- capabilities (free & open): every live capability is available to all ----
+  // Live features render as ✓; the few still in development are marked coming soon.
+  // No tiers, no locks, no paid gating. Render is textContent-only (never innerHTML).
   var CAP_CATALOG = [
     { slug: 'model_advice',   en: 'Model recommendation',        zh: '模型推荐' },
     { slug: 'guided_install', en: 'Guided local install',        zh: '引导式本地安装' },
     { slug: 'local_chat',     en: 'Chat with your local model',  zh: '与本地模型对话' },
-    { slug: 'advanced_rag',   en: 'Advanced RAG + citations (demo)', zh: '高级 RAG + 来源引用(演示)', need: 'Pro' },
-    { slug: 'memory',         en: 'Memory & auto-updates',       zh: '长期记忆与自动更新', need: 'Pro', soon: true },
-    { slug: 'fine_tuning',    en: 'Fine-tuning (Teach My AI)',   zh: '微调(Teach My AI)', need: 'Pro', soon: true },
-    { slug: 'shared_kb',      en: 'Shared company knowledge base', zh: '企业共享知识库', need: 'Business', soon: true }
+    { slug: 'advanced_rag',   en: 'Advanced RAG + citations (demo)', zh: '高级 RAG + 来源引用(演示)' },
+    { slug: 'memory',         en: 'Memory & auto-updates',       zh: '长期记忆与自动更新', soon: true },
+    { slug: 'fine_tuning',    en: 'Fine-tuning (Teach My AI)',   zh: '微调(Teach My AI)', soon: true },
+    { slug: 'shared_kb',      en: 'Shared company knowledge base', zh: '企业共享知识库', soon: true }
   ];
-  function renderPlan(ent) {
-    var caps = (ent && ent.capabilities) || [];
+  function renderPlan() {
     var list = document.getElementById('planCaps');
     while (list.firstChild) list.removeChild(list.firstChild);
     CAP_CATALOG.forEach(function (c) {
-      var on = caps.indexOf(c.slug) !== -1;
       var li = document.createElement('li');
       var mark = document.createElement('span');
-      mark.textContent = on ? '✓ ' : '🔒 ';
-      mark.style.color = on ? 'var(--teal, #14b8a6)' : 'var(--ink-3, #94a3b8)';
+      mark.textContent = c.soon ? '◷ ' : '✓ ';
+      mark.style.color = c.soon ? 'var(--ink-3, #94a3b8)' : 'var(--teal, #14b8a6)';
       var label = document.createElement('span');
       var en = c.en, zh = c.zh;
-      if (!on && c.soon) { en += ' — coming soon'; zh += ' — 即将推出'; }
-      else if (!on && c.need) { en += ' — ' + c.need; zh += ' — ' + (c.need === 'Business' ? '企业版' : '专业版'); }
+      if (c.soon) { en += ' — coming soon'; zh += ' — 即将推出'; }
       label.setAttribute('data-en', en); label.setAttribute('data-zh', zh);
       label.textContent = t(en, zh);
-      if (!on) { li.style.color = 'var(--ink-3, #94a3b8)'; }
+      if (c.soon) { li.style.color = 'var(--ink-3, #94a3b8)'; }
       li.appendChild(mark); li.appendChild(label);
       list.appendChild(li);
     });
-    // free accounts get the upgrade CTA (starts a hosted checkout); paying
-    // accounts get the Billing Portal entry to manage/cancel. Never both.
-    var plan = ent && ent.plan;
-    document.getElementById('planUpgrade').classList.toggle('hidden', plan !== 'free');
-    document.getElementById('planManage').classList.toggle('hidden', plan !== 'pro' && plan !== 'business');
   }
 
   if (!token || !window.__bmaAuth) { showLogin(); }
@@ -265,7 +229,7 @@
     window.__bmaAuth.me(token, function (err, res) {
       if (err || res.status !== 200 || !res.json.ok) { showLogin(); return; } // offline/expired
       showUser(res.json.user);
-      renderPlan(res.json.entitlements);
+      renderPlan();
     });
   }
 
@@ -393,62 +357,6 @@
       }
       renderErr('delMsg', res, 'Password is incorrect.', '密码不正确。');
     });
-  });
-
-  // ---- billing (P0-1/2/7): Stripe-hosted checkout & Billing Portal ----
-  // We never touch card data — both endpoints return a Stripe URL and we do a
-  // full-page redirect (no fetch to Stripe from the browser, so the egress lock
-  // holds). While billing is un-provisioned (beta), the server answers 503 and
-  // we say so honestly instead of showing a broken payment flow.
-  var BETA_EN = "Paid plans aren't open yet — everything that's live is free during beta.";
-  var BETA_ZH = '付费套餐尚未开放——Beta 期间已上线的功能全部免费。';
-  var billingBusy = false;
-  function billingGo(call) {
-    if (billingBusy) return;
-    if (!window.__bmaBilling) { setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH); return; }
-    billingBusy = true;
-    call(function (err, res) {
-      billingBusy = false;
-      if (err) { setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH); return; }
-      if (res.status === 200 && res.json && res.json.url) { location.href = res.json.url; return; }
-      if (res.status === 401) { clearSession(); showLogin(); return; }  // fail closed
-      if (res.status === 503) { setMsg('planMsg', BETA_EN, BETA_ZH); return; }
-      if (res.status === 409) {  // portal only: no subscription to manage
-        setMsg('planMsg', 'No active subscription to manage yet.', '目前没有可管理的订阅。');
-        return;
-      }
-      if (res.status === 429) {
-        setMsg('planMsg', 'Too many attempts — wait a minute and try again.', '尝试次数过多,请稍等一分钟再试。');
-        return;
-      }
-      setMsg('planMsg', OFFLINE_EN, OFFLINE_ZH);
-    });
-  }
-  // upgrade → show the auto-renewal disclosure first (P0-4); checkout only starts
-  // after the user ticks the clickwrap checkbox and confirms.
-  var disclosure = document.getElementById('billingDisclosure');
-  var agree = document.getElementById('billingAgree');
-  document.getElementById('planUpgrade').addEventListener('click', function (e) {
-    e.preventDefault();  // enhance the pricing-page link into a gated checkout
-    setMsg('planMsg', '', '');
-    disclosure.classList.remove('hidden');
-    if (agree) agree.focus();
-  });
-  document.getElementById('billingCancel').addEventListener('click', function () {
-    disclosure.classList.add('hidden');
-    if (agree) agree.checked = false;
-    setMsg('planMsg', '', '');
-  });
-  document.getElementById('billingContinue').addEventListener('click', function () {
-    if (!agree || !agree.checked) {
-      setMsg('planMsg', 'Please agree to the auto-renewal terms to continue.',
-             '请先同意自动续费条款以继续。');
-      return;
-    }
-    billingGo(function (cb) { window.__bmaBilling.checkout(token, 'pro', cb); });
-  });
-  document.getElementById('planManage').addEventListener('click', function () {
-    billingGo(function (cb) { window.__bmaBilling.portal(token, cb); });
   });
 
   // ---- anonymous usage statistics: opt-in toggle (privacy.html) ----

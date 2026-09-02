@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 这个仓库是什么
 
-「Build My AI」——面向非技术用户的个人 AI 搭建平台。当前阶段是**产品文档 + 可运行的演示站 + 零依赖后端 API v0**(前端离线可独立运行,后端在线时自动增强):
+「Build My AI」——面向 AI 爱好者与开发者的**非商业开源项目**,帮你把整套 AI 栈搭在自己的硬件上、完全自持。当前阶段是**产品文档 + 可运行的演示站 + 零依赖后端 API v0**(前端离线可独立运行,后端在线时自动增强):
 
-- `docs/01–23`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)、**20 后端技术文档**(端点规格、分库设计、红线→断言映射,改 `server.py` 前必读)。
-- `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示 + 法律三件套草案)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
-- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py` + 零依赖发信层 `api/mailer.py` + 备份脚本 `ops/backup.py`,全 stdlib):advise/registry/license/telemetry/feedback/auth/billing 七组端点。auth 含密码找回/邮箱验证(`/v1/auth/forgot|reset|verify`,一次性令牌只存哈希、单次使用、有时效)与账号自助(`/v1/account/password|email|logout-all|delete|export`);billing 为 Stripe 托管结账/门户/webhook(checkout 强制 `accept_terms` 续费 clickwrap + 落 consent 留痕,卡数据不进本进程)。隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘;结构化日志 `BMA_LOG` 只记 path/status,永不含请求体);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session/令牌只存哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`——遥测/反馈是 opt-in,先过 `window.__bmaConsent`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定、SQLite WAL + 版本化迁移、`deploy/` 反代与备份脚本。
+- `docs/01–21`:产品与工程文档(`README.md` 有索引)。工程侧必读:**17 架构与约定**(全局钩子清单、文档镜像规则)、**18 测试规范**(提交门槛、断言放宽流程、端到端验证 playbook)、**19 安全模型**(不变量→断言映射)、**20 后端技术文档**(端点规格、分库设计、红线→断言映射,改 `server.py` 前必读)。
+- `frontend/`:多页静态网站(营销页 + 引导向导 + Control Center + 聊天演示 + 法律条款草案)。**零构建、零依赖**——没有 npm/打包器,双击或起个静态服务器即可运行。
+- `backend/`:演进计划(`backend/README.md`)+ **API v0**(`api/server.py` + 零依赖发信层 `api/mailer.py` + 备份脚本 `ops/backup.py`,全 stdlib):advise/registry/telemetry/feedback/auth 五组端点(无付费/计费/license,项目免费开源)。auth 含密码找回/邮箱验证(`/v1/auth/forgot|reset|verify`,一次性令牌只存哈希、单次使用、有时效)与账号自助(`/v1/account/password|email|logout-all|delete|export`)。隐私红线是 schema 白名单 + 测试断言(自由文本一律 400,`need_text` 不落盘;结构化日志 `BMA_LOG` 只记 path/status,永不含请求体);**身份与遥测分库**——账号在 `users.db`(PBKDF2 盐哈希,session/令牌只存哈希),匿名事件在 `events.db`,互不沾染。**前端已接入**(API 在线时:向导方案走 `/v1/advise`、生成文件上报 `/v1/telemetry/deploy`、聊天 👍/👎 上报 `/v1/feedback`——遥测/反馈是 opt-in,先过 `window.__bmaConsent`;离线自动回退纯前端——**auth 例外**:注册/登录离线显式报错、dashboard 无 session 出登录墙,不假通行)。生产化地基已做:`--host`、分桶限速(429)、默认密钥拒绝非回环绑定、SQLite WAL + 版本化迁移、`deploy/` 反代与备份脚本。
 - `figma/`:高保真界面原型(`prototype.html` 浏览器打开)与设计系统说明。
 
-硬性约束:**项目面向美国市场**(模型源/云服务/支付渠道一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
+硬性约束:**面向美国用户**(模型源/云服务一律用美国资源),但**文档语言保持中文**;网站 UI 默认英文、可切中文。
 
 ## 常用命令
 
@@ -26,8 +26,7 @@ open http://localhost:8931/chat.html
 
 # 后端 API v0(零依赖 stdlib,127.0.0.1:8940)
 python3 backend/api/server.py            # 启动
-python3 backend/api/server.py --mint pro # 铸造演示 license
-python3 backend/tests/api.test.py        # 后端测试(74 项,起真实服务)
+python3 backend/tests/api.test.py        # 后端测试(起真实服务)
 python3 backend/ops/backup.py --selftest # 备份+恢复演练(sqlite ONLINE backup,退出 0 即通过;CI 每次跑)
 # 可选:BMA_ADVISOR_LLM=http://127.0.0.1:8080 让 /v1/advise 用本地 LLM 分类(仅回环,失败回退规则)
 # 可选:BMA_SMTP_HOST=… 让找回/验证信走真实 SMTP(如 SES);不设则邮件只进内存 OUTBOX + stdout
@@ -45,7 +44,7 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 `frontend/tests/security.test.js` 把安全模型写成了断言,违反即测试失败:
 
 - **全站只有 `frontend/assets/local-llm.js`(按精确路径豁免)允许发网络请求**;其他任何文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 都会挂。
-- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)/`OLLAMA`(11434,引导安装的引擎)必须各只赋值一次、指向 `127.0.0.1`;`API` 是被测试锁形的条件式——localhost 页面为 `127.0.0.1:8940`,部署页面为 `''`(同源相对,反代转 `/v1/*`,P0-13);每个 `fetch` 必须以五常量之一开头;不允许出现其他 URL 字面量。
+- 连接器内 `BASE`(8080)/`PORTAL`(8090)/`ADVISOR`(8092,预留)/`OLLAMA`(11434,引导安装的引擎)必须各只赋值一次、指向 `127.0.0.1`;`API` 是被测试锁形的条件式——localhost 页面为 `127.0.0.1:8940`,部署页面为 `''`(同源相对,反代转 `/v1/*`);每个 `fetch` 必须以五常量之一开头;不允许出现其他 URL 字面量。
 - `build.js` 永远不读需求框的值(write-only 预填);需求框文本只由 `local-llm.js` 读取并发往 `127.0.0.1` 做分类,绝不进入生成的安装包/手册。
 - 用户输入/模型输出一律 `esc()` + `textContent` 渲染,禁止进原始 `innerHTML`;禁 `eval`/`document.write`/`insertAdjacentHTML`/字符串定时器。
 - 所有 `<script>`/`<link>`/图片必须是本地相对路径(纯静态站无外部资源)。
@@ -62,4 +61,4 @@ ai reindex ~/AI-SET-UP-GROUP       # 彻底重建索引
 
 **打断语义是连接器最易错的部分**:每个请求持独立 `AbortController` + 全局代数计数器 `gen`,过期请求的一切异步收尾都要先判 stale 才能碰共享状态;用户打断时同步提交半截回答进历史、没流出内容就删掉悬空 user 轮,保证 messages 永远是干净交替。改 `local-llm.js` 的请求生命周期前先读 `docs/16-local-ai-web-integration.md` 第 4 节。
 
-**文档与演示互为镜像**:网站的文案/流程/定价要和 `docs/`(尤其 02、04、05、11)一致,界面风格与 `figma/design-system.md` 一致;改一侧时检查另一侧是否需要同步。RAG 演示的语料就是本仓库的 `.md` 文档,文档改后记得 `ai ingest`。
+**文档与演示互为镜像**:网站的文案/流程要和 `docs/`(尤其 02、04、11)一致,界面风格与 `figma/design-system.md` 一致;改一侧时检查另一侧是否需要同步。RAG 演示的语料就是本仓库的 `.md` 文档,文档改后记得 `ai ingest`。

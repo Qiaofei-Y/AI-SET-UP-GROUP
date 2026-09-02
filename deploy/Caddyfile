@@ -1,6 +1,6 @@
 # Build My AI — production reverse proxy (same-origin, automatic HTTPS).
 # One domain serves the static frontend AND proxies /v1/* to the loopback-bound
-# API; Caddy terminates TLS. This is the docs/20 §3.1 / docs/22 P0-13 topology —
+# API; Caddy terminates TLS. This is the docs/20 §3.1 same-origin topology —
 # with same-origin serving, the frontend's API constant resolves to '' and needs
 # zero configuration.
 #
@@ -8,7 +8,7 @@
 #   1. Replace buildmyai.example.com below with your real domain.
 #   2. In frontend/sitemap.xml replace every https://__DOMAIN__ with the domain,
 #      and uncomment the `Sitemap:` line in frontend/robots.txt.
-#   3. Inject a real BMA_LICENSE_SECRET (+ Stripe keys) into the API service.
+#   3. Inject a real BMA_ADMIN_SECRET into the API service.
 # See deploy/README.md for the full runbook.
 
 buildmyai.example.com {
@@ -34,8 +34,6 @@ buildmyai.example.com {
 	}
 
 	# --- API: TLS terminates here, forward to the loopback-bound backend ---
-	# The Stripe webhook (POST /v1/billing/webhook) is verified over the raw body
-	# by the app itself, so no special proxy handling is needed.
 	handle /v1/* {
 		reverse_proxy 127.0.0.1:8940
 	}

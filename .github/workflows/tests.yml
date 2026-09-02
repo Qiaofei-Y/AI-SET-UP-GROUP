@@ -2,7 +2,7 @@ name: tests
 
 # Gate every PR (and pushes to main) on the two zero-dependency test suites.
 # A non-zero exit turns the check red; enable branch protection on `main` requiring
-# both jobs so red blocks merge (docs/23 Week 4 · docs/13 §9.1).
+# both jobs so red blocks merge (docs/13 §9.1).
 on:
   push:
     branches: [main]

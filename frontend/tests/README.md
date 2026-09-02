@@ -49,4 +49,4 @@ Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline';
   object-src 'none'; base-uri 'none'; frame-ancestors 'none'
 ```
 
-(当前用到内联 `onclick`/`style`,故脚本/样式暂留 `'unsafe-inline'`;`connect-src 'none'` 可挡住任何数据外发——若按 docs/22 P0-13 做同源部署、`/v1/*` 反代到后端,则改为 `connect-src 'self'`。)
+(当前用到内联 `onclick`/`style`,故脚本/样式暂留 `'unsafe-inline'`;`connect-src 'none'` 可挡住任何数据外发——若做同源部署、`/v1/*` 反代到后端,则改为 `connect-src 'self'`。)

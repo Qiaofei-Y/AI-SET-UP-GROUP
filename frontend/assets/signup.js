@@ -1,14 +1,10 @@
-// Build My AI — signup + login. Reads ?plan=pro|business and ?mode=login.
+// Build My AI — signup + login. Reads ?mode=login. Signup creates a free
+// account — no plans, no tiers (the project is free & open source).
 // Real auth via window.__bmaAuth (local-llm.js -> self-hosted API, users.db).
 // When the API is unreachable both flows show an explicit error instead of
 // pretending to succeed (P0-14: a silently dropped signup is data loss, a
 // login that always passes is a fake). No user input into innerHTML, ever.
 (function () {
-  function plan() {
-    var p = (location.search.match(/[?&]plan=([a-z]+)/) || [])[1];
-    return p === 'business' ? 'business' : 'pro';
-  }
-  var P = plan();
   var LOGIN = /[?&]mode=login\b/.test(location.search);
 
   // swap a bilingual label: attributes keep langchange working, textContent shows now
@@ -26,17 +22,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    var isBiz = P === 'business';
-    // plan label (re-set on every language toggle)
-    var pill = document.getElementById('planPill');
-    function setPill() {
-      if (pill) pill.textContent = isBiz ? t('Business plan', '企业版') : t('Pro plan', '专业版');
-    }
-    setPill();
-    // company field only for business
-    var companyField = document.getElementById('companyField');
-    if (companyField) companyField.style.display = isBiz ? '' : 'none';
-
     if (LOGIN) {
       relabel('suEyebrow', 'LOG IN', '登录');
       relabel('suTitle', 'Welcome back', '欢迎回来');
@@ -48,7 +33,7 @@
         titleEl.setAttribute('data-zh', 'Build My AI — 登录');
       }
       document.title = t('Build My AI — Log in', 'Build My AI — 登录');
-      hide('planPill'); hide('betaNote'); hide('nameField'); hide('companyField'); hide('privacyLine');
+      hide('betaNote'); hide('nameField'); hide('privacyLine');
       hide('agreeField'); // clickwrap is a signup-time consent; login re-accepts nothing
       document.getElementById('altSignup').classList.add('hidden');
       document.getElementById('altLogin').classList.remove('hidden');
@@ -57,11 +42,9 @@
     var form = document.getElementById('signupForm');
     var fName = document.getElementById('fName');
     var fEmail = document.getElementById('fEmail');
-    var fCompany = document.getElementById('fCompany');
     var fPassword = document.getElementById('fPassword');
     var errName = document.getElementById('errName');
     var errEmail = document.getElementById('errEmail');
-    var errCompany = document.getElementById('errCompany');
     var errPassword = document.getElementById('errPassword');
     var errForm = document.getElementById('errForm');
     var fAgree = document.getElementById('fAgree');
@@ -69,13 +52,12 @@
     if (LOGIN && fPassword) fPassword.setAttribute('autocomplete', 'current-password');
 
     // Current validation state, so visible errors re-render on language toggle.
-    var errs = { name: false, email: false, company: false, password: false, agree: false,
+    var errs = { name: false, email: false, password: false, agree: false,
                  emailTaken: false, badCred: false, api: false, throttled: false };
     function renderErrs() {
       errName.textContent = errs.name ? t('Please enter your name.', '请填写姓名。') : '';
       errEmail.textContent = errs.email ? t('Please enter a valid email.', '请填写有效邮箱。')
         : (errs.emailTaken ? t('This email is already registered — log in instead.', '该邮箱已注册,请直接登录。') : '');
-      errCompany.textContent = errs.company ? t('Company name is required for Business.', '企业版需填写公司名称。') : '';
       errPassword.textContent = errs.password ? t('Password must be at least 8 characters.', '密码至少 8 位。')
         : (errs.badCred ? t('Email or password is incorrect.', '邮箱或密码不正确。') : '');
       errAgree.textContent = errs.agree
@@ -91,9 +73,8 @@
       else input.removeAttribute('aria-invalid');
     }
 
-    // Keep pill + any visible errors in the active language.
+    // Keep any visible errors in the active language.
     document.addEventListener('langchange', function () {
-      setPill();
       renderErrs();
     });
 
@@ -129,11 +110,9 @@
       if (busy) return;
       var name = fName.value.trim();
       var email = fEmail.value.trim();
-      var company = fCompany.value.trim();
       var password = fPassword.value;
       errs.name = !LOGIN && !name;
       errs.email = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      errs.company = !LOGIN && isBiz && !company;
       errs.password = password.length < 8;
       errs.agree = !LOGIN && !(fAgree && fAgree.checked); // clickwrap: consent is required to sign up
       errs.emailTaken = false;
@@ -143,10 +122,9 @@
       renderErrs();
       mark(fName, errs.name);
       mark(fEmail, errs.email);
-      mark(fCompany, errs.company);
       mark(fPassword, errs.password);
       var firstBad = errs.name ? fName : (errs.email ? fEmail
-        : (errs.company ? fCompany : (errs.password ? fPassword : (errs.agree ? fAgree : null))));
+        : (errs.password ? fPassword : (errs.agree ? fAgree : null)));
       if (firstBad) { firstBad.focus(); return; }
 
       var auth = window.__bmaAuth;
@@ -175,11 +153,7 @@
 
       if (!auth) { errs.api = true; renderErrs(); return; }
       var body = { name: name, email: email, password: password,
-                   // requested plan = funnel intent only; the account always starts
-                   // on 'free' — entitlements are server-authoritative (P0-3)
-                   plan: isBiz ? 'business' : 'pro',
                    accept_tos: true }; // clickwrap checked (validated above); server records the version
-      if (isBiz) body.company = company;
       busy = true;
       auth.signup(body, function (err, res) {
         busy = false;

@@ -65,7 +65,6 @@ cd frontend && python3 -m http.server 8931   # 必须走 http://(file:// 禁 fet
 backend API v0(见 [backend/README.md](../backend/README.md))沿用同一哲学,已实现:
 
 - **隐私红线写成测试**:`/v1/telemetry`、`/v1/feedback` 的请求体做 schema 白名单校验,未知字段、自由文本形态的值一律 400,均有测试用例;`/v1/advise` 的 `need_text` 有"不回显、不落库、不进日志"断言(直接扫 SQLite 文件字节验证);
-- license 校验覆盖 铸造→验证/篡改/垃圾输入 三路;
 - **传输与滥用面也写成断言**:负/非法 Content-Length 400、auth/events 分桶限速 429(窗口由 `BMA_RATE_*` 注入,测试用小窗口验证后清计数)、非回环绑定 + 默认密钥必须拒绝启动;
 - 测试起**真实服务**打真实 HTTP(临时端口 + 隔离数据库),不 mock 内部函数;
 - 前端接入本 API 或任何外部 SaaS 前,先走 §3 白名单流程。
