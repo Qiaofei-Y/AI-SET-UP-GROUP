@@ -84,6 +84,14 @@ ok('local-llm.js: no XHR/WebSocket/EventSource/beacon/Image/dynamic-import',
   !/XMLHttpRequest|new\s+WebSocket|new\s+EventSource|sendBeacon|new\s+Image\s*\(|\bimport\s*\(/.test(conn));
 ok('local-llm.js: no innerHTML use', !/innerHTML/.test(conn));
 
+// telemetry/feedback are OPT-IN (privacy.html promises this): both senders must
+// gate on the consent check BEFORE the fetch, so nothing anonymous leaves the
+// machine without the user opting in.
+ok('local-llm.js: reportPlan gates /v1/telemetry/deploy on consented()',
+  /function reportPlan[\s\S]*?consented\(\)[\s\S]*?\/v1\/telemetry\/deploy/.test(conn));
+ok('local-llm.js: chat-feedback gates /v1/feedback on consented()',
+  /chat-feedback[\s\S]*?consented\(\)[\s\S]*?\/v1\/feedback/.test(conn));
+
 // ---------- 2. HTML resource surface ----------
 for (const f of htmlFiles) {
   const h = read(f);
@@ -93,6 +101,26 @@ for (const f of htmlFiles) {
   ok(rel(f) + ': no target=_blank without rel=noopener',
      !/target\s*=\s*["']_blank["'](?![^>]*rel\s*=\s*["'][^"']*noopener)/i.test(h));
   ok(rel(f) + ': loads base.css', /assets\/base\.css/.test(h));
+}
+
+// ---------- 2b. i18n bilingual parity ----------
+// Every visible string must carry BOTH languages: an element with data-en needs
+// data-zh (and vice-versa), and the same for placeholder (-ph) and aria-label
+// (-al) pairs. A one-sided attribute is a defect — this locks the invariant so a
+// half-translated element fails here instead of shipping.
+for (const f of htmlFiles) {
+  const h = read(f);
+  const tags = h.match(/<[^>]*\bdata-(?:en|zh)(?:-ph|-al)?\b[^>]*>/g) || [];
+  let bad = 0;
+  for (const tag of tags) {
+    const pairs = [['data-en', 'data-zh'], ['data-en-ph', 'data-zh-ph'], ['data-en-al', 'data-zh-al']];
+    for (const [en, zh] of pairs) {
+      const hasEn = new RegExp('\\b' + en + '\\b(?![-\\w])').test(tag);
+      const hasZh = new RegExp('\\b' + zh + '\\b(?![-\\w])').test(tag);
+      if (hasEn !== hasZh) { bad++; }
+    }
+  }
+  ok(rel(f) + ': i18n data-en/zh (+ -ph/-al) attributes are always bilingual', bad === 0);
 }
 
 // ---------- 3. no hardcoded real secrets ----------
@@ -217,6 +245,24 @@ for (const a of art || []) {
   ok('Llama license notice ' + (isLl ? 'present' : 'absent') + ' for ' + a.id + ' (docs/22 P0-10)',
      isLl === (a.bat.indexOf('Built with Llama') >= 0) &&
      isLl === (a.guide.indexOf('Llama 3.1 Community License') >= 0));
+}
+
+// P0-10 WEBSITE LAYER: the plan/download UI (not just the generated files) must
+// surface "Built with Llama" + the license link for Llama-family models.
+const uiNoticeSrc = (build.match(/function llamaNoticeHtml[\s\S]*?\n  \}/) || [''])[0];
+let uiNotice = null;
+try {
+  uiNotice = vm.runInNewContext('(function(){ var t=function(en,zh){return en;};' + modelsSrc +
+    ' function isLlama(m){ return m.ollama.indexOf("llama") === 0; }' + uiNoticeSrc +
+    '; return MODELS.map(function(m){ return {id: m.id, ollama: m.ollama, html: llamaNoticeHtml(m)}; });})()');
+} catch (e) { /* fails below */ }
+ok('UI llamaNoticeHtml executes and covers every model (' + (uiNotice ? uiNotice.length : 0) + '/' + registry.models.length + ')',
+   Array.isArray(uiNotice) && uiNotice.length === registry.models.length);
+for (const u of uiNotice || []) {
+  const isLl = u.ollama.indexOf('llama') === 0;
+  ok('UI "Built with Llama" notice ' + (isLl ? 'present' : 'absent') + ' for ' + u.id + ' (P0-10 site layer)',
+     isLl === (u.html.indexOf('Built with Llama') >= 0) &&
+     isLl === (u.html.indexOf('llama.com/llama3_1/license') >= 0));
 }
 
 // ---------- summary ----------

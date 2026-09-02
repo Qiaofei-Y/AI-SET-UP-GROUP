@@ -1,6 +1,6 @@
 # 19 · 安全与隐私模型
 
-> 一句话:攻击面被刻意压到极小(零依赖、单一联网文件、只连本机/同源),剩下的风险(XSS、数据外发、注入到生成文件)全部写成机器可验证的不变量,由 `frontend/tests/security.test.js`(131 项)强制。
+> 一句话:攻击面被刻意压到极小(零依赖、单一联网文件、只连本机/同源),剩下的风险(XSS、数据外发、注入到生成文件)全部写成机器可验证的不变量,由 `frontend/tests/security.test.js`(192 项)强制。
 
 ## 1. 威胁模型
 
@@ -46,7 +46,10 @@
 **E. 存储**
 | 不变量 | 断言 |
 |--------|------|
-| localStorage 只存语言码 | `setItem('bma-lang', lang)` 形式匹配 |
+| i18n 的 localStorage 只存语言码 | `i18n.js` 里只出现 `setItem('bma-lang', lang)` 形式 |
+| 匿名统计只在 opt-in 后才外发 | `local-llm.js` 里 `reportPlan`→`/v1/telemetry/deploy`、`chat-feedback`→`/v1/feedback` 都必须先过 `consented()` 门禁(consent 状态存 `localStorage['bma-usage-consent']`,默认关) |
+
+> session token 存 `sessionStorage`(关标签页即清,见 [20 §7](20-backend-architecture-and-api.md)),不进 localStorage。
 
 ## 3. 需求框数据流(最精巧的一条边界)
 
@@ -69,7 +72,11 @@
 
 永不上传(任何阶段、任何理由):用户文档与知识库内容、聊天问题与回答原文、文件名与目录结构。可上传(opt-in + 匿名):硬件档位、模板/模型选择、安装成败、👍/👎 标注(不含内容)。完整表见 [backend/README.md §5](../backend/README.md)。
 
-**默认状态仍然很强**:前端的全部网络目标只有 本机服务(llm-lab/Ollama,127.0.0.1)与 自建 API(本地回环 / 部署同源)——遥测是 schema 白名单的匿名枚举、身份数据只进自己的 users.db,没有任何第三方端点。P1 接 SaaS 埋点时按 [18 §3](18-testing-and-quality.md) 白名单流程放宽,并同步修改营销文案的表述边界。
+**默认状态仍然很强**:前端的全部网络目标只有 本机服务(llm-lab/Ollama,127.0.0.1)与 自建 API(本地回环 / 部署同源)——遥测是 schema 白名单的匿名枚举、身份数据只进自己的 users.db,没有任何第三方端点。且遥测/反馈是 **opt-in**(默认关,状态存 `bma-usage-consent`;见 [16 §9](16-local-ai-web-integration.md) 与 §2-E 的断言)。P1 接 SaaS 埋点时按 [18 §3](18-testing-and-quality.md) 白名单流程放宽,并同步修改营销文案的表述边界。
+
+**一次性令牌纪律(密码找回 / 邮箱验证,后端 P0-15)**:重置信、验证信里的令牌是不透明的 `token_hex(24)`,库里**只存 `sha256(token)`**(泄库不可重放),**单次使用**(命中即删行)、**有时效**(重置 1h、验证 48h),与 session token 同一套「只存哈希」纪律。重置成功后**撤销该用户全部 session**(持旧密码者立即锁死)。忘记密码端点 `/v1/auth/forgot` **恒定 200**、不泄露邮箱是否注册(防账号枚举)。详见 [20 §5 密码找回/邮箱验证](20-backend-architecture-and-api.md)。
+
+**日志红线(后端结构化日志)**:后端每个响应打一行结构化 JSON 日志(`BMA_LOG`,默认开)到 stderr,字段只有 `ts/level/method/path/status/ms/ip`——**path 已剥掉 query、永不含请求体**;`need_text`、密码、令牌、邮箱都不进任何日志。这与「need_text 不落盘不回显」是同一条红线在日志面的延伸(对应断言 `test_advise_never_echoes_or_stores_need_text`)。
 
 ## 5. 部署加固(HTTP 托管时)
 

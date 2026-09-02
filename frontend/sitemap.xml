@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Build My AI — sitemap.
+  <loc> requires an ABSOLUTE URL, but the production domain is not chosen yet
+  (docs/23, batch 0 / P0-11). On deploy, replace every "https://__DOMAIN__"
+  below with the real origin (e.g. a one-line find/replace in CI). The
+  login-gated dashboard is intentionally omitted (see robots.txt).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://__DOMAIN__/index.html</loc><priority>1.0</priority></url>
+  <url><loc>https://__DOMAIN__/how-it-works.html</loc><priority>0.8</priority></url>
+  <url><loc>https://__DOMAIN__/capabilities.html</loc><priority>0.8</priority></url>
+  <url><loc>https://__DOMAIN__/templates.html</loc><priority>0.7</priority></url>
+  <url><loc>https://__DOMAIN__/deploy.html</loc><priority>0.7</priority></url>
+  <url><loc>https://__DOMAIN__/downloads.html</loc><priority>0.6</priority></url>
+  <url><loc>https://__DOMAIN__/pricing.html</loc><priority>0.9</priority></url>
+  <url><loc>https://__DOMAIN__/build.html</loc><priority>0.8</priority></url>
+  <url><loc>https://__DOMAIN__/chat.html</loc><priority>0.6</priority></url>
+  <url><loc>https://__DOMAIN__/signup.html</loc><priority>0.6</priority></url>
+  <url><loc>https://__DOMAIN__/forgot-password.html</loc><priority>0.4</priority></url>
+  <url><loc>https://__DOMAIN__/privacy.html</loc><priority>0.3</priority></url>
+  <url><loc>https://__DOMAIN__/terms.html</loc><priority>0.3</priority></url>
+  <url><loc>https://__DOMAIN__/refunds.html</loc><priority>0.3</priority></url>
+</urlset>

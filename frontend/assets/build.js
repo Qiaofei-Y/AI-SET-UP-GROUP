@@ -138,6 +138,7 @@
         '<div style="margin-top:12px;font-size:13px;color:var(--clay)">⚠ ' +
         t('The on-device part needs an NVIDIA graphics card and this computer doesn\'t have one. We recommend the cloud option below.',
           '本机运行的部分需要 NVIDIA 显卡,而这台电脑没有。我们推荐下方的云端方案。') + '</div>' : '') +
+      llamaNoticeHtml(p.model) +
       '<details class="adv"><summary>' + t('Advanced (for the technical)', '高级模式(给懂技术的人看)') + '</summary><table>' +
         row(t('Recommended model', '推荐模型'), p.model.name + ' (' + p.model.quant + ')') +
         (isHybrid ? row(t('Cloud escalation model', '云端升级模型'), pickModel('24').name) : '') +
@@ -168,6 +169,24 @@
       '<div class="track"><div class="fill" style="width:' + pct + '%;background:' + color + '"></div></div></div>';
   }
   function row(k, v) { return '<tr><td>' + k + '</td><td>' + v + '</td></tr>'; }
+
+  // Llama attribution for the WEBSITE LAYER (docs/22 P0-10): when the chosen model
+  // is Llama-family, the plan and download screens must visibly show "Built with
+  // Llama" + the license link (the generated files carry it too — see llamaNoticeMd).
+  // Static strings + fixed llama.com links only (no user input) → innerHTML-safe.
+  function llamaNoticeHtml(m) {
+    if (!isLlama(m)) return '';
+    return '<div style="margin-top:12px;padding:10px 12px;border:1px solid var(--line);' +
+      'border-radius:9px;font-size:12.5px;color:var(--ink-2);background:var(--paper)">' +
+      '<b>' + t('Built with Llama', '基于 Llama 构建') + '</b> · ' +
+      t('Uses Meta Llama 3.1 under the ', '本方案使用 Meta Llama 3.1,遵循 ') +
+      '<a href="https://www.llama.com/llama3_1/license/" target="_blank" rel="noopener noreferrer">' +
+      t('Llama 3.1 Community License', 'Llama 3.1 社区许可协议') + '</a>' +
+      t('; your use is also subject to Meta’s ', ';你的使用还须遵守 Meta 的') +
+      '<a href="https://www.llama.com/llama3_1/use-policy/" target="_blank" rel="noopener noreferrer">' +
+      t('Acceptable Use Policy', '可接受使用政策') + '</a>.' +
+      '</div>';
+  }
 
   // ---- generators ----
   // The old PowerShell demo installer is retired (docs/22 P0-6): it could never
@@ -409,7 +428,8 @@
                                          : t('Cloud GPU server', '云 GPU 服务器')) +
       kv(t('Knowledge / RAG', '知识库 / RAG'), p.rag
         ? t('Planned — ships with the desktop app', '规划中——随桌面应用推出')
-        : t('Off', '关闭'));
+        : t('Off', '关闭')) +
+      llamaNoticeHtml(p.model);  // P0-10: visible attribution at the download step too
     // downloads + preview
     var dl = $('outDownloads'), pv = $('outPreview'), fm = $('outFileMeta');
     dl.innerHTML = '';

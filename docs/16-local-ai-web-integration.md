@@ -56,7 +56,7 @@ open http://localhost:8931/chat.html
 
 **引用渲染**:`/api/rag` 的 `sources[{file, section}]` 经 `chat.js` 的 `addCite()` 渲染为与演示一致的引用卡;全部走 `textContent`,模型输出没有任何 HTML 注入路径。
 
-**安全边界(由测试强制)**:`frontend/tests/security.test.js`(131 项)规定——
+**安全边界(由测试强制)**:`frontend/tests/security.test.js`(192 项)规定——
 - 全站只有 `frontend/assets/local-llm.js`(按**精确路径**豁免,防同名文件混入)可以发起网络请求;
 - 其余文件出现 `fetch/XHR/WebSocket/EventSource/sendBeacon/new Image(/import(` 即测试失败;
 - 连接器内 `BASE`/`PORTAL`/`ADVISOR`/`OLLAMA` 必须各只赋值一次、指向 `127.0.0.1`,每个 `fetch` 必须以其一(或 `API`)开头,不允许出现其他 URL 字面量。
@@ -74,7 +74,7 @@ open http://localhost:8931/chat.html
 - 连续两次打断流式回答 → 无卡死、无孤儿流、历史不错序 ✓
 - 中文模式点建议问题 → 中文回答 ✓;预置会话追问 → 正确利用 seed 上下文 ✓
 - 服务停掉 → 回退演示答案 + "已断开"提示,15 秒自动重连 ✓(代码路径)
-- 安全套件 131 项全绿 ✓
+- 安全套件 192 项全绿 ✓
 
 ## 7. 边界与下一步
 
@@ -96,10 +96,12 @@ open http://localhost:8931/chat.html
 
 **向导推荐方案**:进入第 3 步时,`build.js` 通过 `window.__buildAdvisor.planProvider` 钩子(由 `local-llm.js` 注册)请求 `POST /v1/advise`(只传 模板 slug + 硬件档位,**不传需求框文本**——分类已由 §8 的本地模型完成)。成功则方案卡换用 registry 数据并显示"✦ 实时推荐 · 模型库";带 `planGen` 代数守卫防止切换模式后的过期回包覆盖;**生成的安装包/手册与 API 方案一致**(renderOutput 优先用 apiPlan)。
 
-**聊天反馈**:👍/👎 时 `chat.js` 派发 `chat-feedback` 事件(detail 只有 rating),`local-llm.js` 监听并在 满足"真实本地模型已回答 + API 在线"时 `POST /v1/feedback`,载荷仅 `{rating, template, model_id}`——纠正文本框的内容**永不上报**(后端 schema 结构上也收不了)。
+**聊天反馈**:👍/👎 时 `chat.js` 派发 `chat-feedback` 事件(detail 只有 rating),`local-llm.js` 监听并在 满足"真实本地模型已回答 + API 在线 **+ 用户已同意使用分析**"时 `POST /v1/feedback`,载荷仅 `{rating, template, model_id}`——纠正文本框的内容**永不上报**(后端 schema 结构上也收不了)。
 
-**方案统计(数据飞轮种子)**:点"生成我的文件"时,`build.js` 用 slug/档位/布尔构造载荷,经 `window.__buildAdvisor.reportPlan` 钩子 `POST /v1/telemetry/deploy`,带 `stage:'plan_generated'` 与真实安装结果区分;仅当方案本身来自 API(id 与 registry 对齐)且 API 在线时上报,fire-and-forget。
+**方案统计(数据飞轮种子)**:点"生成我的文件"时,`build.js` 用 slug/档位/布尔构造载荷,经 `window.__buildAdvisor.reportPlan` 钩子 `POST /v1/telemetry/deploy`,带 `stage:'plan_generated'` 与真实安装结果区分;仅当方案本身来自 API(id 与 registry 对齐)、API 在线**且用户已同意**时上报,fire-and-forget。
+
+**使用分析是 opt-in(隐私页承诺)**:上面两条通道(遥测 + 反馈)都先过 `window.__bmaConsent.get()` 门禁——同意状态存 `localStorage['bma-usage-consent']`,由 `local-llm.js` 的 `window.__bmaConsent = {get, set}` 读写,向导页与 dashboard 的「使用分析」开关翻转它。**默认关闭**:没勾选就一字不发,连匿名枚举也不发。auth/advise 不受此门禁(advise 是用户主动求方案、不落盘;auth 是必需的真实状态)。
 
 **账号(注册/登录/登录态)**:`local-llm.js` 暴露 `window.__bmaAuth`(signup/login/me/logout,4 秒超时),`signup.js` 与 `dashboard.html` 经它走 `/v1/auth/*`;session token 存 sessionStorage(关标签页即清)。**这一处不做离线降级**:API 不可达时注册/登录显式报错、dashboard 出登录墙,绝不假通行(docs/22 P0-14;端点规格与威胁模型见 [docs/20 §5/§7](20-backend-architecture-and-api.md))。
 
-**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13);每个 fetch 以五常量之一开头(安全套件 131 项)。
+**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13);每个 fetch 以五常量之一开头(安全套件 192 项)。

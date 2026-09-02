@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="description" content="Manage your Build My AI account: update your email and password, control anonymous usage statistics, export your data, or delete your account. Login required.">
+<title data-en="Account settings — Build My AI" data-zh="账号设置 — Build My AI">Account settings — Build My AI</title>
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/dashboard.css">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/fx.css">
+</head>
+<body>
+
+<header class="topbar"><div class="wrap"><div class="row">
+  <a class="brand" href="index.html"><span class="logo">◆</span> Build My AI</a>
+  <div class="rt">
+    <div class="langsw">
+      <button class="langbtn active" data-lang="en" onclick="setLang('en')">EN</button>
+      <button class="langbtn" data-lang="zh" onclick="setLang('zh')">中</button>
+    </div>
+    <a class="btn ghost" href="dashboard.html" data-en="← Control Center" data-zh="← 控制中心">← Control Center</a>
+  </div>
+</div></div></header>
+
+<div class="wrap"><main style="padding:28px 0 64px">
+  <div class="dgrid fx-stagger">
+
+    <!-- profile -->
+    <div class="dcard span2 fx-card">
+      <div class="ch"><h3>👤 <span data-en="Profile" data-zh="个人资料">Profile</span></h3>
+        <button type="button" class="btn ghost" id="acctLogout" data-en="Log out" data-zh="退出登录">Log out</button>
+      </div>
+      <div class="drow"><span data-en="Name" data-zh="姓名">Name</span><b id="profName"></b></div>
+      <div class="drow"><span data-en="Email" data-zh="邮箱">Email</span><b id="profEmail"></b></div>
+      <div class="drow"><span data-en="Email status" data-zh="邮箱状态">Email status</span><span class="badge gray" id="profVerified" data-en="Unverified — check your inbox" data-zh="未验证——请查收邮件">Unverified — check your inbox</span></div>
+      <div class="drow"><span data-en="Plan" data-zh="套餐">Plan</span><b id="profPlan" data-en="Free" data-zh="免费版">Free</b></div>
+    </div>
+
+    <!-- change email -->
+    <div class="dcard fx-card">
+      <div class="ch"><h3>✉️ <span data-en="Change email" data-zh="修改邮箱">Change email</span></h3></div>
+      <div class="acct-col">
+        <div class="acct-lbl" data-en="NEW EMAIL" data-zh="新邮箱">NEW EMAIL</div>
+        <input id="emNew" type="email" autocomplete="email" data-en-ph="you@example.com" data-zh-ph="you@example.com" placeholder="you@example.com" data-en-al="New email address" data-zh-al="新邮箱地址" aria-label="New email address">
+        <input id="emPw" type="password" autocomplete="current-password" data-en-ph="Current password to confirm" data-zh-ph="输入当前密码以确认" placeholder="Current password to confirm" data-en-al="Current password to confirm the email change" data-zh-al="用于确认修改邮箱的当前密码" aria-label="Current password to confirm the email change">
+        <button type="button" class="btn ghost" id="emBtn" data-en="Update email" data-zh="更新邮箱">Update email</button>
+        <div class="acct-msg" id="emMsg" role="alert"></div>
+      </div>
+    </div>
+
+    <!-- change password -->
+    <div class="dcard fx-card">
+      <div class="ch"><h3>🔑 <span data-en="Change password" data-zh="修改密码">Change password</span></h3></div>
+      <div class="acct-col">
+        <div class="acct-lbl" data-en="CHANGE PASSWORD" data-zh="修改密码">CHANGE PASSWORD</div>
+        <input id="pwCur" type="password" autocomplete="current-password" data-en-ph="Current password" data-zh-ph="当前密码" placeholder="Current password" data-en-al="Current password" data-zh-al="当前密码" aria-label="Current password">
+        <input id="pwNew" type="password" autocomplete="new-password" data-en-ph="New password (min 8 characters)" data-zh-ph="新密码(至少 8 位)" placeholder="New password (min 8 characters)" data-en-al="New password (min 8 characters)" data-zh-al="新密码(至少 8 位)" aria-label="New password (min 8 characters)">
+        <button type="button" class="btn ghost" id="pwBtn" data-en="Change password" data-zh="修改密码">Change password</button>
+        <div class="acct-msg" id="pwMsg" role="alert"></div>
+      </div>
+    </div>
+
+    <!-- anonymous usage statistics -->
+    <div class="dcard span2 fx-card">
+      <div class="ch"><h3>📊 <span data-en="Anonymous usage statistics" data-zh="匿名使用统计">Anonymous usage statistics</span></h3></div>
+      <label for="usageToggle" style="display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--ink-2);line-height:1.5;cursor:pointer">
+        <input type="checkbox" id="usageToggle" style="margin-top:2px;width:15px;height:15px;flex:none;accent-color:var(--accent)">
+        <span data-en="Share anonymous install &amp; usage statistics to improve recommendations — hardware tier, template and model only, never any content. Off by default; change it anytime." data-zh="分享匿名安装与使用统计以改进推荐——仅含硬件档位、模板与模型,绝不含任何内容。默认关闭,可随时更改。">Share anonymous install &amp; usage statistics to improve recommendations — hardware tier, template and model only, never any content. Off by default; change it anytime.</span>
+      </label>
+      <div class="acct-msg" id="usageMsg" role="alert"></div>
+    </div>
+
+    <!-- data & danger -->
+    <div class="dcard span2 fx-card">
+      <div class="ch"><h3>🛡️ <span data-en="Your data &amp; account" data-zh="你的数据与账号">Your data &amp; account</span></h3></div>
+      <div class="acct-col">
+        <div class="acct-lbl" data-en="YOUR DATA &amp; SESSIONS" data-zh="你的数据与登录">YOUR DATA &amp; SESSIONS</div>
+        <button type="button" class="btn ghost" id="exportBtn" data-en="⬇ Export my data (.json)" data-zh="⬇ 导出我的数据 (.json)">⬇ Export my data (.json)</button>
+        <button type="button" class="btn ghost" id="outAllBtn" data-en="Sign out on all devices" data-zh="在所有设备上退出登录">Sign out on all devices</button>
+        <button type="button" class="btn ghost danger" id="delBtn" data-en="Delete my account…" data-zh="删除我的账号…">Delete my account…</button>
+        <div class="acct-msg" id="acctMsg" role="alert"></div>
+        <div class="acct-danger hidden" id="delConfirm">
+          <p data-en="This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm." data-zh="这将把你的账号与登录记录从本地数据库中永久抹除(文件级清零并压缩),无法撤销。输入密码以确认。">This permanently erases your account and sessions from the local database (file-level, zeroed and compacted). It cannot be undone. Enter your password to confirm.</p>
+          <input id="delPw" type="password" autocomplete="current-password" data-en-ph="Your password" data-zh-ph="你的密码" placeholder="Your password" data-en-al="Your password to confirm account deletion" data-zh-al="用于确认删除账号的密码" aria-label="Your password to confirm account deletion">
+          <div class="acct-danger-row">
+            <button type="button" class="btn ghost" id="delCancel" data-en="Cancel" data-zh="取消">Cancel</button>
+            <button type="button" class="btn ghost danger" id="delGo" data-en="Permanently delete" data-zh="永久删除">Permanently delete</button>
+          </div>
+          <div class="acct-msg" id="delMsg" role="alert"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main></div>
+
+<!-- login gate (P0-14): no verified session -> account settings stay covered.
+     Shown by default (fail closed); account.js removes it only after
+     /v1/auth/me confirms the token. -->
+<div class="login-gate" id="loginGate">
+  <div class="gate-card">
+    <div class="ic">🔒</div>
+    <h2 data-en="Log in to open your account settings" data-zh="登录后管理账号设置">Log in to open your account settings</h2>
+    <p data-en="These settings are tied to your account and change real data, so they need a verified login. Everything stays on this machine." data-zh="这些设置与你的账号绑定,会改动真实数据,因此需要登录后查看。一切都留在这台电脑上。">These settings are tied to your account and change real data, so they need a verified login. Everything stays on this machine.</p>
+    <a class="btn primary" href="signup.html?mode=login" data-en="Log in →" data-zh="登录 →">Log in →</a>
+    <a class="btn ghost" href="signup.html?plan=pro" data-en="Create a free account" data-zh="创建免费账号">Create a free account</a>
+  </div>
+</div>
+
+<script src="assets/i18n.js"></script>
+<script src="assets/local-llm.js"></script>
+<script src="assets/account.js"></script>
+<script src="assets/fx.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Build My AI — robots policy
+# The whole marketing/app site is public; nothing here is private (user data
+# never reaches these pages — it lives on the user's own machine).
+User-agent: *
+Allow: /
+
+# The account Control Center is login-gated and has no indexable content.
+Disallow: /dashboard.html
+
+# Account settings are login-gated (like the dashboard) — no indexable content.
+Disallow: /account.html
+
+# Token-gated recovery pages — no indexable content.
+Disallow: /reset-password.html
+Disallow: /verify-email.html
+
+# Checkout return pages (Stripe redirects here) — no indexable content.
+Disallow: /checkout-success.html
+Disallow: /checkout-cancel.html
+
+# Sitemap uses an absolute URL, so it is set at deploy time once the production
+# domain is chosen (see docs/23). After deploy, uncomment and fill:
+# Sitemap: https://YOUR-DOMAIN/sitemap.xml

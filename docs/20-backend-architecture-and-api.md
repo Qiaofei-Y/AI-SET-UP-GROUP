@@ -15,14 +15,19 @@
 backend/
 ├── README.md              # 演进计划(P0→P3)+ 当前状态表(战略文档)
 ├── api/
-│   ├── server.py          # 全部后端:HTTP 路由、schema 校验、auth、license、存储(~600 行)
+│   ├── server.py          # 全部后端:HTTP 路由、schema 校验、auth、license、billing、存储
+│   ├── mailer.py          # 零依赖发信抽象(dev OUTBOX / SMTP STARTTLS);找回信、验证信走它(P0-15)
 │   ├── registry.json      # 模型库数据文件(规则即数据,docs/09 M2-2;与前端 pickModel 同步,由测试强制)
 │   └── data/              # 运行时生成,已 gitignore(backend/.gitignore: api/data/)
 │       ├── events.db      # 匿名遥测:telemetry + feedback 两张表
-│       └── users.db       # 身份数据:users + sessions 两张表(与 events.db 物理分库)
+│       └── users.db       # 身份数据:users / sessions / password_resets / email_verifications(与 events.db 物理分库)
+├── ops/
+│   └── backup.py          # 零依赖备份 + 恢复演练(sqlite ONLINE backup + integrity_check;--selftest,P1 docs/23 Week 4)
 └── tests/
-    └── api.test.py        # 43 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
+    └── api.test.py        # 74 项测试:起真实服务打真实 HTTP,含隐私红线与传输加固断言
 ```
+
+生产部署脚本(TLS 反代 + 进程管理 + 定时备份)在仓库根 `deploy/`:`Caddyfile` / `nginx.conf`(同源反代,`/v1/*` 转后端)、`systemd/`(API 服务单元 + 备份 timer),用法见 [deploy/README.md](../deploy/README.md)。
 
 **单文件后端是有意的**:`server.py` 内部按注释分节(registry → advisor → license → auth → schema 白名单 → storage → HTTP),规模到需要拆分时(约千行)再按节拆模块,不提前抽象。
 
@@ -44,7 +49,22 @@ python3 backend/tests/api.test.py          # 测试(自起服务于随机端口,
 | `BMA_RATE_AUTH` | `30/60` | auth 三端点(signup/login/logout)每客户端 IP 的限速,格式 `次数/秒`(login 每次跑 10 万轮 PBKDF2,是 CPU DoS 面,P0-16) |
 | `BMA_RATE_EVENTS` | `120/60` | telemetry + feedback 每客户端 IP 的限速(匿名可写盘,防刷爆磁盘/投毒数据飞轮) |
 | `BMA_ADVISOR_LLM` | 空(关闭) | 顾问 LLM 分类的本地端点,如 `http://127.0.0.1:8080`;**只接受回环地址**,非回环一律忽略 |
-| `BMA_DEBUG` | 空(关闭) | 打开访问日志(只记路径,永不记请求体) |
+| `BMA_STRIPE_SECRET` | 空(计费关闭) | Stripe 私钥;未配置时 checkout/portal 诚实返回 503(不半可用) |
+| `BMA_STRIPE_WEBHOOK_SECRET` | 空 | Stripe webhook 签名密钥(`whsec_…`);未配置时任何 webhook 请求签名校验失败 400 |
+| `BMA_STRIPE_PRICE_PRO` / `_BUSINESS` | 空 | 各付费档对应的 Stripe Price id;缺失的档无法结账(503) |
+| `BMA_CHECKOUT_SUCCESS_URL` / `_CANCEL_URL` | localhost 占位 | 结账完成/取消后 Stripe 回跳地址 |
+| `BMA_PORTAL_RETURN_URL` | localhost 占位 | Billing Portal 返回站点的地址 |
+| `BMA_SITE_URL` | `http://localhost:8931` | 找回/验证邮件里链接的基址(拼 `reset-password.html?token=…` / `verify-email.html?token=…`) |
+| `BMA_SMTP_HOST` | 空(dev 后端) | 设了就走 SMTP STARTTLS 真发信(如指向 Amazon SES);不设则邮件只进内存 `OUTBOX` + stdout,什么也不外发 |
+| `BMA_SMTP_PORT` | `587` | SMTP 端口 |
+| `BMA_SMTP_USER` / `_PASS` | 空 | SMTP 认证凭据(SES 的 SMTP 用户名/密码) |
+| `BMA_SMTP_STARTTLS` | `1` | 是否在投递前升级 STARTTLS(默认开) |
+| `BMA_MAIL_FROM` | `no-reply@localhost` | 发信人地址 |
+| `BMA_MAIL_QUIET` | 空 | 设了就静音 dev 后端的 stdout 回显(测试用) |
+| `BMA_LOG` | `1`(开) | 每个响应打一行**结构化、无请求体**的日志(JSON:ts/level/method/path/status/ms/ip,query 已剥离)到 stderr;`BMA_LOG=0` 静音 |
+| `BMA_DEBUG` | 空(关闭) | 打开 stdlib 访问日志(只记路径,永不记请求体);与 `BMA_LOG` 的结构化日志相互独立 |
+
+备份脚本 `backend/ops/backup.py` 另读一组 `BMA_BACKUP_*`:`BMA_BACKUP_DIR`(快照目录,默认 `./backups`)、`BMA_BACKUP_KEEP`(每库保留份数,默认 14)、`BMA_BACKUP_KEY`(设了就 openssl AES-256 加密快照)、`BMA_BACKUP_S3`(设了就用 aws CLI 推 `s3://bucket/prefix` 异地);源库路径复用 `BMA_USERS_DB`/`BMA_DB`。
 
 默认绑 `127.0.0.1`,`--host` 可改(生产:TLS 反代在前,见下);CORS 只放行 `localhost` / `127.0.0.1` 任意端口的 Origin(浏览器侧再由前端安全测试保证只有 `local-llm.js` 能发请求)。传输加固:请求体上限 16 KB(超出 413),负数/非数字 `Content-Length` 直接 400(不再触发吞 socket 的负数 read),连接级 10 秒超时(slowloris 面),超限速端点返回 429。
 
@@ -78,7 +98,7 @@ nginx 等价:`location /v1/ { proxy_pass http://127.0.0.1:8940; }` + 静态 `roo
 |---|---|---|
 | 内容 | 匿名事件:装机/方案统计、👍/👎 | 账号:姓名、邮箱、密码哈希、session |
 | 隐私级别 | 匿名、opt-in、可公开聚合 | 个人数据,仅本机/自建服务持有 |
-| 表 | `telemetry`、`feedback` | `users`、`sessions` |
+| 表 | `telemetry`、`feedback` | `users`、`sessions`、`password_resets`、`email_verifications` |
 
 物理分库让「遥测是匿名的」这个承诺**在文件级可审计**:拿到 `events.db` 的任何人(包括未来的数据分析管道)接触不到任何身份字段;测试断言身份数据永不出现在 `events.db`(见 §10)。
 
@@ -91,8 +111,12 @@ telemetry(id, ts, stage, template, model, os, gpu, vram_gb, ram_gb, mode,
 feedback (id, ts, rating, template, model)          -- 无任何 content 字段
 
 -- users.db
-users    (id, ts, name, email UNIQUE, company, plan, pw_salt, pw_hash, tos, plan_intent)
-sessions (token_hash PRIMARY KEY, user_id, ts, expires)
+users    (id, ts, name, email UNIQUE, company, plan, pw_salt, pw_hash, tos, plan_intent,
+          stripe_customer_id, subscription_status, plan_period_end, email_verified,
+          billing_consent, billing_consent_ts)   -- 计费/验证列由幂等迁移补齐
+sessions            (token_hash PRIMARY KEY, user_id, ts, expires)  -- token 只存 sha256
+password_resets     (token_hash PRIMARY KEY, user_id, ts, expires)  -- 一次性,1h 时效
+email_verifications (token_hash PRIMARY KEY, user_id, ts, expires)  -- 一次性,48h 时效
 ```
 
 ## 5. API 参考
@@ -139,7 +163,7 @@ key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secr
 
 接受记录:服务端把当前条款版本(`TOS_VERSION`,现为 `draft-2026-08-25`)连同注册时间戳写入 `users.tos`——政策改版时递增该常量即可区分「接受过哪一版」。
 
-**plan 服务端权威(docs/22 P0-3)**:客户端自报的 `plan` 只落 `users.plan_intent`(漏斗信号),`users.plan` 一律从 `free` 开始;改套餐的唯一入口是服务端 `set_plan(email, tier)`——未来由 Stripe webhook 调用,现阶段用运营 CLI `python3 backend/api/server.py --set-plan EMAIL TIER`。改动即时生效(`/v1/auth/me` 每次查库)。
+**plan 服务端权威(docs/22 P0-3)**:客户端自报的 `plan` 只落 `users.plan_intent`(漏斗信号),`users.plan` 一律从 `free` 开始;改套餐的自动入口是 Stripe webhook 的 `apply_subscription()`(按 customer id,见「计费」小节),运营手动兜底是 CLI `python3 backend/api/server.py --set-plan EMAIL TIER`(`set_plan()`,按邮箱)。改动即时生效(`/v1/auth/me` 每次查库)。
 → `200 {"ok": true, "token": "<48hex>", "user": {"name", "email", "plan"}}`
 → `409 {"error": "email_taken"}`(邮箱不区分大小写唯一,存储时统一小写)
 
@@ -150,16 +174,42 @@ key 格式 `BMA-(PRO|BUSINESS)-<12hex token>-<12hex sig>`,sig = HMAC-SHA256(secr
 Header `Authorization: Bearer <token>` → 删除该 session → `200 {"ok": true}`;无 token 401。
 
 ### GET /v1/auth/me
-Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。
+Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {name, email, plan, email_verified}, "entitlements": {"plan", "rank", "capabilities": [...]}}`;token 未知/过期 → `401 {"error": "not_logged_in"}`。**entitlements 是服务端权威能力集**——前端只按它显隐,绝不信浏览器侧的猜测。`email_verified` 是布尔(signup/login 响应的 user 同样带此字段)。
 
-### 账号自助(docs/22 P1 三件套,隐私政策承诺的可执行形式;全部 Bearer 认证 + auth 限速桶)
+### 密码找回 / 邮箱验证(docs/22 P0-15;一次性链接令牌 + 发信抽象层)
+
+发信走 `backend/api/mailer.py`(零依赖 stdlib):**dev 后端**(默认,无 SMTP env)把邮件写进内存 `OUTBOX` 并回显 stdout,什么也不外发,后端测试据此驱动整个找回/验证流;**SMTP 后端**(设 `BMA_SMTP_HOST`)走 STARTTLS 真实投递——Amazon SES 暴露 SMTP 端点,把 `BMA_SMTP_*` 指向 SES 即生产路径(即计划里的「SES(env)」实现,仍零依赖)。链接基址 `BMA_SITE_URL`(默认 `http://localhost:8931`)。发信一律**尽力而为**:验证信发失败绝不拖垮注册本身。
+
+一次性令牌与 session 同一套保密纪律:铸造不透明 `token_hex(24)`(48 hex)放进邮件链接,库里**只存 `sha256(token)`**(泄库不可重放),单次使用(命中即删行)、有时效。两张表 `password_resets` / `email_verifications`(结构同 sessions),`new_link_token()` 铸造、`consume_link_token()` 兑付。
+
+- **POST /v1/auth/forgot** `{"email"}`(auth 限速桶)→ **恒定** `200 {"ok": true}`,不区分邮箱是否存在(防账号枚举);仅当账号真实存在时才发一封含 `reset-password.html?token=…` 的重置信。令牌时效 **1 小时**(RESET_TTL_S)。
+- **POST /v1/auth/reset** `{"token"(48hex), "new_password"(8–128)}` → 令牌有效则换盐换哈希、**撤销该用户全部 session**(重置即锁死持旧密码的人)、并把 `email_verified` 顺带置 1(能收信即证明持有该邮箱)→ `200 {"ok": true}`;令牌未知/过期/已用 `400 invalid_token`。
+- **POST /v1/auth/verify** `{"token"(48hex)}` → 令牌有效则 `users.email_verified=1`(单次使用)→ `200 {"ok": true, "verified": true}`;否则 `400 invalid_token`。注册时自动铸造一枚验证令牌并发信,时效 **48 小时**(VERIFY_TTL_S)。
+
+### 门禁 / entitlements(docs/22 P0-3;plan 网关的可执行形式)
+
+能力清单 `CAPABILITIES`(slug → 最低 plan)是**唯一真相源**:`/v1/auth/me` 与守卫 `_require_capability()` 都读它。**诚实约束**:只有**当前真实存在**的能力入清单(现仅 `model_advice`/`guided_install`/`local_chat` 为 free,`advanced_rag` 为 pro——即定价页标注「演示可用」的那一项);memory/fine-tuning/shared-KB 等 coming-soon 功能**不入清单、不假门禁**(否则破 P0-6 诚实不变量)。`PLAN_RANK = free<pro<business`,高档含低档能力。
+
+- **GET /v1/entitlements**(Bearer)→ `200 {"ok": true, "entitlements": {plan, rank, capabilities}}`;未登录 401。前端直接轮询用。
+- **GET /v1/pro/rag-manifest**(Bearer + 需 `advanced_rag`)→ 有权:`200 {capability, formats, citations, chunk_tokens, overlap_tokens}`(Advanced-RAG 能力描述符,唯一已上线 Pro 资源);**无权**:`402 {"error": "upgrade_required", "capability", "required_plan", "current_plan"}`——诚实告知要升到哪档,而非半答。这是 plan 门禁端到端的样板:新增真实 Pro 端点照此调 `_require_capability()` 即可。
+
+### 账号自助(docs/22 P1;隐私政策承诺的可执行形式——改密/改邮箱/全设备登出/数据导出/注销共五端点,全部 Bearer 认证;导出为 GET,其余 POST 走 auth 限速桶)
 
 - **POST /v1/account/password** `{"current_password", "new_password"}`(均 8–128)→ 校验当前密码(恒定工作量 PBKDF2)→ 换盐换哈希 → **轮换全部 session(含当前——被盗的现 token 也不能活过改密),同一事务内铸造新 token 返回** → `200 {"ok": true, "revoked_sessions": N, "token": "<新 48hex>"}`(前端换入 sessionStorage);当前密码错 `403 bad_credentials`。
+- **POST /v1/account/email** `{"password", "new_email"}`(P1 设置页改邮箱)→ 密码重认证 → 新邮箱**立即生效但置为未验证**并向新地址补发验证信(复用 P0-15 一次性令牌流)→ `200 {"ok": true, "email": "<小写新址>", "email_verified": false}`;新址与旧址相同则原样返回不重置验证;密码错 `403`;新址已被占用(UNIQUE)`409 email_taken`。session 不撤销(改邮箱非改密)。
 - **POST /v1/account/logout-all** `{}`(空体,未知键仍 400)→ 撤销该用户全部 session(含当前)→ `200 {"ok": true, "revoked_sessions": N}`。
-- **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
+- **GET /v1/account/export** → CCPA 可携带副本:`{user: {created_ts, name, email, company, plan, plan_intent, tos_accepted, email_verified}, sessions: [{created_ts, expires_ts, current}], note}`。**安全材料绝不导出**(密码哈希/盐、session token 哈希都不在其中——它们是安全数据不是个人数据);note 说明遥测匿名、无从关联。
 - **POST /v1/account/delete** `{"password"}`(破坏性操作需重认证)→ 删除 sessions + user,**文件级抹除**:`PRAGMA secure_delete=ON`(释放页清零)+ `VACUUM`(压缩),测试直接扫库文件字节断言邮箱/姓名零痕迹;密码错 `403`。
 
 配套:`create_session` 顺手清扫过期 session(`DELETE WHERE expires <= now`),sessions 表有界。
+
+### 计费(docs/22 P0-1/2/3;卡数据永不进本进程——结账与门户都是 Stripe 托管页)
+
+- **POST /v1/billing/checkout** `{"plan": "pro"|"business", "accept_terms": true}`(Bearer 认证 + auth 限速桶)→ **自动续费 clickwrap(P0-4)**:`accept_terms` 必须为 `true`(缺失/为 false → 400),登录后先经 `record_billing_consent()` 落库(`billing_consent`=`BILLING_TOS_VERSION` + `billing_consent_ts`,即使随后 503 也留痕,证明已展示并接受续费条款),再向 Stripe 建 subscription 模式 Checkout 会话,回 `200 {"ok": true, "url": "<stripe 托管结账页>"}`,前端整页跳转;`client_reference_id`=用户邮箱、`metadata[plan]` 随会话下发,供 webhook 回链。未登录 401;`BMA_STRIPE_SECRET` 或该档 Price id 未配置 `503 billing_unavailable`;Stripe 调用失败 `502 stripe_error`。前端 dashboard「升级」按钮先弹显式续费披露 + 勾选框,勾选后才发起。
+- **POST /v1/billing/portal** `{}`(Bearer 认证)→ 用 `users.stripe_customer_id` 建 Billing Portal 会话(升/降/退订/发票全托管,契合 FTC click-to-cancel),回 `200 {"ok": true, "url": …}`。未配置 503;从未结账(无 customer)`409 no_customer`。
+- **POST /v1/billing/webhook**(公开,无 Bearer;`events` 限速桶)→ 读**原始字节**(不走 JSON body 解析)校验 `Stripe-Signature`:纯 stdlib HMAC-SHA256 over `<t>.<payload>` + 时间戳容差 300s(防重放),不匹配/过期一律 `400 bad_signature`。处理 `checkout.session.completed`(回链 customer + 升档)、`customer.subscription.updated/created`(按 Price id→档位、非 active/trialing 落 free)、`customer.subscription.deleted`(落 free),经 `apply_subscription(customer_id, …)` 写库,快速 200 ack(非 2xx 触发 Stripe 重试)。
+
+**plan 仍服务端权威**:webhook 的 `apply_subscription()`(按 Stripe customer id)是付费账号变更 plan 的唯一自动路径;`set_plan()`(按邮箱)降为运营 CLI。users 表为此加 `stripe_customer_id`/`subscription_status`/`plan_period_end` 三列(幂等迁移)。
 
 ## 6. 校验层:schema 白名单(隐私红线的可执行形式)
 
@@ -201,17 +251,19 @@ Header `Authorization: Bearer <token>` → `200 {"ok": true, "user": {...}}`;tok
 | 前端功能 | 端点 | 调用方 | 说明 |
 |---|---|---|---|
 | 向导第 3 步方案卡 | `POST /v1/advise` | `local-llm.js` `advisePlan()` ← `build.js` 钩子 | 只传 slug+硬件,不传需求框文本 |
-| 「生成文件」埋点 | `POST /v1/telemetry/deploy` | `local-llm.js` `reportPlan()` | `stage:'plan_generated'` |
-| 聊天 👍/👎 | `POST /v1/feedback` | `local-llm.js` 监听 `chat-feedback` 事件 | 仅真实本地模型回答时 |
+| 「生成文件」埋点 | `POST /v1/telemetry/deploy` | `local-llm.js` `reportPlan()` | `stage:'plan_generated'`;**opt-in**:仅当 `window.__bmaConsent.get()` 为真才发(隐私页承诺默认不采集) |
+| 聊天 👍/👎 | `POST /v1/feedback` | `local-llm.js` 监听 `chat-feedback` 事件 | 仅真实本地模型回答时;同样**opt-in**,未同意则一字不发 |
 | 注册/登录 | `POST /v1/auth/*` | `local-llm.js` `__bmaAuth` ← `signup.js` | **离线显式报错,不假通行**(P0-14) |
 | 登录态展示/退出 | `GET /v1/auth/me`、`logout` | `__bmaAuth` ← `dashboard.html` | sessionStorage token;无有效 session 时登录墙拦截 |
+| 套餐 / 能力显隐 | `GET /v1/auth/me` 的 `entitlements` | dashboard「你的套餐」LIVE 卡 | 按服务端能力集渲染 ✓/🔒,free 显升级 CTA(P0-3) |
+| 订阅结账/管理 | `POST /v1/billing/checkout`、`portal` | `local-llm.js` `__bmaBilling` ← 定价页/dashboard(第 2 周接线) | 返回 Stripe 托管 URL,页面整页跳转;复用 `API` 前缀不破 egress 锁 |
 
-向导/遥测/反馈离线自动降级——**API 是增强,不是依赖**(设计原则 1,backend/README §0)。**唯一例外是 auth**:账号是真实状态,离线时注册/登录显式报错、dashboard 出登录墙,绝不假装成功(docs/22 P0-14,商用前提)。
+向导/遥测/反馈离线自动降级——**API 是增强,不是依赖**(设计原则 1,backend/README §0)。**遥测与反馈还是 opt-in**:即便 API 在线,也只有用户在向导/dashboard 勾选「使用分析」(状态存 `bma-usage-consent`,由 `local-llm.js` 的 `window.__bmaConsent` 读写)后才上报;未同意时这两条通道一字不发(隐私页承诺,见 [16 §9](16-local-ai-web-integration.md))。**唯一例外是 auth**:账号是真实状态,离线时注册/登录显式报错、dashboard 出登录墙,绝不假装成功(docs/22 P0-14,商用前提)。
 
 ## 10. 测试策略
 
-`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。43 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、账号自助四端点)、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
+`api.test.py` 起**真实服务**(随机端口、临时库)打**真实 HTTP**,不 mock 内部函数;LLM 顾问用 stdlib 假服务模拟 采用/垃圾回退/宕机回退 三态。74 项覆盖:五组业务端点(含需求→模型匹配矩阵与 install_method 白名单)、auth 全流程(含 clickwrap 留痕、plan 服务端权威、密码找回/邮箱验证一次性令牌流、账号自助五端点含改邮箱)、**计费闭环(checkout 需登录/未配置 503/坏档 400、portal 无 customer 409、webhook 坏签名与过期时间戳 400、签名有效驱动 plan 升→降生命周期、伪造事件不改 plan)**、**门禁闭环(entitlements 随 plan 翻转、free 打 Pro 资源 402 upgrade_required、set_plan 升档即放行、两端点需登录)**、隐私红线、传输加固(CORS 白名单、413、bad JSON、404、负/非法 Content-Length 400、分桶限速 429、默认密钥拒绝非回环绑定)。跑法见 §3;提交门槛(前后端两套全绿)见 [18 测试与质量规范](18-testing-and-quality.md)。
 
 ## 11. 与演进计划的衔接
 
-当前实现对应 backend/README 的「P2/P3 提前动工的 v0」:auth/license/telemetry/feedback/advise 都已是真实现,但**上线时机仍按触发条件**(P1 投放、P2 漏斗 ≥50、P3 付费 ≥10)。生产化地基已就位(docs/22 批次 0 的代码部分):`--host` 绑定、分桶限速、密钥 fail-closed、Content-Length/超时加固。到 P2 正式化时的剩余升级点:TLS 反代 + 进程管理(systemd)、CORS 放行生产域名(与 P0-13 同源部署一起定)、SQLite WAL/备份、Stripe webhook 调 `set_plan()` 写 `users.plan`(入口已就位)、license 与 user 关联、(如需社交登录/邮箱验证)评估 Clerk/Supabase 替换自建 auth;到 P3:顾问换云端大模型、registry 持续测录管道。
+当前实现对应 backend/README 的「P2/P3 提前动工的 v0」:auth/license/telemetry/feedback/advise 都已是真实现,但**上线时机仍按触发条件**(P1 投放、P2 漏斗 ≥50、P3 付费 ≥10)。生产化地基已就位(docs/22 批次 0 的代码部分):`--host` 绑定、分桶限速、密钥 fail-closed、Content-Length/超时加固。**SQLite 已生产化**(docs/23 P1):两库所有连接经 `connect_db()` 开启 WAL + `busy_timeout=5000ms` + `synchronous=NORMAL`,并发读/单写不再 file-lock 串行;schema 迁移由 `run_migrations()` 按 `schema_version` 表记账,只补跑未应用的步、重复启动不重跑,旧库(缺 `schema_version`/缺列)自动补列并保留数据;`_account_delete` 在 VACUUM 后 `wal_checkpoint(TRUNCATE)`,文件级抹除的字节可审计性在 WAL 下依然成立。到 P2 正式化时的剩余升级点:TLS 反代 + 进程管理(systemd)、CORS 放行生产域名(与 P0-13 同源部署一起定)、SQLite 定期备份/`.db-wal` 快照策略、Stripe webhook 调 `set_plan()` 写 `users.plan`(入口已就位)、license 与 user 关联、(如需社交登录/邮箱验证)评估 Clerk/Supabase 替换自建 auth;到 P3:顾问换云端大模型、registry 持续测录管道。

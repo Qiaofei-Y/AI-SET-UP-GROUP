@@ -4,18 +4,18 @@
 
 ## 1. 总判断
 
-当前仓库是一个**做工精细的「演示站 + 本机增强」**:安全架构、隐私白名单、i18n、向导交互、本地模型对接都是真实资产;但「商用」不是修 bug,而是要**新建整个对外服务层**——支付、法律、生产部署、交付物本体四条线现在都是零。最结构性的一条:前端所有网络请求被安全测试钉死在 127.0.0.1,**照现状部署到真实域名,账号/向导/遥测四条链路经同源 `/v1/*` 即可工作(P0-13 前端侧已修,反代配置见 docs/20 §3.1),聊天/分类仍按设计探测用户本机 llm-lab、探不到走演示**;原本更糟的「注册静默丢弃、登录任意通过」已由 P0-14 修复(现为显式报错 + 登录墙,见 §6 进度注)。
+当前仓库是一个**做工精细的「演示站 + 本机增强」**:安全架构、隐私白名单、i18n、向导交互、本地模型对接都是真实资产;但「商用」不是修 bug,而是要**新建整个对外服务层**——支付、法律、生产部署、交付物本体四条线现在都是零(**2026-08 更新:支付与生产部署的代码侧已落地**——Stripe checkout/portal/webhook + entitlements 门禁、`deploy/` 同源反代/systemd/备份配置 + CI/日志/备份护栏均已交付并测试,详见 §6 进度注与 docs/23;剩下的是接真实 Stripe 账户/律师审阅/域名主机/安装器本体这四类**外部或交付物**动作)。最结构性的一条:前端所有网络请求被安全测试钉死在 127.0.0.1,**照现状部署到真实域名,账号/向导/遥测四条链路经同源 `/v1/*` 即可工作(P0-13 前端侧已修,反代配置见 docs/20 §3.1),聊天/分类仍按设计探测用户本机 llm-lab、探不到走演示**;原本更糟的「注册静默丢弃、登录任意通过」已由 P0-14 修复(现为显式报错 + 登录墙,见 §6 进度注)。
 
-**资产(可以带着走的)**:131+43 项测试体系与隐私红线代码、advise/registry/telemetry/feedback 业务逻辑、auth 骨架(PBKDF2/分库/session 哈希)、build 向导与文件生成、chat 的 SSE/打断语义、双语 i18n、零依赖架构本身。
+**资产(可以带着走的)**:192+74 项测试体系与隐私红线代码、advise/registry/telemetry/feedback/auth/billing 业务逻辑、auth 全流程(PBKDF2/分库/session 与一次性令牌只存哈希/找回验证/账号自助)、build 向导与文件生成、chat 的 SSE/打断语义、双语 i18n、零依赖架构本身。
 **演示壳(2026-08-26 更新:前端假象已全部诚实标注或移除——dashboard 改为标注明确的示例数据预览、假安装包已被真实 Ollama 引导安装取代、假知识库拖放与 Teach My AI 假进度已改为诚实预览话术)。仍待处理的**:license 的 dev 默认密钥(非回环绑定已 fail-closed)+ 收而不用的 device_fingerprint + 永远 now+72h 的假宽限(P1 license 商用化)。plan 客户端自报已废除(P0-3 部分,2026-08-26)。
 
 ## 2. P0 —— 不做无法开始收费(17 条,全部对抗验证确认)
 
 | # | 条目 | 侧 | 量级 | 要点 |
 |---|---|---|---|---|
-| 1 | Stripe 支付闭环 | 前后端 | M | 全仓库零支付代码。最小闭环:Stripe Checkout(托管页,卡数据不进自家系统,契合隐私卖点)+ 公网 webhook 回写 users.plan + users 表加 stripe_customer_id/订阅字段 |
-| 2 | 订阅生命周期 + 线上退订 | 前后端 | S | FTC click-to-cancel:不能在线取消就不能开始收订阅费。接 Stripe Billing Portal(托管页承担升级/降级/取消/发票),后端只处理 webhook |
-| 3 | 购买→解锁门禁闭环 | 前后端 | M | **部分已修(2026-08-26)**:plan 客户端自报已废除——注册一律落 free,自报值仅记 `plan_intent`(漏斗信号);改套餐唯一入口 `set_plan()`(webhook 将调用,现有 `--set-plan` 运营 CLI)。剩 Stripe webhook 接入与「功能因 plan 开关」的门禁消费方 |
+| 1 | Stripe 支付闭环 | 前后端 | M | **✅ 代码侧已修(2026-08-27)**:`POST /v1/billing/checkout`(Stripe 托管结账,卡数据不进自家系统)+ `POST /v1/billing/webhook`(纯 stdlib HMAC-SHA256 签名校验 + 时间戳容差防重放,伪造签名 400)回写 users.plan;users 表加 `stripe_customer_id`/`subscription_status`/`plan_period_end`;密钥/价格走环境变量,未配置时端点诚实 503。剩:接真实 Stripe 账户密钥、配置公网 webhook 端点 |
+| 2 | 订阅生命周期 + 线上退订 | 前后端 | S | **✅ 代码侧已修(2026-08-27)**:`POST /v1/billing/portal` 返回 Stripe Billing Portal URL(升/降/退订/发票全托管,契合 FTC click-to-cancel);webhook 处理 `subscription.updated/deleted` 同步 plan/状态。剩:定价页 CTA 接线 + 成功/取消回跳页(第 2 周) |
+| 3 | 购买→解锁门禁闭环 | 前后端 | M | **✅ 已修(2026-08-27)**:plan 服务端权威——webhook `apply_subscription()`(按 customer id)是付费账号唯一变更路径,`set_plan()` 降为运营 CLI;注册一律落 free,自报仅记 `plan_intent`。**门禁消费方落地**:服务端权威 entitlements 清单(`/v1/auth/me` + `/v1/entitlements`)+ `_require_capability()` 守卫(free 打 `/v1/pro/rag-manifest`→402 upgrade_required,升 pro 即放行,全生命周期测试断言);dashboard LIVE「你的套餐」卡按 entitlements 显隐。诚实约束:仅真实能力进清单,coming-soon 不假门禁 |
 | 4 | 公司主体 + 订阅收费合规件 | 法律 | M | 无法律主体连 Stripe 账户都开不了;自动续费明示披露 + 同意记录 + 销售税(Stripe Tax) |
 | 5 | 法律页三件套 + clickwrap | 前后端 | M | **部分已修(2026-08-25)**:privacy/terms/refunds 三页草案上线(带「待律师审阅」横幅,全站页脚可达)+ 注册 clickwrap 勾选 + 服务端留痕(users.tos 记版本);剩 律师审阅、主体名/联系方式/管辖州落定、退款窗口业务拍板 |
 | 6 | 收费卖点与演示假象对齐 | 产品 | M | **✅ 已修(2026-08-26,三路全站清查 57 处)**:假安装包淘汰;dashboard 全页改为「预览 · 示例数据」(假运行状态/假更新提醒/317-500 假进度全部移除);Teach My AI 纠正流不再宣称学习(全站 8 处措辞改为 coming soon);知识库拖放明确为预览且提示真实文件未被读取;营销页「自动检测硬件/一键安装/自动索引/训练数据」等 30 处宣称全部改为真实状态或加 ◷ 徽标。收费前只需复查新功能是否引入新假象 |
@@ -38,7 +38,7 @@
 
 ## 4. P1 —— 上线后第一个月内(17 条,审计确认、对抗验证因额度中断未跑;多为自明事实)
 
-代码签名与分发通道(证书申请周期长,**应与 P0-8 并行启动**)· SQLite 生产化(WAL/busy_timeout/异常兜底/迁移版本表)· 数据库备份(Litestream 或定时 .backup 上 S3,**收费前就该有**)· 支持/联系渠道(Stripe 收单资质要求,现『Reach out』链到注册页)· license 商用化(签发记录/订单关联/设备绑定/吊销/真宽限)· 真正的 Control Center(桌面化;网页版连 11434 都连不上)· 硬件自动检测 + 安装成功率漏斗(docs/04 的 ≥90% 成功率从未被度量)· 销售税与发票 · ~~修改密码~~(**✅ 2026-08-26**,改邮箱仍待做)· ~~删除账号与数据导出~~(**✅ 2026-08-26**:自助导出 JSON + 文件级安全抹除删除,CCPA 承诺兑现)· ~~Session 撤销与清理~~(**✅ 2026-08-26**:改密撤销其他 session、全设备登出、过期 session 顺手清扫)· 账号设置页 + 全站登录态 · 遥测同意/opt-out 开关(兑现自家 opt-in 承诺)· 监控/告警/安全事件日志(不记 body 红线不破)· CI/CD(docs/13 §9.1 模板现成,半天)· 站点基建(favicon✅已做/404/robots/SEO meta)· 下载中心页(依赖 P0-8)。
+代码签名与分发通道(证书申请周期长,**应与 P0-8 并行启动**;下载中心页骨架已上线)· ~~SQLite 生产化~~(**✅ 2026-08-27**:两库走 `connect_db()` 开 WAL + busy_timeout + synchronous=NORMAL,`run_migrations()` 版本化幂等迁移 `schema_version`)· ~~数据库备份~~(**✅ 2026-08-28**:`ops/backup.py` sqlite 在线备份 + integrity_check + 可选加密/S3,`--selftest` 恢复演练进 CI;**待办(外部)**:cron/systemd 定时 + S3 桶凭据)· ~~支持/联系渠道~~(**✅ 2026-08-31**:全站页脚 Support `mailto:michael.yan@purehd.com`,三处「Reach out」CTA + 法律页联系方式改指真实收件箱;**待办(外部)**:公司域名上线后换 `support@` 别名)· license 商用化(签发记录/订单关联/设备绑定/吊销/真宽限)· 真正的 Control Center(桌面化;网页版连 11434 都连不上)· 硬件自动检测 + 安装成功率漏斗(docs/04 的 ≥90% 成功率从未被度量)· 销售税与发票 · ~~修改密码~~(**✅ 2026-08-26**)· ~~改邮箱~~(**✅ 2026-08-29**:`POST /v1/account/email` 密码重认证 + 新址立即生效置未验证 + 补发验证信,占用 409)· ~~删除账号与数据导出~~(**✅ 2026-08-26**:自助导出 JSON + 文件级安全抹除删除,CCPA 承诺兑现)· ~~Session 撤销与清理~~(**✅ 2026-08-26**:改密撤销其他 session、全设备登出、过期 session 顺手清扫)· ~~账号设置页 + 全站登录态~~(**✅ 2026-08-29**:`account.html` 登录墙守护的自助页 + `auth-nav.js` 营销页据 session 切「登录/账号」,fail-closed)· ~~遥测同意/opt-out 开关~~(**✅ 2026-08-28**:`window.__bmaConsent`,默认关,`reportPlan`/`chat-feedback` 外发前门控,兑现 opt-in 承诺)· ~~监控/告警/安全事件日志~~(**✅ 2026-08-30**:每响应一行 body-free JSON 到 stderr,只记 method/path/status/ms/ip,5xx→error、401/403/429→warn;**待办(外部)**:接真实告警系统)· ~~CI/CD~~(**✅ 2026-08-30**:`.github/workflows/tests.yml` 前后端双套件并行,PR + push-to-main 触发;**待办(外部)**:GitHub branch protection 把两 check 设为 required)· ~~站点基建~~(**✅ 2026-08-26**:favicon/404/robots/sitemap/SEO meta + OG/Twitter 全站)· ~~下载中心页~~(**✅ 2026-08-30**:`downloads.html` 骨架按「今天可用/即将推出」诚实标注,不放假下载按钮;真实安装包本体仍依赖 P0-8)。
 
 ## 5. P2 —— 规模化再说(6 条)
 
@@ -48,7 +48,9 @@
 
 **批次 0 · 地基(1–2 周,大多 S/M)**:注册公司主体 + 开 Stripe 账户(周期长,第一天就启动)→ 生产拓扑定案(同源部署)+ 安全断言有意识放宽(P0-13)→ 后端生产化包(--host/TLS 反代/限流/WAL/fail-closed 密钥/异常兜底/负 Content-Length 修复 = P0-12/16/17 + 反驳条 2)→ 移除前端假通行(P0-14)→ 静态站上托管 + CI 模板落地 + 备份。
 **批次 1 · 能合法收钱(2–3 周)**:法律三件套 + clickwrap(P0-4/5)→ Stripe Checkout + webhook + Billing Portal(P0-1/2)→ plan 服务端授权 + 门禁(P0-3)→ 定价/结账前端(P0-7)→ 发信 + 密码重置/邮箱验证(P0-15)→ 卖点对齐大扫除(P0-6)+ Llama 合规(P0-10)+ 遥测同意 + 支持页。
-**批次 2 · 付费交付物(1–2 月,与批次 1 部分并行)**:Windows 真安装器(P0-8,Tauri)+ 代码签名(证书并行申请)→ 本地 RAG 组件(P0-9)→ Control Center 桌面化 + 硬件真检测 + 安装漏斗遥测 → 下载中心页。
+**批次 2 · 付费交付物(1–2 月,与批次 1 部分并行)**:Windows 真安装器(P0-8,Tauri)+ 代码签名(证书并行申请)→ 本地 RAG 组件(P0-9)→ Control Center 桌面化 + 硬件真检测 + 安装漏斗遥测 → 下载中心页。**已拆成可勾选执行清单见 [docs/24](24-batch-2-execution-plan.md)(2026-09-01 起)**。
 **批次 3 · 增长与增强**:license 商用化、账号自助全家桶、监控告警、销售税、**Lambda 一键云部署(docs/21,给无卡用户真实产品路径 + Pro 卖点)**、macOS。
 
 > 与并行工作的衔接:favicon 已由 UI 动效改造顺手补上;**批次 0 的纯代码部分已落地**——后端生产化包(P0-12 的 `--host`/超时、P0-16 分桶限速、P0-17 密钥 fail-closed、负 Content-Length 顺手修)与 P0-14(注册/登录离线显式报错 + dashboard 登录墙)已提交,详见 docs/20 §3/§9;P0-13 亦已拍板同源并完成前端侧(`API` 锁形条件式 + 断言放宽),剩余批次 0 项(公司主体/Stripe、域名/托管/反代落地、CI/备份)依赖外部动作。**2026-08-26 PM 完善轮**:P0-6/8/10 各部分落地——假安装包淘汰、真实 Ollama 引导安装 + 分步指南上线(每模式「安装包+手册」双件套,桌面版/Lambda 以诚实徽标预告)、deploy 页新增安装方式对照条与信任宣言、遥测加 install_method 枚举(安装成功率首次可按交付路径分段);快跟项亦落地——聊天页新增 Ollama 回退档(11434,钉版 tag),引导安装完成的用户回到 chat 页即可直接对话,安装→首答链路闭环。P0-6 收尾:三路工作流全站清查 57 处「未实现却宣称可用」的文案(营销 30 + dashboard 10 + 交互面 17),全部改为真实状态标注——dashboard 变为明确的示例数据预览,Teach My AI/知识库拖放不再假装学习与索引。docs/21(Lambda)是 P2-1 的实现方案;本报告的「验收」= 批次 0+1 完成后,一个陌生人能在生产域名上注册→付款→拿到真实可用的交付物→在线退订,全程合法合规。
+>
+> **2026-08-27 · 上线冲刺启动**:未来一个月执行计划见 [docs/23](23-one-month-execution-plan.md)(批次 0/1 拆成 4 周可勾选清单)。批次 1 头号项 **Stripe 支付闭环(P0-1/2/3)代码侧已落地**——checkout/portal/webhook 三端点(纯 stdlib,签名校验 + 时间戳防重放)、users 表订阅字段迁移、`apply_subscription()` 服务端权威授权、前端 `__bmaBilling` 网关(复用 `API` 前缀,不破 egress 锁);后端测试 43→51,前端 131 项全绿。剩余为外部动作(真实 Stripe 密钥/公网 webhook)与前端结账 UI(第 2 周)。**同日续:plan 门禁消费方(P0-3 收尾)落地**——服务端权威 entitlements 清单 + `_require_capability()` 守卫(free 打 Pro 资源 402 upgrade_required,升 pro 即放行)+ dashboard「你的套餐」LIVE 卡;诚实约束下只有 advanced_rag(唯一已上线 Pro 功能)进清单,coming-soon 不假门禁;后端测试 51→53。**P0-3 完成**。

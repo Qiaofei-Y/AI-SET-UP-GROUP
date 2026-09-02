@@ -42,7 +42,7 @@
 
 **已有基础(不要重复造):** `bash frontend/tests/run.sh`
 
-- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(131 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
+- `security.test.js`:静态扫描 + `esc()` 单元测试 + 数据流与网络边界断言(192 项),零依赖,只需 Node。网络边界:全站仅 `assets/local-llm.js`(聊天页的可选本机模型连接器,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md))允许发起请求,且只能指向 `127.0.0.1` 的本机服务;其余文件出现任何网络 API 即测试失败。
 - `xss.browser.html`:无头浏览器里向真实 `chat.js` 投喂 XSS payload,验证被当纯文本渲染。
 - `run.sh`:串起两者,任一失败退出码 `1`(可直接进 CI / pre-commit)。
 
@@ -537,23 +537,31 @@ echo "Running frontend/tests before commit..."
 bash frontend/tests/run.sh
 ```
 
-**CI(GitHub Actions 示例):** `.github/workflows/tests.yml`
+**CI(已落地):** `.github/workflows/tests.yml`——两个并行 job,PR 与 push-to-main 触发,任一红即挡合并(需在 GitHub 仓库设置里对 `main` 开启 branch protection、勾选这两个 check 为 required)。
 
 ```yaml
 name: tests
-on: [push, pull_request]
+on:
+  push: { branches: [main] }
+  pull_request:
 jobs:
-  security:
+  backend:                       # 零依赖 stdlib:起真实服务跑真实 HTTP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: python3 backend/tests/api.test.py
+  frontend:                      # ubuntu-latest 自带 google-chrome → 跑完整套(含 XSS + 全页 smoke)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-      - name: Security + unit tests
-        run: bash frontend/tests/run.sh   # 退出码非 0 即让 CI 变红
+      - run: bash frontend/tests/run.sh   # 退出码非 0 即让 CI 变红
 ```
 
-> `run.sh` 在没有 Chrome 的 CI 上会自动跳过浏览器 XSS 测试(转义仍由单元测试覆盖);要跑完整套就在 CI 里装 Chromium。
+> `run.sh` 在没有 Chrome 的 CI 上会自动跳过浏览器 XSS/smoke 测试(转义仍由单元测试覆盖);GitHub 的 `ubuntu-latest` 已预装 google-chrome,故此处跑的是完整套。
 
 ### 9.2 质量门槛(Definition of Done,合并前必须全绿)
 

@@ -23,6 +23,11 @@
     document.querySelectorAll('[data-' + lang + '-ph]').forEach(function (el) {
       el.setAttribute('placeholder', el.getAttribute('data-' + lang + '-ph'));
     });
+    // aria-label (accessible name for controls with no visible <label>): keep it
+    // in the active language too, mirroring the placeholder mechanism.
+    document.querySelectorAll('[data-' + lang + '-al]').forEach(function (el) {
+      el.setAttribute('aria-label', el.getAttribute('data-' + lang + '-al'));
+    });
     document.querySelectorAll('.langbtn').forEach(function (b) {
       b.classList.toggle('active', b.getAttribute('data-lang') === lang);
     });

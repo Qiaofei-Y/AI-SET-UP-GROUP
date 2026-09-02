@@ -1,0 +1,51 @@
+name: tests
+
+# Gate every PR (and pushes to main) on the two zero-dependency test suites.
+# A non-zero exit turns the check red; enable branch protection on `main` requiring
+# both jobs so red blocks merge (docs/23 Week 4 · docs/13 §9.1).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Least privilege: these jobs only read the checked-out tree — no writes to the
+# repo, no packages, no deployments. Narrowing the default GITHUB_TOKEN here caps
+# the blast radius if a step (or a future dependency) is ever compromised.
+permissions:
+  contents: read
+
+# One in-flight run per ref: a new push to the same branch/PR cancels the older,
+# now-superseded run instead of queueing behind it (faster feedback, less CI load).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # stdlib-only: boots the real server on an ephemeral port and speaks real HTTP
+      - name: python3 backend/tests/api.test.py
+        run: python3 backend/tests/api.test.py
+      # backup + restore drill (snapshot → encrypt → decrypt → restore → verify)
+      - name: python3 backend/ops/backup.py --selftest
+        run: python3 backend/ops/backup.py --selftest
+
+  frontend:
+    name: Frontend security + XSS + UI smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # ubuntu-latest ships google-chrome, so run.sh runs the full suite (static +
+      # unit + headless-Chrome XSS + all-pages UI smoke). If Chrome were ever absent
+      # it self-skips the browser parts; escaping stays covered by the unit test.
+      - name: bash frontend/tests/run.sh
+        run: bash frontend/tests/run.sh
