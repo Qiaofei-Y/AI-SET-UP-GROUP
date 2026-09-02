@@ -310,6 +310,39 @@ ok('installer runtime never ships a fabricated digest (null until measured at bu
    runtime.pin.digest === null ? (typeof runtime.pin.digest_status === 'string' && runtime.pin.digest_status.length > 0)
                                : /^sha256:[0-9a-f]{64}$/.test(runtime.pin.digest));
 
+// ---------- 8d. batch-2 model-artifact fetch policy (direct GGUF pull) ----------
+// The llama.cpp installer pulls GGUF weights straight from Hugging Face — a
+// different fetch path than today's `ollama pull` (§8b). Lock it: HF-only host,
+// mandatory sha256, resolve/main/<file> shape, safe re-run.
+const fetchPolicy = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'installer', 'fetch-policy.json'), 'utf8'));
+const ma = fetchPolicy.model_artifacts;
+ok('fetch-policy allows only huggingface.co for model artifacts',
+   Array.isArray(ma.allowed_hosts) && ma.allowed_hosts.length === 1 && ma.allowed_hosts[0] === 'huggingface.co');
+ok('fetch-policy requires sha256 integrity on every model download',
+   !!ma.integrity && ma.integrity.required === true && ma.integrity.algorithm === 'sha256' &&
+   typeof ma.integrity.digest_status === 'string' && ma.integrity.digest_status.length > 0);
+ok('fetch-policy url_template resolves to an allowed host', /^https:\/\/huggingface\.co\//.test(ma.url_template));
+ok('fetch-policy retry is idempotent + resumable (safe re-run)',
+   !!fetchPolicy.retry && fetchPolicy.retry.idempotent === true && fetchPolicy.retry.resume === true);
+
+let fetchMans = null;
+try {
+  fetchMans = vm.runInNewContext('(function(){' + modelsSrc +
+    ' var STATE={need:"company",needText:"",os:"win11",gpu:"nvidia",vram:"12",ram:"32",mode:"local"};' +
+    manifestSrc +
+    '; return MODELS.map(function(m){ return {id:m.id, obj: JSON.parse(installManifest({model:m, rag:true}))}; });})()');
+} catch (e) { /* fails below */ }
+ok('manifests available for fetch-URL derivation (' + (fetchMans ? fetchMans.length : 0) + '/' + registry.models.length + ')',
+   Array.isArray(fetchMans) && fetchMans.length === registry.models.length);
+const GGUF_URL_OK = /^https:\/\/huggingface\.co\/[^/]+\/[^/]+\/resolve\/main\/[^/]+\.gguf$/i;
+for (const fm of fetchMans || []) {
+  const url = ma.url_template
+    .replace('{repo}', fm.obj.plan.source.replace(/^huggingface\.co\//, ''))
+    .replace('{file}', fm.obj.plan.model_file);
+  ok('GGUF download URL stays on the whitelisted host + resolve/main form — ' + fm.id,
+     GGUF_URL_OK.test(url) && ma.allowed_hosts.indexOf(url.split('/')[2]) >= 0);
+}
+
 // ---------- summary ----------
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
