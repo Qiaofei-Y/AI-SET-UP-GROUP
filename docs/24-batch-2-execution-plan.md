@@ -31,8 +31,8 @@
 | 状态 | 侧 | 条目 | 验收信号 | 关联 |
 |---|---|---|---|---|
 | ☐ | 代码 | **Tauri 项目脚手架** `desktop/`(Rust + 复用现有静态前端为 WebView UI) | `cargo tauri build` 在 CI(Windows runner)产出未签名 `.msi`;不引入新的联网面(WebView 仍只连 `127.0.0.1`) | P0-8 |
-| ☐ | 代码 | **安装配置协议**:向导 `build.js` 生成的配置 ↔ 安装器读取的 manifest 对齐 | 单一 schema(模型 tag/量化/RAG 开关/端口),前后端 + 安装器共用;schema 校验测试(照 registry↔pickModel 同步断言的模式) | P0-8/9 |
-| ☐ | 代码 | **内嵌运行时策略定案**:llama.cpp server(digest 钉死)vs 打包 Ollama;许可与体积权衡写入 docs | 决策文档 + 一条「运行时来源在白名单/钉版」的测试断言 | P0-8 |
+| ◐ | 代码 | **安装配置协议**:向导 `build.js` 生成的配置 ↔ 安装器读取的 manifest 对齐 | ✅ 地基就位:`installer/manifest.schema.json`(单一契约,零依赖 JSON-Schema 子集)+ `security.test.js §8c` sandbox 实跑 `installManifest()`(每模型 × local/cloud)逐字段校验符合、漂移即挂(照 registry↔pickModel 同步断言的模式)。**待办**:安装器侧消费方(随 Tauri 落地) | P0-8/9 |
+| ☑ | 代码 | **内嵌运行时策略定案**:llama.cpp(digest 钉死,单体自包含)vs 打包 Ollama;许可与体积权衡写入 docs | ✅ 决策拍板(2026-09-01):**llama.cpp,digest 钉死,单体自包含**(理由/来源/钉版机制见 `installer/README.md` + `installer/runtime.json`,单一真相源)。`security.test.js §8c` 断言:引擎=llama.cpp、钉版机制=digest、来源限官方 `ggml-org/llama.cpp`(github/ghcr)白名单、**绝不伪造 digest**(未测得前留空 + 强制 `digest_status` 说明)。**待办(外部)**:首个签名构建测得真实 digest 写回 | P0-8 |
 | ☐ | 代码 | **模型拉取 + 校验**:按 manifest 从官方源拉钉版 GGUF + `sha256` 校验(复用 registry 的 URL 白名单) | 离线单测:给定 manifest 生成的下载计划命中白名单且带 sha256;失败可重试幂等 | P0-8/9 |
 | ☐ | 外部 | **安装器签名 + SmartScreen 通过** | 签名后的 `.msi` 在干净 Windows 上双击无「未知发布者」硬拦 | P0-8 |
 
