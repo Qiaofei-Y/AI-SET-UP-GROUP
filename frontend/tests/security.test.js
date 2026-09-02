@@ -265,6 +265,51 @@ for (const u of uiNotice || []) {
      isLl === (u.html.indexOf('llama.com/llama3_1/license') >= 0));
 }
 
+// ---------- 8c. batch-2 installer contract: manifest schema + pinned runtime ----------
+// docs/24 groundwork. Two invariants, same guardrail spirit as §8/§8b:
+//  (1) the wizard's install-plan.json (installManifest) matches the shared
+//      manifest.schema.json the desktop installer will consume — no drift.
+//  (2) the runtime decision (llama.cpp, digest-pinned, official source) is
+//      recorded as data and never ships a fabricated digest.
+function validateJson(val, spec) {
+  const types = Array.isArray(spec.type) ? spec.type : [spec.type];
+  const t = val === null ? 'null' : (Array.isArray(val) ? 'array' : typeof val);
+  if (types.indexOf(t) < 0) return false;
+  if (spec.enum && spec.enum.indexOf(val) < 0) return false;
+  if (spec.type === 'object' && spec.properties) {
+    for (const r of (spec.required || [])) if (!(r in val)) return false;
+    for (const k in spec.properties) if (k in val && !validateJson(val[k], spec.properties[k])) return false;
+  }
+  return true;
+}
+
+const manifestSchema = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'installer', 'manifest.schema.json'), 'utf8'));
+const manifestSrc = (build.match(/function installManifest[\s\S]*?\n  \}/) || [''])[0];
+for (const mode of ['local', 'cloud']) {
+  let mans = null;
+  try {
+    mans = vm.runInNewContext('(function(){' + modelsSrc +
+      ' var STATE={need:"company",needText:"",os:"win11",gpu:"nvidia",vram:"12",ram:"32",mode:"' + mode + '"};' +
+      manifestSrc +
+      '; return MODELS.map(function(m){ return {id:m.id, obj: JSON.parse(installManifest({model:m, rag:true}))}; });})()');
+  } catch (e) { /* fails below */ }
+  ok('installManifest executes for every model in ' + mode + ' mode (' + (mans ? mans.length : 0) + '/' + registry.models.length + ')',
+     Array.isArray(mans) && mans.length === registry.models.length);
+  for (const mm of mans || [])
+    ok('install-plan.json conforms to manifest.schema.json — ' + mm.id + ' (' + mode + ')', validateJson(mm.obj, manifestSchema));
+}
+
+const runtime = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'installer', 'runtime.json'), 'utf8'));
+ok('installer runtime engine is llama.cpp (batch-2 decision, docs/24)', runtime.engine === 'llama.cpp');
+ok('installer runtime is digest-pinned to an official ggml-org image',
+   !!runtime.pin && runtime.pin.mechanism === 'digest' && /ggml-org\/llama\.cpp/.test(runtime.pin.image || ''));
+const RT_HOST_OK = /^https:\/\/(github\.com|ghcr\.io)\/ggml-org\/llama\.cpp/;
+ok('installer runtime sources stay on the official whitelist (' + (runtime.official_sources || []).length + ')',
+   Array.isArray(runtime.official_sources) && runtime.official_sources.length > 0 && runtime.official_sources.every((u) => RT_HOST_OK.test(u)));
+ok('installer runtime never ships a fabricated digest (null until measured at build)',
+   runtime.pin.digest === null ? (typeof runtime.pin.digest_status === 'string' && runtime.pin.digest_status.length > 0)
+                               : /^sha256:[0-9a-f]{64}$/.test(runtime.pin.digest));
+
 // ---------- summary ----------
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
