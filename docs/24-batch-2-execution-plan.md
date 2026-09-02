@@ -22,6 +22,27 @@
 | ☐ | 外部 | **真机测试台就位**:至少一台 NVIDIA GPU 的 Windows 机(自有或云 GPU Windows 实例) | 能跑完整安装→首答链路,度量安装成功率 | P0-8/9 |
 | ☐ | 外部 | **Apple Developer 账户**(macOS 公证,若排 macOS) | 拿到 Developer ID,可 notarize | 批次 3 macOS |
 
+### 第 0 天动作明细(可跟踪 playbook)
+
+> 代码侧地基已就绪(见下方各周表:manifest 契约 / 运行时钉版 / GGUF 拉取策略均已落地并测),**以下三项外部动作才是本批次真正的长约束**,越早启动越好。价格/周期以当时官网核实为准(此处只给量级)。
+
+**A · EV 代码签名证书**(P0-8,主约束,数天–数周) — 负责人:☐ ______ · 目标启动日:☐ ______
+- *为什么长*:CA 需做企业实体验证(注册地址/电话回访/D-U-N-S 或等价),EV 还需硬件密钥(HSM/USB token)或云签名开通。
+- *前置*:公司主体已注册(批次 0「注册公司主体」,与 Stripe 同一主体)、可验证的公司电话+地址、**D-U-N-S 号**(免费申请但本身也要时间,先去 dnb.com 申请)。
+- *选型(美国渠道)*:① **Azure Trusted Signing**——微软托管签名,免自管 token、按月订阅,CI 接入最省事(近年首选);② **DigiCert / Sectigo EV**——传统,发云 HSM 或实体 token。
+- *产出/验收*:能对 `.exe`/`.msi` 签名;干净 Windows 双击签名 `.msi` 无「未知发布者」硬拦(EV 通常即时过 SmartScreen)。
+- *待你拍板*:Azure Trusted Signing vs 传统 EV token——决定 CI 里签名步骤怎么接(前者用服务凭据,后者需 token/HSM 接入)。
+
+**B · NVIDIA Windows 真机测试台**(P0-8/9,与 A 并行) — 负责人:☐ ______ · 目标就位日:☐ ______
+- *为什么需要*:安装成功率、GPU/显存真检测、llama.cpp CUDA 运行、GGUF 加载、RAG 首答——都必须真机验证;CI 的 Windows runner **无 GPU**,覆盖不到。
+- *选项(美国)*:① 自有 NVIDIA Windows 机(最省事);② 云 GPU Windows 实例——AWS EC2 `g4dn`/`g5`(Windows AMI)、Azure `NC`/`NV`、Paperspace(按时计费,用完即停控成本)。注意:**Lambda(docs/21)是 Linux GPU**,适合云路径、不适合 Windows 安装器测试。
+- *产出/验收*:一台可反复重装的 Win+NVIDIA 环境,跑通「下载→装运行时→拉模型→首答」并采集分阶段成功率(接 `install_method` 漏斗遥测)。
+
+**C · Apple Developer 账户**(批次 3 macOS,可延后) — 负责人:☐ ______
+- *为什么*:macOS 分发需 Developer ID 签名 + notarization,否则 Gatekeeper 拦。
+- *前置/产出*:公司主体(D-U-N-S)或个人 + Apple Developer Program 年费 → Developer ID 证书,可 `codesign` + `notarytool` 公证。
+- *排期*:批次 2 聚焦 Windows,此项在 Windows 跑通后再启动(除非要 Win/mac 同步上)。
+
 ---
 
 ## 第 1–2 周 · Tauri 安装器骨架(P0-8)
