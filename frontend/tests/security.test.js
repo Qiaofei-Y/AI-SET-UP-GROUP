@@ -65,7 +65,7 @@ ok('local-llm.js: ADVISOR pinned to 127.0.0.1 and assigned exactly once',
   /var ADVISOR = 'http:\/\/127\.0\.0\.1:\d+'/.test(conn) && (conn.match(/\bADVISOR\s*=/g) || []).length === 1);
 ok('local-llm.js: OLLAMA pinned to 127.0.0.1 and assigned exactly once',
   /var OLLAMA = 'http:\/\/127\.0\.0\.1:11434'/.test(conn) && (conn.match(/\bOLLAMA\s*=/g) || []).length === 1);
-// P0-13 same-origin topology (docs/22): API may be EITHER the local loopback
+// Same-origin topology: API may be EITHER the local loopback
 // literal (page served from localhost — dev/demo) OR the empty string (deployed
 // page — every call stays same-origin via the reverse proxy). The conditional
 // is locked to this exact shape so no third host is ever constructible.
@@ -223,7 +223,7 @@ for (const [vram, need, want] of MATRIX) {
 // ---------- 8b. generated install artifacts are REAL and content-safe ----------
 // The old PowerShell demo installer is retired for good: its bug class (PS 5.1
 // parameter traps behind -EncodedCommand) must not come back.
-ok('build.js contains no PowerShell installer machinery (retired demo, docs/22 P0-6)',
+ok('build.js contains no PowerShell installer machinery (retired demo)',
    !/Invoke-WebRequest|EncodedCommand|powershell(\.exe)?\s+-/i.test(build));
 // Execute the real builders and assert on the actual artifact text.
 const buildersSrc = (build.match(/function isLlama[\s\S]*?function ollamaGuide[\s\S]*?\n  \}/) || [''])[0];
@@ -242,7 +242,7 @@ for (const a of art || []) {
   ok('artifact URLs for ' + a.id + ' stay on the official whitelist (' + urls.length + ' urls)',
      urls.length > 0 && urls.every((u) => HOST_OK.test(u)));
   const isLl = a.ollama.indexOf('llama') === 0;
-  ok('Llama license notice ' + (isLl ? 'present' : 'absent') + ' for ' + a.id + ' (docs/22 P0-10)',
+  ok('Llama license notice ' + (isLl ? 'present' : 'absent') + ' for ' + a.id,
      isLl === (a.bat.indexOf('Built with Llama') >= 0) &&
      isLl === (a.guide.indexOf('Llama 3.1 Community License') >= 0));
 }
@@ -266,7 +266,7 @@ for (const u of uiNotice || []) {
 }
 
 // ---------- 8c. batch-2 installer contract: manifest schema + pinned runtime ----------
-// docs/24 groundwork. Two invariants, same guardrail spirit as §8/§8b:
+// Installer batch-2 groundwork. Two invariants, same guardrail spirit as §8/§8b:
 //  (1) the wizard's install-plan.json (installManifest) matches the shared
 //      manifest.schema.json the desktop installer will consume — no drift.
 //  (2) the runtime decision (llama.cpp, digest-pinned, official source) is
@@ -300,7 +300,7 @@ for (const mode of ['local', 'cloud']) {
 }
 
 const runtime = JSON.parse(fs.readFileSync(path.join(WEB, '..', 'installer', 'runtime.json'), 'utf8'));
-ok('installer runtime engine is llama.cpp (batch-2 decision, docs/24)', runtime.engine === 'llama.cpp');
+ok('installer runtime engine is llama.cpp (batch-2 decision)', runtime.engine === 'llama.cpp');
 ok('installer runtime is digest-pinned to an official ggml-org image',
    !!runtime.pin && runtime.pin.mechanism === 'digest' && /ggml-org\/llama\.cpp/.test(runtime.pin.image || ''));
 const RT_HOST_OK = /^https:\/\/(github\.com|ghcr\.io)\/ggml-org\/llama\.cpp/;

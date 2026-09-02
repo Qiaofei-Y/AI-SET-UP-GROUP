@@ -102,6 +102,6 @@ open http://localhost:8931/chat.html
 
 **使用分析是 opt-in(隐私页承诺)**:上面两条通道(遥测 + 反馈)都先过 `window.__bmaConsent.get()` 门禁——同意状态存 `localStorage['bma-usage-consent']`,由 `local-llm.js` 的 `window.__bmaConsent = {get, set}` 读写,向导页与 dashboard 的「使用分析」开关翻转它。**默认关闭**:没勾选就一字不发,连匿名枚举也不发。auth/advise 不受此门禁(advise 是用户主动求方案、不落盘;auth 是必需的真实状态)。
 
-**账号(注册/登录/登录态)**:`local-llm.js` 暴露 `window.__bmaAuth`(signup/login/me/logout,4 秒超时),`signup.js` 与 `dashboard.html` 经它走 `/v1/auth/*`;session token 存 sessionStorage(关标签页即清)。**这一处不做离线降级**:API 不可达时注册/登录显式报错、dashboard 出登录墙,绝不假通行(docs/22 P0-14;端点规格与威胁模型见 [docs/20 §5/§7](20-backend-architecture-and-api.md))。
+**账号(注册/登录/登录态)**:`local-llm.js` 暴露 `window.__bmaAuth`(signup/login/me/logout,4 秒超时),`signup.js` 与 `dashboard.html` 经它走 `/v1/auth/*`;session token 存 sessionStorage(关标签页即清)。**这一处不做离线降级**:API 不可达时注册/登录显式报错、dashboard 出登录墙,绝不假通行(账号是可选的:用于多设备同步/找回,不是解锁功能的付费墙;端点规格与威胁模型见 [docs/20 §5/§7](20-backend-architecture-and-api.md))。
 
-**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,docs/22 P0-13);每个 fetch 以五常量之一开头(安全套件 192 项)。
+**边界不变**:BASE/PORTAL/ADVISOR 钉死 `127.0.0.1`、只赋值一次;`API` 是锁形条件式(本地页 `127.0.0.1:8940`,部署页同源相对 `''`,同源部署);每个 fetch 以五常量之一开头(安全套件 192 项)。

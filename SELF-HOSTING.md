@@ -2,8 +2,7 @@
 
 Build My AI is fully self-hostable. The backend is **zero-dependency** (Python 3
 standard library only — no `pip install`, no build step) and the frontend is a
-**static, zero-build** site (vanilla JS + HTML/CSS). One image or one checkout
-runs everything.
+**static, zero-build** site (vanilla JS + HTML/CSS). One image runs everything.
 
 This guide covers four paths, from a laptop to a public HTTPS domain:
 
@@ -19,11 +18,12 @@ All four expose the same acceptance check: `GET /v1/health` must return
 
 ---
 
-## The one env var you must understand: `BMA_LICENSE_SECRET`
+## The one env var you must understand: `BMA_ADMIN_SECRET`
 
-The backend can mint license keys, signed with `BMA_LICENSE_SECRET`. The shipped
-default is the literal string `dev-secret-change-me` — fine on loopback, but
-**anyone who knows it could mint valid licenses**.
+`BMA_ADMIN_SECRET` is the deployment secret that fronts the fail-closed startup
+guard: it proves the deployment was configured deliberately before it faces the
+network. The shipped default is the literal string `dev-secret-change-me` — fine
+on loopback, but a **publicly known secret on a public bind is unsafe**.
 
 To prevent an accidental public exposure, the server **fails closed**: at startup,
 if the bind host is anything other than `127.0.0.1` / `localhost` / `::1` **and**
@@ -31,19 +31,18 @@ the secret is still the default, it refuses to start (`backend/api/server.py`,
 `create_server()`):
 
 ```
-refusing to bind <host> with the default BMA_LICENSE_SECRET — inject a real secret first
+refusing to bind <host> with the default BMA_ADMIN_SECRET — inject a real secret first
 ```
 
 Consequences per path:
 
 - **Local dev (path 1)** binds `127.0.0.1` by default, so it runs with the
-  default secret. Fine for development; set a real secret if you will issue
-  licenses.
+  default secret. Fine for development; set a real secret for any non-loopback bind.
 - **Docker (paths 2 & 3)** run the API with `--host 0.0.0.0` inside the container
-  — a non-loopback bind — so they **require** `BMA_LICENSE_SECRET`. The compose
-  files have no default (`${BMA_LICENSE_SECRET:?...}`) and abort if it is unset.
+  — a non-loopback bind — so they **require** `BMA_ADMIN_SECRET`. The compose
+  files have no default (`${BMA_ADMIN_SECRET:?...}`) and abort if it is unset.
 - **Bare-metal (path 4)** keeps the API on `127.0.0.1`, but the secret is still
-  required for real license issuance and must never stay the default.
+  required for any real deployment and must never stay the default.
 
 Generate one with:
 
@@ -62,7 +61,7 @@ and the compose/deploy files. All are optional unless noted.
 
 | Var | Default | Meaning |
 |-----|---------|---------|
-| `BMA_LICENSE_SECRET` | `dev-secret-change-me` | License signing key. Required for any non-loopback bind (see above). |
+| `BMA_ADMIN_SECRET` | `dev-secret-change-me` | Deployment secret for the fail-closed startup guard. Required for any non-loopback bind (see above). |
 | `BMA_DB` | `backend/api/data/events.db` | SQLite path for anonymous telemetry/feedback events. |
 | `BMA_USERS_DB` | `backend/api/data/users.db` | SQLite path for accounts (PBKDF2-hashed passwords, session/token hashes). |
 | `BMA_LOG` | `1` | Structured, body-free access logging (`path`/`status` only). Set `0` to mute. |
@@ -72,18 +71,6 @@ Identity and telemetry are **split across two databases** (`users.db` vs
 `events.db`) so account data and anonymous events never mix. Both live under the
 same data directory / volume.
 
-**Billing (Stripe) — optional; leave empty to keep checkout/portal honestly `503`**
-
-| Var | Meaning |
-|-----|---------|
-| `BMA_STRIPE_SECRET` | Stripe secret API key. Card data never touches this process (Stripe-hosted checkout/portal). |
-| `BMA_STRIPE_WEBHOOK_SECRET` | Verifies the raw body of `POST /v1/billing/webhook`. |
-| `BMA_STRIPE_PRICE_PRO` / `BMA_STRIPE_PRICE_BUSINESS` | Stripe price IDs per tier. |
-| `BMA_CHECKOUT_SUCCESS_URL` / `BMA_CHECKOUT_CANCEL_URL` / `BMA_PORTAL_RETURN_URL` | Redirect targets. |
-
-Stripe (`https://api.stripe.com`) is the **only** non-loopback host the backend
-ever dials.
-
 **Email (password reset / verification) — optional; unset ⇒ dev/stdout only**
 
 | Var | Meaning |
@@ -91,6 +78,9 @@ ever dials.
 | `BMA_SMTP_HOST` / `BMA_SMTP_USER` / `BMA_SMTP_PASS` | SMTP endpoint (e.g. Amazon SES). Unset ⇒ mail goes to an in-memory outbox + stdout, not really sent. |
 | `BMA_SITE_URL` | Base URL used in reset/verify links inside emails. |
 | `BMA_MAIL_FROM` | From header, e.g. `Build My AI <no-reply@example.com>`. |
+
+When `BMA_SMTP_HOST` is configured, your SMTP endpoint is the **only** non-loopback
+host the backend ever dials; unset, the backend makes no outbound connections at all.
 
 **Backups** (`backend/ops/backup.py`)
 
@@ -169,9 +159,6 @@ open http://localhost:8931
 frontend over `http://`. Databases are created on first run under
 `backend/api/data/`.
 
-Handy: mint a demo license for testing —
-`python3 backend/api/server.py --mint pro`.
-
 **Acceptance check:**
 
 ```bash
@@ -184,11 +171,11 @@ curl -fsS http://127.0.0.1:8940/v1/health
 ## Path 2 — Docker dev, single host (no TLS)
 
 One image, two services (`api`, `web`), defined in `docker-compose.yml`. Both are
-published only to `127.0.0.1` (not exposed to the network). `BMA_LICENSE_SECRET`
+published only to `127.0.0.1` (not exposed to the network). `BMA_ADMIN_SECRET`
 is required because the API binds `0.0.0.0` inside the container.
 
 ```bash
-BMA_LICENSE_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+BMA_ADMIN_SECRET=$(openssl rand -hex 32) docker compose up -d --build
 open http://localhost:8931
 ```
 
@@ -218,7 +205,7 @@ host) behind a `caddy:2` container that serves the static site and proxies
 make ports 80 and 443 reachable, so Caddy can complete the ACME challenge.
 
 ```bash
-BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
+BMA_DOMAIN=ai.example.com BMA_ADMIN_SECRET=$(openssl rand -hex 32) \
   docker compose -f docker-compose.prod.yml up -d --build
 ```
 
@@ -228,18 +215,14 @@ BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
 - The API is **not** published to the host — Caddy is its only ingress.
 - Volumes: `bma-data` (SQLite), `caddy-data`, `caddy-config`.
 - The Caddyfile sets the security headers (CSP, HSTS, nosniff, `frame-ancestors`,
-  etc.). The Stripe webhook is verified over the raw body by the app, so the
-  proxy needs no special handling.
+  etc.).
 
-For live billing/email, inject the optional secrets into the `api` service
-environment (they are wired through as `BMA_STRIPE_SECRET`,
-`BMA_STRIPE_WEBHOOK_SECRET`, `BMA_SMTP_HOST`, etc.):
+For live email (password reset / verification), inject the optional SMTP secrets
+into the `api` service environment:
 
 ```bash
 BMA_DOMAIN=ai.example.com \
-BMA_LICENSE_SECRET=... \
-BMA_STRIPE_SECRET=sk_live_... \
-BMA_STRIPE_WEBHOOK_SECRET=whsec_... \
+BMA_ADMIN_SECRET=... \
 BMA_SMTP_HOST=email-smtp.us-east-1.amazonaws.com \
   docker compose -f docker-compose.prod.yml up -d --build
 ```
@@ -285,14 +268,10 @@ The data dir **must exist first** — `buildmyai-api.service` uses
 **3. Inject secrets** (edit the `Environment=` lines in
 `deploy/systemd/buildmyai-api.service`):
 
-- `BMA_LICENSE_SECRET` — a real random string (**required**; the default refuses
+- `BMA_ADMIN_SECRET` — a real random string (**required**; the default refuses
   a non-loopback bind and is unsafe anywhere).
 - Email: `BMA_SMTP_HOST/USER/PASS` (e.g. Amazon SES SMTP; unset ⇒ dev/stdout, no
   real mail) and `BMA_SITE_URL` = your domain.
-- Billing (**can stay empty** — checkout/portal return an honest `503` until
-  live): `BMA_STRIPE_SECRET`, `BMA_STRIPE_WEBHOOK_SECRET`,
-  `BMA_STRIPE_PRICE_PRO/BUSINESS`; then set the Stripe dashboard webhook to
-  `https://<domain>/v1/billing/webhook`.
 
 The unit keeps the API on `127.0.0.1:8940` and is heavily sandboxed
 (`NoNewPrivileges`, `ProtectSystem=strict`, restricted syscalls/address families,
@@ -375,8 +354,7 @@ python3 backend/ops/backup.py --restore <snapshot-file> --to <dest.db>
 Honest limits — these are external actions, not features this repo can do for you:
 
 - A **real domain + DNS** and open ports 80/443 for automatic HTTPS (paths 3, 4).
-- **Real secrets**: `BMA_LICENSE_SECRET`, and — only when going live — Stripe keys
-  and SMTP credentials. Until Stripe is configured, checkout/portal endpoints
-  return an honest `503` rather than a fake flow.
-- A company entity + Stripe account, legal review of the terms, a support inbox,
-  and wiring the structured `warn`/`error` logs to your alerting.
+- **Real secrets**: `BMA_ADMIN_SECRET`, and — if you enable account email —
+  SMTP credentials. Until SMTP is configured, reset/verification mail goes to
+  stdout instead of being sent.
+- Wiring the structured `warn`/`error` logs to your alerting.

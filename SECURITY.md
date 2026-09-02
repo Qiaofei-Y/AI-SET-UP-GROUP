@@ -12,10 +12,8 @@ Email **michael.yan@purehd.com** privately with:
 - steps to reproduce (a minimal proof of concept if you have one),
 - the affected surface (backend API / frontend / installer / deploy) and the commit or branch.
 
-During the beta this is our support/security inbox and we read everything.
-A dedicated `security@` address will be published here once the company domain
-is live. Please give us a reasonable window to investigate and ship a fix
-before any public disclosure.
+This is our support/security inbox and we read everything. Please give us a
+reasonable window to investigate and ship a fix before any public disclosure.
 
 ## Scope
 
@@ -28,9 +26,8 @@ a self-hosted instance, for example:
   processed or persisted, or getting a request **body, email, or token** into a log line,
 - cross-contamination between the identity database (`users.db`) and the
   telemetry database (`events.db`),
-- authentication, session, password-recovery, or licensing flaws
+- authentication, session, or password-recovery flaws
   (PBKDF2/hashed-token handling, one-time recovery tokens),
-- billing/webhook signature handling,
 - XSS or other unsafe rendering in the frontend,
 - deploy hardening gaps in the shipped reverse-proxy / systemd / Docker config.
 

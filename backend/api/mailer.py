@@ -3,8 +3,7 @@
 
 Zero-dependency: Python 3 stdlib only (smtplib + email) — same philosophy as
 server.py (no SDK, no package manager). Two backends, chosen per send at
-request time by environment so ops can turn on real mail WITHOUT a code change
-(same pattern as the Stripe config in server.py):
+request time by environment so ops can turn on real mail WITHOUT a code change:
 
   - dev (default): no SMTP env set → the message is appended to a bounded,
     in-memory OUTBOX and echoed to stdout. Nothing leaves the machine; the

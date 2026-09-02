@@ -45,9 +45,9 @@
 
 > 参考实现:"本地 RAG → 本地模型 → 带来源引用回答"这条链路,已在演示站聊天页(`frontend/chat.html`)用本机 llm-lab 模型栈(llama.cpp + bge-m3,全程数据不出本机)跑通,见 [16 本地 AI 接入网页](16-local-ai-web-integration.md)。
 
-## 对商业模式的意义
+## 为什么云端选项必须做
 
-云端选项不只是便利功能,它就是商业模式里的**云 GPU 收入线**(见 [05 商业模式](05-business-model.md)):用户设备不够时,平台提供云端算力并抽成。所以"云端调用"是**必须做的第二条路**,排在 MVP 之后(见 [07 路线图](07-roadmap.md) Phase 1)。
+云端不是可有可无的便利,它是**设备不够的用户唯一的出路**:没有独显、或 VRAM < 6GB 的人,本地跑不动像样的模型。给他们一条「用自己的云账号、自付费」的路(BYO-key,见 [21 Lambda 云集成](21-lambda-cloud-integration.md)),项目不经手账单、不抽成。所以"云端调用"是**必须做的第二条路**,排在 MVP 之后(见 [07 路线图](07-roadmap.md) Phase 1)。
 
 ## 数据流与隐私边界(一张图说清)
 
@@ -69,4 +69,4 @@
 
 ---
 
-相关文档:[03 核心模块](03-core-modules.md) · [05 商业模式](05-business-model.md) · [08 资源与链接](08-resources.md) · [09 MVP 工程任务清单](09-mvp-engineering-tasks.md)
+相关文档:[03 核心模块](03-core-modules.md) · [08 资源与链接](08-resources.md) · [09 MVP 工程任务清单](09-mvp-engineering-tasks.md) · [21 Lambda 云集成](21-lambda-cloud-integration.md)

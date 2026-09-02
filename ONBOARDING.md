@@ -5,7 +5,7 @@
 
 ## 0. 这是什么项目
 
-「Build My AI」——面向**非技术用户**的个人 AI 搭建平台,目标市场**美国**(模型源/云服务/支付渠道一律用美国资源),文档语言保持中文、网站 UI 默认英文可切中文。当前阶段 = 产品文档 + 可运行演示站(`frontend/`,零构建静态站)+ 零依赖后端 API v0(`backend/`,纯 Python stdlib)。全部文档索引见 [README.md](README.md);商用化差距与路线在 [docs/22](docs/22-commercial-readiness-audit.md)。
+「Build My AI」——面向 **AI 爱好者与开发者**的非商业开源项目,帮你把整套 AI 栈搭在自己的硬件上、完全自持;面向美国用户(模型源/云服务一律用美国资源),文档语言保持中文、网站 UI 默认英文可切中文。当前阶段 = 产品文档 + 可运行演示站(`frontend/`,零构建静态站)+ 零依赖后端 API v0(`backend/`,纯 Python stdlib)。全部文档索引见 [README.md](README.md)。
 
 ## 1. 五分钟跑起来
 
@@ -34,7 +34,7 @@ python3 backend/tests/api.test.py        # 后端:74 项,起真实服务打真�
 | `local-llm.js`(连接器) | [docs/16](docs/16-local-ai-web-integration.md)(尤其第 4 节打断语义——全仓最易错的部分) |
 | `backend/api/server.py` | [docs/20](docs/20-backend-architecture-and-api.md)(端点规格、schema 白名单、红线→断言映射) |
 | 测试 / 想放宽某条安全断言 | [docs/18](docs/18-testing-and-quality.md)(§3 是唯一允许的放宽流程:白名单而非删除) |
-| 网站文案 / 定价 / 流程 | docs/02、04、05、11(**文档与演示互为镜像**,改一侧必查另一侧) |
+| 网站文案 / 流程 | docs/02、04、11(**文档与演示互为镜像**,改一侧必查另一侧) |
 | 视觉 / 动效 | [figma/design-system.md](figma/design-system.md)(配色三色纪律、动效原则) |
 
 ## 3. 提交门槛(Definition of Done)
@@ -53,13 +53,13 @@ python3 backend/tests/api.test.py        # 后端:74 项,起真实服务打真�
 - **向导需求框是 write-only**:`build.js` 永不读框值;自由文本只由连接器发往本机做分类,绝不进入生成的安装包/手册。
 - **用户输入/模型输出只走 `esc()` + `textContent`**,禁 `innerHTML`/`eval`/`document.write`/字符串定时器。
 - **身份与遥测分库**:账号在 `users.db`、匿名事件在 `events.db`,互不沾染;遥测端点是 schema 白名单,自由文本一律 400。
-- **auth 不做离线假通行**:API 不可达时注册/登录显式报错、dashboard 出登录墙(docs/22 P0-14)。别"好心"加回退。
+- **auth 不做离线假通行**:API 不可达时注册/登录显式报错、dashboard 出登录墙。别"好心"加回退。
 - 改 `registry.json` 或 `build.js` 的 `MODELS`/`pickModel` 任一侧,另一侧不同步会挂测试(前后端全字段 + 选择规则矩阵双重断言)。
 
 ## 5. 现在做到哪了 / 下一步
 
-- **已完成**:演示站全站(21 页,双语 + FX 动效层,含账号设置/找回三件套/结账回跳/下载中心 + 法律三件套草案 + 注册 clickwrap)、后端七组端点 v0(advise/registry/license/telemetry/feedback/auth/billing,auth 含找回/验证 + 账号自助五端点)、前后端打通(部署同源拓扑)、生产化地基(WAL/迁移、限速/fail-closed 密钥/`--host`、结构化 body-free 日志、备份+恢复演练、CI 双套件、同源反代+CSP 部署配置)、192+74 项测试体系。
-- **路线图**:[docs/22 §6](docs/22-commercial-readiness-audit.md) 按依赖排批——批次 0 剩余项(公司主体/Stripe 开户、域名/托管/反代落地、CI/备份)依赖外部动作;批次 1 = 能合法收钱;批次 2 = 付费交付物(真实安装器 + RAG 组件)。
+- **已完成**:演示站全站(双语 + FX 动效层,含账号设置/找回三件套/下载中心 + 法律条款草案)、后端五组端点 v0(advise/registry/telemetry/feedback/auth,auth 含找回/验证 + 账号自助五端点)、前后端打通(部署同源拓扑)、生产化地基(WAL/迁移、限速/fail-closed 密钥/`--host`、结构化 body-free 日志、备份+恢复演练、CI 双套件、同源反代+CSP 部署配置)、双套件测试体系。
+- **路线图**:批次 2 = 真实自包含安装器(llama.cpp,见 [installer/](installer/))+ RAG 组件;签名安装器就绪前不放真实下载按钮。
 - 工程任务拆解与验收标准:[docs/09](docs/09-mvp-engineering-tasks.md)。
 
 ## 6. 协作约定

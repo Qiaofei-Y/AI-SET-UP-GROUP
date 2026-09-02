@@ -1,5 +1,5 @@
 {
-  "_comment": "Batch-2 (docs/24) model-artifact fetch policy for the llama.cpp desktop installer — single source of truth. The installer pulls GGUF weights DIRECTLY from Hugging Face (a different path from today's shipped Ollama-guided install, which uses `ollama pull`). Language-neutral data: the Rust installer and the security tests both read it. NOT user-facing until the signed installer ships.",
+  "_comment": "Batch-2 model-artifact fetch policy for the llama.cpp desktop installer — single source of truth. The installer pulls GGUF weights DIRECTLY from Hugging Face (a different path from today's shipped Ollama-guided install, which uses `ollama pull`). Language-neutral data: the Rust installer and the security tests both read it. NOT user-facing until the signed installer ships.",
   "model_artifacts": {
     "url_template": "https://huggingface.co/{repo}/resolve/main/{file}",
     "allowed_hosts": ["huggingface.co"],

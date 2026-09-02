@@ -1,8 +1,8 @@
 {
-  "_comment": "Batch-2 (docs/24) paid desktop installer runtime — single source of truth. NOT the currently shipped path: today's guided install uses Ollama (see downloads.html / frontend/assets/build.js). Nothing here is user-facing until the signed installer ships.",
+  "_comment": "Batch-2 desktop installer runtime — single source of truth. NOT the currently shipped path: today's guided install uses Ollama (see downloads.html / frontend/assets/build.js). Nothing here is user-facing until the signed installer ships.",
   "engine": "llama.cpp",
   "why": "Self-contained, MIT-licensed, no external engine dependency; matches the docs/21 cloud path so local and cloud share one runtime. Digest-pinned so the installer runs exactly the build we froze at release.",
-  "distribution": "bundled inside the signed desktop installer (P0-8)",
+  "distribution": "bundled inside the signed desktop installer",
   "pin": {
     "mechanism": "digest",
     "image": "ghcr.io/ggml-org/llama.cpp:server-cuda",

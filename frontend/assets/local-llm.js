@@ -9,8 +9,8 @@
 //           when up; chat 👍/👎 ratings post to /v1/feedback (rating +
 //           template + model id only, never any content); /v1/auth/* for
 //           accounts. On a local page it's :8940 on this machine; on a real
-//           domain it's SAME-ORIGIN relative (reverse proxy forwards /v1/*,
-//           docs/22 P0-13) — no other host is ever constructible.
+//           domain it's SAME-ORIGIN relative (reverse proxy forwards /v1/*)
+//           — no other host is ever constructible.
 //   OLLAMA  :11434 the engine our guided installer sets up (OpenAI-compatible
 //                  /v1) — the chat fallback rung when llm-lab isn't running,
 //                  so a user who completed the real install can chat right here
@@ -517,19 +517,6 @@
     logoutAll: function (token, cb) { authCall('/v1/account/logout-all', {}, token, cb); },
     exportData: function (token, cb) { authCall('/v1/account/export', null, token, cb); },
     deleteAccount: function (token, body, cb) { authCall('/v1/account/delete', body, token, cb); }
-  };
-  // ---- billing (API): start a Stripe-HOSTED checkout / portal (P0-1/2) ----
-  // We never handle card data: these return a Stripe URL and the page does a
-  // full-page redirect to it. authCall already pins to the API prefix, so no new
-  // network target is introduced (the security test's egress lock stays intact).
-  // checkout carries accept_terms: the caller MUST obtain the auto-renewal
-  // clickwrap consent first (dashboard shows the disclosure + checkbox); the
-  // server records the acceptance (version + time) before starting a subscription.
-  window.__bmaBilling = {
-    checkout: function (token, plan, cb) {
-      authCall('/v1/billing/checkout', { plan: plan, accept_terms: true }, token, cb);
-    },
-    portal: function (token, cb) { authCall('/v1/billing/portal', {}, token, cb); }
   };
 
   window.LocalLLM = {

@@ -11,8 +11,8 @@
 - **North Star Metric(北极星指标)**:每周从自己私有 AI 得到**有用(带来源)回答**的活跃用户数。
 - **Aha moment(激活定义)**:新用户在**首次会话 30 分钟内**,**拖入 ≥1 个文档**并得到**一个带来源引用的正确回答**。
 - **引导的唯一使命**:把新用户尽快、尽可能无摩擦地推到这个 Aha moment,然后用留存回路让他每周回来。
-- **核心心法**:免注册即可用(Free)、零技术名词(用"质量/速度/占用"代替 VRAM/量化)、每一步有默认最优解、失败可恢复、没文档也能靠演示模式体验。
-- **升级时机**:不是一上来就要钱,而是在用户**已经尝到价值**(第 N 个文档、想微调、想接 API、想多设备)时自然提示;Beta 期间全部免费,但 Pro/Business 需注册解锁。
+- **核心心法**:免注册即可用、零技术名词(用"质量/速度/占用"代替 VRAM/量化)、每一步有默认最优解、失败可恢复、没文档也能靠演示模式体验。
+- **注册是可选项**:本项目免费开源、无付费档位;注册账号仅用于跨设备同步等便利,**永远不作为解锁功能的门禁**。所有能力对所有人开放。
 
 ---
 
@@ -224,18 +224,18 @@ Build My AI 的价值主张是:**一个完全属于你、读你自己资料、�
 
 ## 4 · 降低摩擦的手段
 
-### 4.1 免注册即可用(Free)
+### 4.1 免注册即可用
 
-- **Free 无需注册即可完整走完**:落地 → 向导 → 安装 → 拖文档 → 首问答 → Aha,全程不要求账号。
-- 注册只在**解锁 Pro/Business 功能**(微调、API、多设备、团队)时才要求;这样注册墙不会挡在 Aha 之前。
+- **全程无需注册**:落地 → 向导 → 安装 → 拖文档 → 首问答 → Aha,以及后续的微调、API、多设备,全部功能都不要求账号。
+- 注册是**纯可选**的便利项:想跨设备同步配置/知识库时,可以选择创建账号——但它**从不作为解锁功能的门禁**,不会挡在任何能力之前。
 - 后台仅收**匿名**使用数据(与 docs/13 对齐),用于漏斗分析。
 
 **文案示例**
 
 | 位置 | EN | 中 |
 |------|----|----|
-| 首页信任条 | Start free. No account, no credit card. | 免费开始。无需账号,无需信用卡。 |
-| 注册墙(仅高级功能) | This is a Pro feature. During Beta it's free — just create an account to unlock. | 这是 Pro 功能。Beta 期间免费——注册即可解锁。 |
+| 首页信任条 | Free and open source. No account required. | 免费开源。无需注册。 |
+| 可选注册说明 | Want to sync across devices? Create a free account — everything works without one. | 想跨设备同步?可以创建一个免费账号——不注册也能用全部功能。 |
 
 ### 4.2 演示 / 示例模式(没文档也能体验)
 
@@ -272,8 +272,8 @@ Build My AI 的价值主张是:**一个完全属于你、读你自己资料、�
 | 端口被占用 | 默认端口被占 | Something else is using our port. We'll switch to another one. | 有别的程序占用了端口。我们换一个。 | [Auto-fix / 自动切换] |
 | 下载中断/网络 | 网络超时/校验失败 | The download got interrupted. We'll pick up where it left off. | 下载中断了。我们从断点继续。 | [Resume / 断点续传] [Retry / 重试] |
 
-- 每个失败屏都带 **[Copy diagnostics / 复制诊断信息]**(见 §9.2),方便求助但不吓人。
-- 失败也是埋点事件(见 §10),按 `error_type` 分类,反哺产品改进。
+- 每个失败屏都带 **[Copy diagnostics / 复制诊断信息]**(见 §8.2),方便求助但不吓人。
+- 失败也是埋点事件(见 §9),按 `error_type` 分类,反哺产品改进。
 
 ---
 
@@ -300,7 +300,7 @@ Build My AI 的价值主张是:**一个完全属于你、读你自己资料、�
 | 完成第 4 项(Aha) | 🎉 You just hit the big one — a private answer with a real source. | 🎉 你刚达成最关键的一步——一个带真实来源的私有回答。 |
 | 全部完成 | All set. Your private AI is fully up and running. | 全部搞定。你的私有 AI 已完全就绪。 |
 
-> 设计注意:清单**第 4 项(带来源回答)才是核心**,前 3 项是通往它的台阶;第 5、6 项是把用户推向留存(Teach My AI)和升级(API)的钩子。
+> 设计注意:清单**第 4 项(带来源回答)才是核心**,前 3 项是通往它的台阶;第 5、6 项是把用户推向留存(Teach My AI)和进阶用法(API)的钩子。
 
 ---
 
@@ -325,7 +325,7 @@ Build My AI 的价值主张是:**一个完全属于你、读你自己资料、�
 | 进度条 | Teach My AI: {X}/{Y} corrections collected. At {Y}, your AI upgrades itself — just for you. | Teach My AI:已收集 {X}/{Y} 条纠正。到 {Y} 条时,你的 AI 会为你自己升级一次。 |
 | 临近阈值 | Almost there — {Z} more fixes and your AI gets noticeably sharper. | 就快了——再纠正 {Z} 次,你的 AI 会明显更准。 |
 
-**触发 2 · 每周价值提醒(邮件,仅注册用户;Free 用应用内卡片)**
+**触发 2 · 每周价值提醒(注册用户可收邮件;未注册用户走应用内卡片)**
 
 > Subject(EN):Your AI answered {N} questions from your files this week
 > 主题(中):这周你的 AI 从你的资料里回答了 {N} 个问题
@@ -355,142 +355,78 @@ Everything stays on your device. — Build My AI
 
 ---
 
-## 7 · 从 Free 到 Pro 的自然升级引导
+## 7 · 多人 / 团队自托管引导(可选)
 
-升级引导的核心不是"什么时候弹窗",而是"**在用户已经想要那个能力的一刻**才提示"。Beta 期间**全部免费**,但 Pro/Business 功能需**注册解锁**——升级提示要如实这样说,降低戒心。
+若你想让**一台自托管的 Build My AI 供多人共用**(比如小团队、实验室、家庭共享一个私有 AI),在个人 FTUE 之上补齐"共享知识库 + 简单权限"即可。这部分完全可选,和个人用法一样免费、无席位限制。
 
-### 7.1 升级触发时机(意图信号驱动)
+### 7.1 与单人用法的差异
 
-| 触发信号 | 用户此刻的想法 | 提示什么 | 落点 |
-|----------|----------------|----------|------|
-| 拖入第 N 个文档(如第 6 个) | "我资料越来越多了" | 更大知识库 / 更好检索(Pro) | 应用内软提示 |
-| 点了"Fix this answer"若干次 | "我想让它真的记住我的纠正" | 自动微调 / LoRA(Pro) | Teach My AI 面板 |
-| 打开 🔌 API 面板 | "我想接到自己的软件里" | API 访问(Pro) | API 面板顶部 |
-| 想在第二台电脑用 | "我换台机器也要用" | 多设备(Pro) | 设置 / 设备页 |
-| 团队/公司共享意图 | "想让同事一起用" | Business(公司知识库/权限) | 见 §8 |
+| 维度 | 单人 | 多人自托管 |
+|------|------|-----------|
+| 知识库 | 我的文档 | **共享知识库**:多人共同贡献、集中管理 |
+| 权限 | 无 | **简单角色**:谁能看、谁能加文档、谁能管模型 |
+| 用户 | 单人 | **多用户**:把访问入口分享给同伴 |
 
-### 7.2 升级提示文案(EN 主 / 中 备)
+### 7.2 多人首次引导流程(在个人 FTUE 基础上增补)
 
-**软提示(应用内横幅,非阻断)**
-
-| 场景 | EN | 中 |
-|------|----|----|
-| 微调意图 | Want your AI to truly learn your corrections? Auto fine-tuning is a Pro feature — free during Beta. | 想让你的 AI 真正学会你的纠正?自动微调是 Pro 功能——Beta 期间免费。 |
-| API 意图 | Connect your own apps with the API. Pro feature, free in Beta — just create an account. | 用 API 连接你自己的应用。Pro 功能,Beta 期间免费——注册即可。 |
-| 多设备 | Use your AI on another computer. That's Pro — free during Beta. | 在另一台电脑上使用你的 AI。这是 Pro——Beta 期间免费。 |
-
-**升级弹窗(点击"解锁"后)**
-
-```
-Title (EN):  Unlock all features
-标题 (中):    解锁全部功能
-
-Body (EN):
-You're using Build My AI Free. Unlock Pro to:
-  • Auto fine-tuning (Teach My AI → real model upgrades)
-  • API access for your own apps
-  • Use on multiple devices
-  • Larger knowledge base & priority answers
-
-During Beta, all of this is FREE.
-Just create a free account to unlock — no credit card.
-
-[ Create free account ]        [ Maybe later ]
-
-正文 (中):
-你正在使用 Build My AI 免费版。解锁 Pro 可获得:
-  • 自动微调(Teach My AI → 真正的模型升级)
-  • API 访问,连接你自己的应用
-  • 多设备使用
-  • 更大的知识库与优先回答
-Beta 期间,以上全部免费。注册免费账号即可解锁——无需信用卡。
-[ 创建免费账号 ]        [ 以后再说 ]
-```
-
-> 落点:所有升级 CTA 指向 **[frontend/signup.html](../frontend/signup.html)**(注册页,现文案为 "Everything that's live, free during beta" / "Create free account" / "You're on the beta list!"——P0-6 诚实化后不再宣称「解锁」,门禁上线后再恢复本节的解锁话术)。Business 注册需**填写公司名**(见 §8)。
-
-### 7.3 升级引导的禁忌
-
-- **不要在 Aha 之前弹升级**:用户还没尝到价值就要账号,转化极差。
-- **不要谎称"限时/涨价"**:Beta 免费就说免费,建立信任比制造紧迫更重要。
-- **一次一个诉求**:根据触发信号只讲**当下最相关**的那个卖点,不要罗列全清单轰炸。
-
----
-
-## 8 · Business / 团队引导
-
-Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私有 AI"的用户。其引导与个人版有三点关键差异。
-
-### 8.1 与个人版的差异
-
-| 维度 | 个人(Free/Pro) | Business |
-|------|-----------------|----------|
-| 知识库 | 我的文档 | **公司知识库**:多人共同贡献、集中管理 |
-| 权限 | 无 | **角色/权限**:谁能看、谁能加文档、谁能管模型 |
-| 用户 | 单人 | **多用户**:邀请同事、席位管理 |
-| 注册 | 邮箱即可 | **需填写公司名**(signup.html 的 Business 分支) |
-| 引导重点 | "让它读我的资料" | "让团队共用一个可信、私有的公司大脑" |
-
-### 8.2 Business 首次引导流程(在个人 FTUE 基础上增补)
-
-1. **注册即建组织**:选择 Business → 填公司名 → 创建组织空间。
-2. **建公司知识库**:引导管理员先拖入 3–5 份**公司级**核心文档(政策、合同模板、产品手册),奠定"共享大脑"基座。
+1. **建共享空间**:给这台自托管实例起个名字(如团队/项目名),作为共享工作区。
+2. **建共享知识库**:先拖入 3–5 份**大家都会用到**的核心文档(政策、模板、手册),奠定"共享大脑"基座。
 3. **设权限角色**:至少区分 `Admin(管模型/权限)` 与 `Member(用 + 贡献文档)`。
-4. **邀请同事**:发邀请链接;被邀请者的 FTUE 跳过"建库",直接进入"提问已有公司知识"。
-5. **团队 Aha**:让第一位被邀请的同事在公司知识库里得到一个带来源回答——这是团队版的激活。
+4. **邀请同伴**:分享访问入口;新成员的 FTUE 跳过"建库",直接进入"提问已有共享知识"。
+5. **团队 Aha**:让第一位加入的同伴在共享知识库里得到一个带来源回答——这是多人场景的激活。
 
-### 8.3 Business 文案示例
+### 7.3 多人文案示例
 
 | 位置 | EN | 中 |
 |------|----|----|
-| 注册公司名 | Your company name (this names your shared AI workspace) | 你的公司名(用于命名你们的共享 AI 空间) |
-| 建库引导 | Add a few company documents everyone should be able to ask about. | 先加几份大家都可能会问到的公司文档。 |
-| 邀请 | Invite your team. They'll be answering from your company knowledge in minutes. | 邀请你的团队。几分钟内他们就能从公司知识里得到答案。 |
+| 空间命名 | Name this shared AI workspace | 给这个共享 AI 空间起个名字 |
+| 建库引导 | Add a few documents everyone should be able to ask about. | 先加几份大家都可能会问到的文档。 |
+| 邀请 | Share access with your team. They'll be answering from your shared knowledge in minutes. | 把访问入口分享给你的团队。几分钟内他们就能从共享知识里得到答案。 |
 | 权限说明 | Admins manage the AI and who can access it. Members ask and add documents. | 管理员负责管理 AI 和访问权限。成员负责提问和添加文档。 |
-| 被邀请者欢迎 | {Company}'s private AI is ready for you. Ask it anything about {Company}'s documents. | {公司}的私有 AI 已为你准备好。尽管问它关于{公司}文档的任何问题。 |
+| 新成员欢迎 | The shared private AI is ready for you. Ask it anything about the shared documents. | 这个共享私有 AI 已为你准备好。尽管问它关于共享文档的任何问题。 |
 
 ---
 
-## 9 · 支持与自助
+## 8 · 支持与自助
 
 让用户在卡住时**不用等人工**就能自救,是引导体验的一部分。
 
-### 9.1 人话 FAQ(8–10 条最可能的问题)
+### 8.1 人话 FAQ(8–10 条最可能的问题)
 
 | # | 问题(EN / 中) | 答案要点 |
 |---|----------------|----------|
 | 1 | **Do I need to know anything technical?** / 我需要懂技术吗? | 不需要。只要回答几个大白话问题,拖入你的文件即可。全程无需命令行。 |
 | 2 | **Is my data private? Does anything get uploaded?** / 我的数据私密吗?会上传吗? | 本地方案下,数据**永不离开你的设备**;云端方案会明确告知哪些数据在云端处理。默认私有优先。 |
-| 3 | **Is it really free?** / 真的免费吗? | Free 版免注册永久可用;Pro/Business 在 **Beta 期间也全部免费**,只需注册解锁。 |
+| 3 | **Is it really free?** / 真的免费吗? | 是。本项目免费开源,没有付费档位、没有订阅;全部功能对所有人开放,注册与否都能用。 |
 | 4 | **The install failed. What do I do?** / 安装失败了怎么办? | 每个失败都有人话原因和一键重试;常见为空间/驱动/端口/网络问题(见安装屏提示),或点"复制诊断信息"求助。 |
 | 5 | **What files can it read?** / 它能读哪些文件? | PDF、Word、Excel、纯文本等常见文档,直接拖入即可。 |
 | 6 | **Why doesn't the answer show a source?** / 为什么答案没有来源? | 若问题超出你已加的文档范围,它可能没法引用;多拖相关文档,或换个更贴近资料的问法。 |
 | 7 | **How does it get smarter?** / 它怎么变聪明? | 你每纠正一次回答(Teach My AI),它就积累一条数据;够了会自动为你升级(微调)。 |
 | 8 | **Can I use it without any documents?** / 没有文档也能用吗? | 可以,试试演示模式;但它的独特价值在于读**你自己的**资料。 |
-| 9 | **Can my team use one shared AI?** / 团队能共用一个吗? | 可以,用 Business:公司知识库 + 权限 + 多用户,注册时填公司名。 |
+| 9 | **Can my team use one shared AI?** / 团队能共用一个吗? | 可以,自托管一台实例即可多人共用:共享知识库 + 简单权限 + 多用户(见 §7)。 |
 | 10 | **My computer isn't powerful enough — now what?** / 我电脑不够强怎么办? | 我们会自动建议云端方案或更小的本地方案,你仍能得到带来源的答案。 |
 
-### 9.2 "复制诊断信息"按钮
+### 8.2 "复制诊断信息"按钮
 
 - 位置:安装失败屏、Dashboard 运行状态(💚)、设置页。
 - 点击后复制一段**结构化但脱敏**的诊断文本(系统、方案、失败步骤、错误码、匿名 ID),用户可粘贴到社区/工单。
 - 文案:`Copy diagnostics / 复制诊断信息`;复制后提示 `Copied — paste it when you ask for help. / 已复制——求助时粘贴它即可。`
 
-### 9.3 社区与人工
+### 8.3 社区与协作
 
 | 渠道 | 用途 | 文案 |
 |------|------|------|
 | 社区论坛 | 同伴互助、常见问题 | Ask the community — chances are someone solved it. / 问问社区——多半有人遇到过。 |
 | 帮助中心 | 图文教程、安装指南 | Step-by-step guides for every setup. / 每种方案都有分步骤图文指南。 |
-| 邮件/工单(Pro/Business) | 一对一支持 | Priority support for Pro & Business. / Pro 与 Business 享优先支持。 |
+| GitHub Issues | 报 bug、提需求、贡献代码 | Open an issue or PR — this is open source. / 提 issue 或 PR——这是开源项目。 |
 
 ---
 
-## 10 · 引导相关的埋点(与 docs/13 对齐)
+## 9 · 引导相关的埋点(与 docs/13 对齐)
 
-所有事件**匿名**采集(Free 亦然,仅匿名使用数据),口径与 [docs/13 §6 埋点方案](13-validation-testing-and-experiments.md) 统一。以下为**激活漏斗每一步**应上报的事件。
+所有事件**匿名**采集(仅匿名使用数据),口径与 [docs/13 §6 埋点方案](13-validation-testing-and-experiments.md) 统一。以下为**激活漏斗每一步**应上报的事件。
 
-### 10.1 激活漏斗事件表
+### 9.1 激活漏斗事件表
 
 | 事件名 | 触发时机 | 关键属性 | 对应漏斗步 |
 |--------|----------|----------|------------|
@@ -513,13 +449,11 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 | **`activation`** | **拖 ≥1 文档 + 带来源回答(30min 内)** | time_to_activate | **L3(核心)** |
 | `correction_submitted` | 提交一次 Teach My AI 修正 | corrections_total | §5/§6 |
 | `teach_progress` | 达到微调阈值进度节点 | x_of_y | §6 |
-| `api_enabled` | 首次开启 API | — | §5/§7 |
-| `upgrade_prompt_view` | 展示升级提示 | trigger(docN/finetune/api/multidevice) | §7 |
-| `upgrade_prompt_click` | 点击升级 CTA | trigger | §7 |
-| `signup_complete` | 注册完成 | plan(pro/business), has_company(bool) | §7/§8 |
+| `api_enabled` | 首次开启 API | — | §5 |
+| `signup_complete` | (可选)创建账号完成 | is_shared_workspace(bool) | §4.1/§7 |
 | `weekly_value_view` | 查看/打开周报 | channel(inapp/email) | §6 |
 
-### 10.2 核心派生指标
+### 9.2 核心派生指标
 
 | 指标 | 定义 | 目标方向 |
 |------|------|----------|
@@ -527,7 +461,6 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 | Time-to-Activate | `activation.time_to_activate` 中位数 | ↓(目标 < 30min) |
 | Install Success Rate | `install_success` / `install_start` | ↑ |
 | 最大漏点 | 相邻两步转化率最低者 | 每周复盘 |
-| Upgrade Intent | `upgrade_prompt_click` / `upgrade_prompt_view` | ↑ |
 | North Star | 每周产生 ≥1 次 `answer_with_source`(有用)的活跃用户数 | ↑ |
 
 > 埋点纪律:**不采集文档内容、不采集问题原文**,只采集类别/计数/时长等匿名信号;与 docs/13 的隐私口径完全一致。
@@ -537,14 +470,14 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 ## 附:引导设计的 10 条黄金准则
 
 1. **Aha 优先于一切**:每个决策都问"这会让用户更快看到带来源的第一个答案吗?"
-2. **注册墙永远在 Aha 之后**,不在之前。
+2. **注册永远是可选项**,从不作为解锁功能的门禁。
 3. **零技术名词**:质量/速度/占用,而非 VRAM/量化/Embedding。
 4. **每一步有默认最优解**,用户可以全程只点"下一步"。
 5. **失败可恢复、说人话、能一键重试**。
 6. **没文档也能体验**(演示模式 + chat.html 演示)。
 7. **空状态必须给下一步动作**,不留空白。
 8. **留存靠"报告用户的价值产出",不靠催促**。
-9. **升级按意图信号触发**,一次只讲一个最相关卖点;Beta 免费如实说。
+9. **免费开源如实说**,没有付费档位、没有解锁话术,不制造付费紧迫感。
 10. **一切埋点匿名**,内容永不采集。
 
 ---
@@ -554,10 +487,9 @@ Business(从 $299/mo,Beta 免费)面向"想让整个团队/公司共用一个私
 - [docs/02 · 产品概览](02-product-overview.md) —— 目标用户与完整用户旅程
 - [docs/03 · 核心模块](03-core-modules.md) —— Advisor / Auto-Deploy / Control Center / RAG / Teach My AI / Registry
 - [docs/13 · 测试、实验与假设验证](13-validation-testing-and-experiments.md) —— §6 埋点方案:事件字典与匿名口径(本文件的埋点以其为准)
-- [docs/05 · 商业模式](05-business-model.md) —— Free / Pro / Business 定价与 Beta 免费策略
 - 网站页面:
   - [frontend/index.html](../frontend/index.html) —— 营销首页 / 落地
   - [frontend/build.html](../frontend/build.html) —— 引导向导(需求→设备→推荐→本地/云端→生成)
   - [frontend/chat.html](../frontend/chat.html) —— 带来源引用的对话演示(可用作没文档用户的体验入口;检测到本机 llm-lab 时接入真实本地模型,否则回退预置演示,见 [docs/16](16-local-ai-web-integration.md))
   - [frontend/dashboard.html](../frontend/dashboard.html) —— 控制中心(空状态 + 新手清单 + 留存进度落点)
-  - [frontend/signup.html](../frontend/signup.html) —— Pro/Business 注册(升级 CTA 落点;Business 填公司名)
+  - [frontend/signup.html](../frontend/signup.html) —— 可选注册(跨设备同步等便利;非功能门禁)

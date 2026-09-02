@@ -1,7 +1,7 @@
 # Build My AI — same-origin production reverse proxy (Docker).
 # One domain serves the static frontend AND proxies /v1/* to the API container;
-# Caddy terminates TLS with automatic HTTPS. This is the docs/20 §3.1 / docs/22
-# P0-13 same-origin topology — served this way, the frontend's API constant is
+# Caddy terminates TLS with automatic HTTPS. This is the docs/20 §3.1 same-origin
+# topology — served this way, the frontend's API constant is
 # '' and needs zero configuration.
 #
 # Set BMA_DOMAIN to your real domain (its A/AAAA record must point at this host
@@ -31,8 +31,6 @@
 	}
 
 	# --- API: TLS terminates here, forward to the API container ---
-	# The Stripe webhook (POST /v1/billing/webhook) is verified over the raw body
-	# by the app itself, so no special proxy handling is needed.
 	handle /v1/* {
 		reverse_proxy api:8940
 	}

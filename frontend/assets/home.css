@@ -125,23 +125,7 @@
 .stcard p{font-size:13.5px;color:var(--ink-2);line-height:1.6}
 .stcard .tag{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--ink-2)}
 
-/* pricing */
-.price3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
-.tier{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px}
-.section.alt .tier{background:var(--paper)}
-.tier.pop{border-color:var(--accent);box-shadow:var(--shadow)}
-.tier .plabel{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}
-.tier h3{font-size:20px;font-weight:600;margin:6px 0 2px}
-.tier .p{font-size:28px;font-weight:600;margin:10px 0 4px}
-.tier .p small{font-size:13px;color:var(--ink-2);font-weight:400}
-.tier ul{list-style:none;margin:16px 0 20px}
-.tier li{font-size:13.5px;padding:6px 0 6px 22px;position:relative;color:var(--ink-2)}
-.tier li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-weight:700}
-.tier .p .was{text-decoration:line-through;color:var(--ink-2);font-weight:400;font-size:19px;margin-right:8px}
-.tier .p .now{color:var(--accent)}
-.signup-note{font-size:12px;color:var(--ink-2);margin-top:10px;display:flex;gap:6px;align-items:flex-start}
-.signup-note::before{content:"→";color:var(--accent)}
-/* beta banner */
+/* free & open banner */
 .beta-banner{background:var(--accent-soft);border:1px solid #C4E0DA;border-radius:14px;padding:16px 20px;margin:0 auto 28px;max-width:760px;text-align:center;font-size:14px;color:var(--accent-2)}
 .beta-banner b{color:var(--ink)}
 .beta-banner .pill{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--accent);color:#fff;padding:3px 10px;border-radius:999px;margin-right:8px;letter-spacing:.04em;vertical-align:middle}
@@ -158,7 +142,7 @@
 .ctaband .btn.ghost:hover{background:rgba(255,255,255,.12)}
 
 @media (max-width:820px){
-  .statband .row,.steps4,.grid3,.tgrid,.dep3,.who4,.st3,.price3{grid-template-columns:1fr}
+  .statband .row,.steps4,.grid3,.tgrid,.dep3,.who4,.st3{grid-template-columns:1fr}
   .statband .row{grid-template-columns:1fr 1fr}
 }
 @media (max-width:720px){ .shot-side{display:none} .shot-body{height:auto} }

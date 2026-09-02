@@ -1,27 +1,29 @@
-# 15 · Marketing Playbook —《Build My AI》多渠道广告与可直接使用的脚本库
+# 15 · Marketing Playbook —《Build My AI》社区建设与可直接使用的脚本库
 
-> 本文是《Build My AI》最重要的落地文档。它不讲营销理论,而是给出**可直接复制发布的英文成稿**(广告文案、视频脚本、社区帖、邮件、搜索广告),每段英文成稿旁配中文讲解与使用说明。
+> 本文是《Build My AI》最重要的社区落地文档。它不讲营销理论,而是给出**可直接复制发布的英文成稿**(内容、视频脚本、社区帖、邮件、社媒),每段英文成稿旁配中文讲解与使用说明。
 >
-> 面向市场:**美国(US market)**。所有对外文案一律使用美式英语。
+> 定位:这是一个**免费、开源、非商业**的项目。目标不是"获客/转化/营收",而是**让爱好者与开发者发现它、亲手跑起来、自托管、并参与贡献**——建立一个健康的开源社区,并赢得信任。
+>
+> 面向人群:**美国(US market)的 AI 爱好者、隐私党、开发者与自托管人群**。所有对外文案一律使用美式英语。
 >
 > 使用约定:
 > - 🇺🇸 **英文成稿区**:直接复制发布,只需替换 `[链接]`、`[日期]` 等占位符。
 > - 🇨🇳 **中文说明区**:告诉你怎么用、为什么这么写、注意什么。
-> - 所有数字(CAC、转化率、预算)均为**假设值**,标注 `(假设)`,上线后用真实数据替换。
+> - 所有数字(点击率、采纳漏斗、社区指标)均为**假设值**,标注 `(假设)`,上线后用真实数据替换。
 >
-> 交叉引用:商业计划与 GTM 见 [`docs/12-business-plan.md`](./12-business-plan.md)、定价与套餐见 [`docs/05-business-model.md`](./05-business-model.md);落地页与演示见 [`frontend/`](../frontend/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`)。
+> 交叉引用:AI 架构与模型路由见 [`docs/11-ai-architecture-and-model-routing.md`](./11-ai-architecture-and-model-routing.md);落地页与演示见 [`frontend/`](../frontend/)(`index.html` / `build.html` / `chat.html` / `dashboard.html` / `signup.html`);本地 AI 集成见 [`docs/16-local-ai-web-integration.md`](./16-local-ai-web-integration.md)。
 
 ---
 
 ## 目录
 
 1. [定位与信息层级](#1-定位与信息层级)
-2. [目标受众与渠道选择](#2-目标受众与渠道选择)
+2. [目标社区与渠道选择](#2-目标社区与渠道选择)
 3. [内容与教程计划(Tutorial-Led Growth)](#3-内容与教程计划tutorial-led-growth)
-4. [广告创意 + 完整脚本(核心章节)](#4-广告创意--完整脚本核心章节)
+4. [内容创意 + 完整脚本(核心章节)](#4-内容创意--完整脚本核心章节)
 5. [SEO / 关键词地图](#5-seo--关键词地图)
 6. [发布日历(30 / 60 / 90 天)](#6-发布日历30--60--90-天)
-7. [衡量与预算](#7-衡量与预算)
+7. [衡量与社区健康](#7-衡量与社区健康)
 8. [品牌与合规注意](#8-品牌与合规注意)
 
 ---
@@ -32,24 +34,24 @@
 
 🇺🇸 **英文成稿**
 
-> **Build My AI turns the complex, open-source AI world into a personal AI that anyone can own in one click — running privately on your own computer, so your files never leave your machine.**
+> **Build My AI turns the complex, open-source AI world into a personal AI that anyone can own in one click — running privately on your own computer, so your files never leave your machine. Free and open-source.**
 
 🇨🇳 **中文说明**
-这是所有文案的"母版"。任何标题、广告、帖子都是这句话的裁剪版。三个不可丢的支点:**complex → simple(一键)**、**private / on your own computer(隐私本地)**、**anyone can own(非技术用户)**。写任何新文案前,先问:它有没有踩中这三点中的至少一个?
+这是所有文案的"母版"。任何标题、帖子、视频都是这句话的裁剪版。三个不可丢的支点:**complex → simple(一键)**、**private / on your own computer(隐私本地)**、**anyone can own(可自托管、免费开源)**。写任何新文案前,先问:它有没有踩中这三点中的至少一个?
 
 ### 1.2 三条核心 Message
 
 | # | Core Message(英文) | 中文含义 | 主要打给谁 |
 |---|---------------------|---------|-----------|
 | M1 | **Your data never leaves your computer.** | 本地优先 = 隐私。数据不上云、不喂给大厂。 | 隐私党、律师、医生、财务 |
-| M2 | **No models, GPUs, RAG, or Docker to learn — just describe what you need.** | 零术语。你不需要懂 AI,只需要说人话。 | 非技术 SMB、专业人士 |
-| M3 | **Own your first private AI in about 20 minutes — free to start.** | 20 分钟拥有、免费开始、低门槛。 | 所有人(降低尝试成本) |
+| M2 | **No models, GPUs, RAG, or Docker to learn — just describe what you need.** | 零术语。你不需要懂 AI,只需要说人话。 | 非技术 SMB、专业人士、初上手的爱好者 |
+| M3 | **Own your first private AI in about 20 minutes — free and open-source.** | 20 分钟拥有、免费开源、可自托管、低门槛。 | 所有人(降低尝试成本) |
 
-🇨🇳 **说明**:每条广告最多主打**一条** message。混着讲会稀释。短视频 3 版就是分别对应 M1 / M2 / M3。
+🇨🇳 **说明**:每条内容最多主打**一条** message。混着讲会稀释。短视频 3 版就是分别对应 M1 / M2 / M3。
 
 ### 1.3 可直接使用的 Taglines / Headlines(英文,5+ 条)
 
-🇺🇸 **英文成稿(可直接用于网站 hero、广告标题、社媒 bio)**
+🇺🇸 **英文成稿(可直接用于网站 hero、帖子标题、社媒 bio)**
 
 1. **Your own private AI. In one click.**
 2. **The AI that reads your files — and keeps them yours.**
@@ -61,8 +63,8 @@
 
 🇨🇳 **说明**
 - 第 1、6 条最适合做**主 hero 标题**(index.html)。
-- 第 3 条适合搜索广告(包含 "ChatGPT" 类比,但注意合规:见 §8,不要暗示官方关联)。
-- 第 7 条("Stop renting AI. Own it.")情绪最强,适合短视频结尾和 X 推文,但**避免在同一素材里对订阅服务点名攻击**。
+- 第 3 条适合内容标题(包含 "ChatGPT" 类比,但注意合规:见 §8,不要暗示官方关联)。
+- 第 7 条("Stop renting AI. Own it.")情绪最强,适合短视频结尾和 X 推文——强调"自己拥有/自托管"这件事,**避免在同一素材里对订阅服务点名攻击**。
 
 ### 1.4 分受众价值主张(Value Props by Audience)
 
@@ -71,43 +73,44 @@
 | **SMB / 小企业主** | 想用 AI 但怕数据泄露、请不起工程师、不想学工具 | *"Give your business a private AI assistant that reads your contracts, SOPs, and spreadsheets — set up in an afternoon, no IT team needed."* |
 | **专业人士**(律师/会计/顾问) | 客户资料高度敏感,合规上传不了云端 AI | *"Ask questions across your case files and get answers with citations — without a single document leaving your office."* |
 | **研究者 / 学者** | 大量 PDF 文献,需要可溯源、可复现 | *"Chat with your entire research library and see exactly which paper each answer came from."* |
-| **隐私党 / 技术爱好者** | 不信任云端 AI,想本地跑开源模型但嫌配置麻烦 | *"Local, open-source LLMs — without the Docker, CUDA, and config hell. One installer, runs offline."* |
+| **隐私党 / 技术爱好者 / 自托管人群** | 不信任云端 AI,想本地跑开源模型但嫌配置麻烦 | *"Local, open-source LLMs — without the Docker, CUDA, and config hell. One installer, runs offline, and the project itself is open-source."* |
 
 🇨🇳 **说明**:落地页可以做**受众分流入口**(4 个卡片),点进去分别对应上面 4 句 value prop 的着陆页变体。UTM 里用 `?aud=smb / pro / research / privacy` 区分。
 
 ---
 
-## 2. 目标受众与渠道选择
+## 2. 目标社区与渠道选择
 
-### 2.1 为什么是这批受众 × 这些渠道
+### 2.1 为什么是这批人 × 这些渠道
 
-🇨🇳 我们的核心用户画像是:**拥有一台 Windows + NVIDIA PC、对隐私敏感、但不是程序员**的美国人。这决定了渠道选择的三条逻辑:
+🇨🇳 我们的核心用户画像是:**拥有一台 Windows + NVIDIA PC、对隐私敏感、愿意自己动手**的美国人——既包括不写代码的专业人士,也包括喜欢折腾本地模型的爱好者与开发者。这决定了渠道选择的三条逻辑:
 
-1. **他们已经有硬件** → 说明是游戏玩家、创作者、专业人士或小企业主,活跃在 YouTube、Reddit、X。
+1. **他们已经有硬件** → 说明是游戏玩家、创作者、专业人士或小企业主,活跃在 YouTube、Reddit、X、GitHub。
 2. **隐私敏感** → 对"本地/不上云"叙事天然共鸣,Reddit 的 r/privacy、r/LocalLLaMA、r/selfhosted 是高浓度人群。
-3. **非技术** → 需要**教程带动**(看着别人做一遍就敢自己做),所以 YouTube 长视频 + 博客教程是主引擎,而非纯品牌广告。
+3. **愿意自己跑** → 既需要**教程带动**(看着别人做一遍就敢自己做),也需要**开源可审计**(开发者会去看仓库、提 issue、贡献 PR),所以 YouTube 长视频 + 博客教程 + 一个可读可跑的 GitHub 仓库是主引擎,而非品牌广告。
 
 ### 2.2 渠道优先级表
 
 | 优先级 | 渠道 | 角色 | 为什么适合 | 前期投入 |
 |-------|------|------|-----------|---------|
-| P0 | **YouTube(长视频教程)** | 主转化引擎 | 非技术用户靠"看别人做一遍"建立信心;SEO 长尾 | 高(制作) |
-| P0 | **Reddit**(r/LocalLLaMA, r/privacy, r/selfhosted, r/smallbusiness) | 冷启动 + 信任 | 高浓度目标人群;真诚 Show 帖转化质量高 | 低(时间) |
+| P0 | **GitHub 仓库** | 社区主场 | 开源项目的家:README、Releases、Issues、Discussions;star→try→self-host→contribute 全在这里发生 | 中(维护) |
+| P0 | **YouTube(长视频教程)** | 主上手引擎 | 非技术用户靠"看别人做一遍"建立信心;SEO 长尾 | 高(制作) |
+| P0 | **Reddit**(r/LocalLLaMA, r/privacy, r/selfhosted, r/smallbusiness) | 冷启动 + 信任 | 高浓度目标人群;真诚 Show 帖传播质量高 | 低(时间) |
 | P0 | **SEO 博客教程** | 长期自然流量 | "how to run local LLM"类关键词持续有量 | 中 |
 | P1 | **Product Hunt / Hacker News** | 发布日爆发 | 一次性获取早期用户 + 反向链接 + 信誉 | 中(集中) |
 | P1 | **短视频**(TikTok / Reels / Shorts) | 顶部拉新 | 隐私恐惧 hook 传播性强 | 中 |
-| P1 | **X / Twitter** | 社区 + 开发者关系 | build-in-public,聚集 AI/隐私圈 | 低 |
-| P2 | **Google Search Ads** | 承接高意图搜索 | "chat with PDF privately"等意图明确 | 中(付费) |
-| P2 | **Email 序列** | 激活与升级 | Free→Pro 转化主渠道 | 低 |
-| P2 | **LinkedIn** | 触达 SMB / 专业人士 | B2B 语境,Business 计划线索 | 低 |
+| P1 | **X / Twitter** | 社区 + 开发者关系 | build-in-public,聚集 AI/隐私/开源圈 | 低 |
+| P2 | **Discord / 社区讨论** | 留存与贡献 | 上手答疑、收集反馈、孵化贡献者 | 低(时间) |
+| P2 | **Newsletter / Email** | 激活与上手 | 帮新用户跑通首个"能用的 AI",并回流社区 | 低 |
+| P2 | **LinkedIn** | 触达 SMB / 专业人士 | 触达对隐私/自托管感兴趣的专业人士与团队 | 低 |
 
-🇨🇳 **说明**:Beta 期先把 P0 做扎实(免费流量 + 信任),Product Hunt/HN 做发布日(P1),付费(P2 Google Ads)等定位验证、落地页转化率跑通后再放量,避免烧钱买不转化的流量。
+🇨🇳 **说明**:全程以**有机流量 + 信任**为主。先把 P0(GitHub 仓库 + 免费流量 + 社区)做扎实,Product Hunt/HN 做发布日(P1)。这是一个非商业开源项目,不投放付费广告——增长靠内容、口碑、可审计的代码和真诚的社区互动。
 
 ---
 
 ## 3. 内容与教程计划(Tutorial-Led Growth)
 
-🇨🇳 核心策略:**教程即广告**。每篇教程独立解决一个真实问题,自然带出产品。以下 10 个选题按"意图 + 关键词"排序,可直接进内容排期。
+🇨🇳 核心策略:**教程即传播**。每篇教程独立解决一个真实问题,自然带出项目。以下 10 个选题按"意图 + 关键词"排序,可直接进内容排期。
 
 | # | 教程标题(英文成稿) | 目标关键词 | 格式 | 🇺🇸 Hook(一句话) |
 |---|---------------------|-----------|------|-------------------|
@@ -117,19 +120,19 @@
 | 4 | **ChatGPT vs. Your Own Private AI: What's the Real Difference?** | private ai vs chatgpt | Blog + YouTube | *"One rents you intelligence. The other you own. Here's the honest comparison."* |
 | 5 | **How Lawyers Can Use AI Without Breaking Client Confidentiality** | ai for lawyers privacy | Blog + LinkedIn | *"The reason your firm banned ChatGPT — and the setup that solves it."* |
 | 6 | **Turn 100 Research Papers Into a Searchable AI (With Citations)** | ai literature review tool | Blog + YouTube | *"Ask a question, get an answer, and see exactly which paper it came from."* |
-| 7 | **The Cost of AI Subscriptions vs. Running Your Own (2026 Math)** | ai subscription cost | Blog + Short | *"$20/mo × 5 tools × forever. Or a one-time free setup. Let's do the math."* |
+| 7 | **Stop Renting AI: Run Your Own on the PC You Already Own** | run your own local ai | Blog + Short | *"Cloud AI subscriptions add up. Here's how to self-host a free, open-source alternative that works offline."* |
 | 8 | **Which Open-Source AI Model Should You Actually Run? (Beginner's Guide)** | best open source llm | Blog | *"Llama, Mistral, Qwen… you don't need to choose. Here's how the choice gets made for you."* |
-| 9 | **Give Your Small Business a Private AI Assistant This Weekend** | ai assistant small business | Blog + YouTube | *"No IT team. No monthly per-seat fee. One afternoon."* |
+| 9 | **Give Your Small Business a Private AI Assistant This Weekend** | ai assistant small business | Blog + YouTube | *"No IT team. No cloud contract. One afternoon."* |
 | 10 | **Teach Your AI: How to Make a Local Assistant Smarter Over Time** | improve local ai answers | Blog + Short | *"Your AI got something wrong? Correct it once — it remembers."* |
 
 🇨🇳 **说明**
 - 选题 1、2、9 是**主力**(覆盖 SMB + 非技术 + Windows/NVIDIA,直接对应 MVP)。
-- 每篇博客结尾统一 CTA:*"Ready to build yours? Start free — no signup needed → [build.html 链接]"*。
+- 每篇博客结尾统一 CTA:*"Ready to build yours? It's free and open-source — no signup needed → [build.html 链接]. Star or fork it on GitHub → [repo 链接]."*
 - YouTube 视频的完整脚本见 §4.a(以选题 1/2 合并为拍摄脚本)。
 
 ---
 
-## 4. 广告创意 + 完整脚本(核心章节)
+## 4. 内容创意 + 完整脚本(核心章节)
 
 > 🇨🇳 以下全部为**可直接复制发布的英文成稿**。占位符仅有 `[URL]`、`[date]`、`[your name]` 等。语气要求:真实、可信、像一个真的做出东西的人在分享,而不是营销号。避免 AI slop 词汇(如 "revolutionize"、"game-changer"、"seamless"、"unlock the power of")。
 
@@ -141,7 +144,7 @@
 
 **缩略图文字建议:** `PRIVATE AI` + `NO CODE` + 一个红叉划掉的 cloud 图标。
 
-🇨🇳 **说明**:这是主转化视频。结构 = 痛点(30s)→ 承诺 →实操录屏(主体)→ 结果验证 → CTA。下面给**口播全文 + 画面/录屏提示**。口播可直接照读。
+🇨🇳 **说明**:这是主上手视频。结构 = 痛点(30s)→ 承诺 →实操录屏(主体)→ 结果验证 → CTA。下面给**口播全文 + 画面/录屏提示**。口播可直接照读。
 
 ---
 
@@ -159,7 +162,7 @@
 **[0:30–1:15] 承诺与前提(镜头:屏幕 + 画中画)**
 
 🇺🇸 Voiceover:
-> "Here's the honest setup. This runs best on a Windows PC with an NVIDIA graphics card — the kind a lot of us already have for gaming or work. Everything I do here is free to start. And the whole point is: your data never leaves your computer. Let me show you the tool I'm using — it's called Build My AI. Its job is to take the whole messy world of open-source AI and turn it into something you can just… click. Let's go."
+> "Here's the honest setup. This runs best on a Windows PC with an NVIDIA graphics card — the kind a lot of us already have for gaming or work. Everything I do here is free and open-source. And the whole point is: your data never leaves your computer. Let me show you the tool I'm using — it's called Build My AI. Its job is to take the whole messy world of open-source AI and turn it into something you can just… click. Let's go."
 
 📺 画面:展示 index.html 首页;鼠标悬停在 "Start free" 按钮上。
 
@@ -219,12 +222,12 @@
 **[10:30–11:00] CTA**
 
 🇺🇸 Voiceover:
-> "If you want to build your own, it's free to start — no signup, nothing to lose. I'll put the link in the description. If this was useful, subscribe, because I'm going to do more of these — building private AI for specific jobs like legal, research, and small business. Thanks for watching."
+> "If you want to build your own, it's free and open-source — no signup, nothing to lose. I'll put the link in the description, along with the GitHub repo if you want to look under the hood or contribute. If this was useful, subscribe, because I'm going to do more of these — building private AI for specific jobs like legal, research, and small business. Thanks for watching."
 
-📺 画面:build.html 链接卡片 + 订阅按钮动画。
+📺 画面:build.html 链接卡片 + GitHub 链接 + 订阅按钮动画。
 
 **视频描述(英文成稿,可直接粘贴):**
-> In this video I build a private AI on a normal Windows PC that reads my own files and answers with citations — no coding, no cloud, and it works offline. Tool used: Build My AI (free to start, no signup): [URL]
+> In this video I build a private AI on a normal Windows PC that reads my own files and answers with citations — no coding, no cloud, and it works offline. Tool used: Build My AI (free and open-source, no signup): [URL]. Source on GitHub: [repo URL]
 >
 > Chapters:
 > 0:00 The problem with uploading your files to AI
@@ -252,13 +255,13 @@
 | 0–3s | "Every time you paste something into ChatGPT, ask yourself: where does it go?" | 手打字粘贴合同到聊天框,画面变红 | "WHERE DOES IT GO?" |
 | 3–10s | "Your contracts. Your medical records. Your clients' data. It leaves your computer — and you don't get it back." | 文件"飞"进 cloud 图标 | "IT LEAVES YOUR COMPUTER" |
 | 10–25s | "So I built mine differently. This AI runs on my own PC. I drag in my files, ask questions, get answers with sources — and I can literally turn off my Wi-Fi." | 录屏:本地问答 + 断网仍工作 | "OFFLINE. STILL WORKS." |
-| 25–35s | "Your data never leaves your computer. No coding. Free to start." | 展示 build 界面 | "PRIVATE AI · NO CODE" |
+| 25–35s | "Your data never leaves your computer. No coding. Free and open-source." | 展示 build 界面 | "PRIVATE AI · NO CODE" |
 | 35–40s | "Link in bio. Build your own." | CTA 卡片 | "→ Build My AI" |
 
 🇺🇸 **Caption(英文成稿):**
-> I stopped uploading my private files to AI. Built my own instead — runs on my PC, works offline, answers with citations. No coding. Free to start. 🔒
+> I stopped uploading my private files to AI. Built my own instead — runs on my PC, works offline, answers with citations. No coding. Free and open-source. 🔒
 
-🇺🇸 **Hashtags:** `#privacy #localai #privateai #ai #chatgptalternative #datasecurity #nocode #techtok`
+🇺🇸 **Hashtags:** `#privacy #localai #privateai #ai #chatgptalternative #datasecurity #nocode #opensource #techtok`
 
 ---
 
@@ -270,44 +273,44 @@
 | 3–12s | "No Docker. No Python. No command line. I just typed what I wanted — in English." | 录屏:向导输入需求 | "I JUST TYPED WHAT I WANTED" |
 | 12–22s | "It checked my computer, picked the right AI for me, and gave me one installer. I clicked it." | 录屏:PC 检测 + 一键安装 | "ONE CLICK" |
 | 22–35s | "Now it reads my files and answers questions — with sources. On my own computer." | 录屏:拖文件 + 带引用问答 | "READS MY FILES" |
-| 35–42s | "If I can do it, you can. Free to start — link in bio." | CTA | "→ Build My AI" |
+| 35–42s | "If I can do it, you can. Free and open-source — link in bio." | CTA | "→ Build My AI" |
 
 🇺🇸 **Caption:**
-> POV: you're not technical but you just built a private AI that reads your documents. No code, no cloud, ~20 minutes. Free to start.
+> POV: you're not technical but you just built a private AI that reads your documents. No code, no cloud, ~20 minutes. Free and open-source.
 
-🇺🇸 **Hashtags:** `#nocode #ai #privateai #localllm #productivity #smallbusiness #techtok #learnontiktok`
+🇺🇸 **Hashtags:** `#nocode #ai #privateai #localllm #productivity #smallbusiness #opensource #techtok #learnontiktok`
 
 ---
 
-#### 短视频 #3 — Hook:"省钱,不用一堆 AI 订阅"(对应 M3 + 成本)
+#### 短视频 #3 — Hook:"别再租 AI,自己跑一个"(对应 M3 + 自托管)
 
 | 时间 | 🇺🇸 口播/字幕 | 📺 画面提示 | On-screen text |
 |------|--------------|------------|----------------|
 | 0–3s | "Add up what you pay for AI every month. I'll wait." | 屏幕列出多个订阅账单 | "$20 + $20 + $20…" |
 | 3–12s | "Most of us are renting AI we don't even own. Every month. Forever." | 日历翻页 + 扣款动画 | "RENTING. FOREVER." |
 | 12–25s | "So I set up my own — it runs on the PC I already have. Reads my files, answers with sources, works offline." | 录屏:本地 AI 工作 | "RUNS ON MY OWN PC" |
-| 25–35s | "It's free to start. Not a trial — actually free. You only pay if you want the Pro extras." | 展示 pricing(Free 高亮) | "FREE TO START" |
+| 25–35s | "It's free and open-source. Not a trial, not a subscription — you run it yourself." | 展示 build 界面 + GitHub 仓库 | "FREE & OPEN-SOURCE" |
 | 35–42s | "Stop renting AI. Own it. Link in bio." | CTA | "→ Build My AI" |
 
 🇺🇸 **Caption:**
-> The math on AI subscriptions isn't mathing. I built my own private AI on the PC I already own — free to start, works offline, reads my files. 💸
+> The math on AI subscriptions isn't mathing. I self-hosted my own private AI on the PC I already own — free, open-source, works offline, reads my files. 💸
 
-🇺🇸 **Hashtags:** `#savemoney #ai #subscriptions #privateai #localai #frugal #techtok #productivity`
+🇺🇸 **Hashtags:** `#ai #subscriptions #privateai #localai #selfhosted #opensource #techtok #productivity`
 
-🇨🇳 **合规提示**:短视频 #3 强调"免费"时,措辞已用 *"free to start / actually free"* 且点明 Pro 才付费,符合真实(Beta 期全免费)。**不要**说"forever free / never pay"。
+🇨🇳 **合规提示**:短视频 #3 的对比点是"自己拥有/自托管"而非"更便宜的付费方案"。措辞用 *"free and open-source / you run it yourself"*,如实(项目本身免费开源)。对比云端订阅时只讲**事实与场景**(自托管、离线、拥有),不贬低、不虚假对比(见 §8.3)。
 
 ---
 
 ### 4.c Reddit 帖子 ×2
 
-🇨🇳 **通用说明**:Reddit 极度反感硬广。规则:(1) 先给价值/真诚故事,产品自然带出;(2) 标注自己是 maker(社区看重透明);(3) 不要在标题塞产品名做标题党;(4) 发帖前读该 sub 的自我推广规则。
+🇨🇳 **通用说明**:Reddit 极度反感硬广。规则:(1) 先给价值/真诚故事,项目自然带出;(2) 标注自己是 maker(社区看重透明);(3) 不要在标题塞项目名做标题党;(4) 发帖前读该 sub 的自我推广规则。开源项目在 Reddit 有天然优势——把"可审计、可自托管、免费"讲清楚。
 
 ---
 
 #### 帖子 #1 — r/LocalLLaMA(技术向 "Show" 帖)
 
 🇺🇸 **标题:**
-> Show: a one-click local LLM installer for non-technical people (Windows + NVIDIA, RAG over your own docs, fully offline)
+> Show: a one-click local LLM installer for non-technical people (Windows + NVIDIA, RAG over your own docs, fully offline, open-source)
 
 🇺🇸 **正文(英文成稿):**
 > I've spent the last few months watching non-technical friends and family bounce off local LLMs. They *want* privacy and their own docs indexed, but "install Docker, set up CUDA, pick a quant, configure a vector DB" is a wall they never get over. So I built something to remove that wall, and I'd genuinely like this community's scrutiny.
@@ -323,20 +326,20 @@
 > 2. Where does local RAG most often disappoint non-technical users, in your experience?
 > 3. Any licensing gotchas I should be extra careful about when bundling open models for redistribution?
 >
-> It's free to start (no signup). I'll drop the link in a comment to respect the self-promo rules — mods, remove if not okay. Not looking to spam; genuinely want feedback from people who know this stuff cold.
+> It's free and open-source (no signup). I'll drop the repo/link in a comment to respect the self-promo rules — mods, remove if not okay. Not looking to spam; genuinely want feedback and contributors from people who know this stuff cold.
 
-🇨🇳 **说明**:这个 sub 是硬核用户,**技术透明 + 主动示弱 + 提真问题**是通行证。把链接放评论区(遵守规则),正文不塞链接。
+🇨🇳 **说明**:这个 sub 是硬核用户,**技术透明 + 主动示弱 + 提真问题 + 开源可审计**是通行证。把链接(仓库)放评论区(遵守规则),正文不塞链接。
 
 🇺🇸 **评论区回复模板:**
 
 - 被质疑"这不就是套壳 Ollama/LM Studio 吗":
-  > Fair question. Under the hood it does lean on existing open-source inference — I'm not pretending to reinvent that. The difference is who it's for: LM Studio/Ollama still assume you'll pick a model and understand quants. This is for the person who doesn't know those words and never will. The routing ("given *this* GPU, run *this* model at *this* setting") and the one-installer packaging are the actual work. If that's not novel enough to be interesting to you, totally fair.
+  > Fair question. Under the hood it does lean on existing open-source inference — I'm not pretending to reinvent that. The difference is who it's for: LM Studio/Ollama still assume you'll pick a model and understand quants. This is for the person who doesn't know those words and never will. The routing ("given *this* GPU, run *this* model at *this* setting") and the one-installer packaging are the actual work. It's all open-source, so if that's not novel enough to be interesting to you, totally fair — but the code's there to read.
 
 - 有人要技术细节:
-  > Sure — [具体回答:vector store 选型、routing 逻辑、支持的模型]. Anything specific you want me to expand on? Happy to.
+  > Sure — [具体回答:vector store 选型、routing 逻辑、支持的模型]. Anything specific you want me to expand on? Happy to. PRs welcome too.
 
 - 有人抱怨"又一个 Windows-only 工具":
-  > Yep, and I get the frustration. Windows + NVIDIA is just where I could make the experience actually reliable first. Linux and Apple Silicon are on the roadmap — I didn't want to ship a mediocre version everywhere before one solid version somewhere.
+  > Yep, and I get the frustration. Windows + NVIDIA is just where I could make the experience actually reliable first. Linux and Apple Silicon are on the roadmap — I didn't want to ship a mediocre version everywhere before one solid version somewhere. It's open-source, so if this is your itch, contributions are genuinely welcome.
 
 ---
 
@@ -350,7 +353,7 @@
 >
 > The actual fix, it turns out, is to run the AI locally — on your own machine, so nothing leaves it. The catch has always been that doing that yourself is a nightmare of Docker, drivers, and config unless you're technical.
 >
-> I ended up using a tool (full disclosure: I'm involved in building it, so take this with the appropriate salt) that packages the whole thing into one installer for Windows + NVIDIA machines. You drag in your PDFs/Word/Excel, and it answers questions about them with citations, entirely offline — you can pull your network cable and it keeps working. Your files get indexed locally and never get uploaded.
+> I ended up using a tool (full disclosure: I'm involved in building it, so take this with the appropriate salt) that packages the whole thing into one installer for Windows + NVIDIA machines. You drag in your PDFs/Word/Excel, and it answers questions about them with citations, entirely offline — you can pull your network cable and it keeps working. Your files get indexed locally and never get uploaded. It's free and open-source, so the privacy claims are auditable rather than "trust me."
 >
 > Sharing mostly because "just run it locally" is advice this sub gives constantly, and I wanted to point out the setup barrier is finally getting low enough for non-technical folks. Happy to answer questions about the privacy model, what's stored where, and the honest limits (a local model won't match a frontier cloud model on general tasks — but for private docs, the tradeoff is worth it to me).
 >
@@ -358,16 +361,16 @@
 
 🇺🇸 **评论区回复模板:**
 - "开源吗 / 能审计吗":
-  > The orchestration layer isn't fully open yet, but it runs open-source models locally and I'm happy to be specific about what data is stored where (short version: your documents and their index stay on your disk; the only thing that leaves is anonymous usage stats, and that's off if you want). If verifiability matters to you, that's a fair bar and I won't oversell it.
+  > Yes — it's open-source, and it runs open-source models locally. Short version of what's stored where: your documents and their index stay on your disk; the only thing that can leave is anonymous usage stats, and that's opt-in / off if you want. If verifiability matters to you, that's a fair bar and the code is there to check.
 
-🇨🇳 **说明**:r/privacy 对"信任我"的话术免疫,所以正文里**主动 disclose 自己是 maker**、**主动说局限**、**主动交代数据存哪**。这不是弱点,是这个社区唯一能被接受的姿态。
+🇨🇳 **说明**:r/privacy 对"信任我"的话术免疫,所以正文里**主动 disclose 自己是 maker**、**主动说局限**、**主动交代数据存哪**、**强调开源可审计**。这不是弱点,是这个社区唯一能被接受的姿态。
 
 ---
 
 ### 4.d Hacker News — "Show HN"
 
 🇺🇸 **标题(英文成稿):**
-> Show HN: Build My AI – one-click local LLM with RAG for non-technical people
+> Show HN: Build My AI – one-click local LLM with RAG for non-technical people (open-source)
 
 🇺🇸 **正文(英文成稿):**
 > Hi HN. Build My AI turns the messy open-source local-LLM stack into something a non-technical person can set up in one click.
@@ -378,11 +381,11 @@
 >
 > What it's not: it won't beat GPT-class cloud models on general reasoning. The bet is that "private, local, over your own files, zero setup" is worth more than raw benchmark scores to a large group of people who are currently locked out.
 >
-> It's free to start with no signup (anonymous usage data only). Pro is $29/mo, Business from $299/mo; everything's free during the beta.
+> It's a free, non-commercial, open-source project — no signup to start (anonymous, opt-in usage data only). The whole thing is on GitHub if you want to read the code, self-host, or contribute.
 >
-> I'd love feedback on two things specifically: (1) the honesty of the hardware→model routing, and (2) whether the "no jargon at all" approach holds up or hides too much. Link: [URL]
+> I'd love feedback on two things specifically: (1) the honesty of the hardware→model routing, and (2) whether the "no jargon at all" approach holds up or hides too much. Link: [URL] · Repo: [repo URL]
 
-🇨🇳 **说明**:HN 读者是工程师,吃"技术诚实 + 承认局限 + 明确定价"。**不要**用营销词。把定价直接写清是 HN 的加分项(透明)。发帖时间选美西周二/周三上午。
+🇨🇳 **说明**:HN 读者是工程师,吃"技术诚实 + 承认局限 + 开源可读"。**不要**用营销词。把"免费、非商业、开源、代码在 GitHub"直接写清是 HN 的加分项(透明)。发帖时间选美西周二/周三上午。
 
 ---
 
@@ -392,21 +395,21 @@
 > Your own private AI, in one click. No code, no cloud.
 
 🇺🇸 **Description(英文成稿):**
-> Build My AI turns the complex world of open-source AI into a personal AI anyone can own — running privately on your own computer. Describe what you need in plain English, and it detects your PC, recommends the best model for it, and installs it in one click. Drag in your PDFs, Word docs, and spreadsheets, then chat with answers that cite their sources. No models, GPUs, RAG, or Docker to learn. Your data never leaves your machine. Free to start, no signup. (MVP: Windows + NVIDIA.)
+> Build My AI turns the complex world of open-source AI into a personal AI anyone can own — running privately on your own computer. Describe what you need in plain English, and it detects your PC, recommends the best model for it, and installs it in one click. Drag in your PDFs, Word docs, and spreadsheets, then chat with answers that cite their sources. No models, GPUs, RAG, or Docker to learn. Your data never leaves your machine. Free and open-source, no signup. (MVP: Windows + NVIDIA.)
 
 🇺🇸 **Maker Comment(第一人称,英文成稿):**
 > Hey Product Hunt 👋 I'm [your name], and I built Build My AI because I was tired of watching non-technical people who *really* need private AI — lawyers, doctors, small-business owners, researchers — give up the moment they hit "install Docker."
 >
-> The open-source local-AI world is incredible and almost nobody outside of engineers can actually use it. So the whole product is one idea: take that complexity and hide it completely behind one click. You describe what you want, it figures out your hardware, picks the right model, installs it, and lets you drag in your own files and chat with citations — all locally, so your data never leaves your computer.
+> The open-source local-AI world is incredible and almost nobody outside of engineers can actually use it. So the whole project is one idea: take that complexity and hide it completely behind one click. You describe what you want, it figures out your hardware, picks the right model, installs it, and lets you drag in your own files and chat with citations — all locally, so your data never leaves your computer.
 >
 > I want to be honest about the tradeoff: a local model won't out-reason a frontier cloud model on general questions. But for working privately with your own documents, on hardware you already own, I think it's a genuinely great deal — and for a lot of people, privacy isn't negotiable.
 >
-> It's free to start (no signup needed), and everything's free during the beta. I'd love your honest feedback, especially on where the "no jargon" approach helps vs. where it hides too much. I'm here all day. 🙏
+> It's free and open-source (no signup needed), and it's a non-commercial project — I'm doing this because I want it to exist. I'd love your honest feedback, especially on where the "no jargon" approach helps vs. where it hides too much, and I'd love contributors. I'm here all day. 🙏
 
 🇺🇸 **First Comment(可置顶,引导讨论):**
-> One thing I'd genuinely love input on: we made the deliberate choice to *never* show you model names, quant settings, or GPU details — the app just picks for you. Some power users hate that. Do you want an optional "advanced mode," or does surfacing any of that break the whole promise? Curious what this crowd thinks.
+> One thing I'd genuinely love input on: we made the deliberate choice to *never* show you model names, quant settings, or GPU details — the app just picks for you. Some power users hate that. Do you want an optional "advanced mode," or does surfacing any of that break the whole promise? Curious what this crowd thinks. (It's open-source, so if you feel strongly, you can also just… open a PR. 😄)
 
-🇨🇳 **说明**:PH 文化 = maker 亲自在场、真诚、请求反馈。发布日 12:01 AM PT 上线,全天回复每条评论。Tagline 卡 60 字符以内。
+🇨🇳 **说明**:PH 文化 = maker 亲自在场、真诚、请求反馈。发布日 12:01 AM PT 上线,全天回复每条评论。Tagline 卡 60 字符以内。强调"开源/非商业"符合项目定位,也更容易赢得社区好感。
 
 ---
 
@@ -435,12 +438,12 @@
 >
 > Not "the AI said so." → "page 9 of this contract said so." I can click and verify.
 
-🇺🇸 **Tweet 4(成本):**
+🇺🇸 **Tweet 4(自托管):**
 > AI subscriptions are the new cable bill.
 >
 > $20 here, $20 there, every month, forever, for tools you never actually own.
 >
-> I set mine up once on the PC I already had. Free to start. Runs offline.
+> I set mine up once on the PC I already had. Free, open-source, runs offline.
 
 🇺🇸 **Tweet 5(offline 演示,配视频):**
 > Best part of running AI locally:
@@ -454,11 +457,11 @@
 #### Launch Thread(6–8 推,英文成稿)
 
 🇺🇸
-> **1/** Today I'm launching Build My AI: your own private AI, set up in one click, running on your own computer. No code. No cloud. Here's what it does and why I built it 🧵
+> **1/** Today I'm launching Build My AI: your own private AI, set up in one click, running on your own computer. No code. No cloud. Free and open-source. Here's what it does and why I built it 🧵
 >
 > **2/** The problem: the open-source local-AI world is genuinely amazing. And almost nobody outside of engineers can use it. "Install Docker, pick a model, configure a vector DB" is where normal people give up — the exact people who need privacy most.
 >
-> **3/** So the whole product is one idea: hide *all* of that behind one click. You describe what you want in plain English. It detects your PC. It picks the model that'll run well on your hardware. It installs it. You never see a single piece of jargon.
+> **3/** So the whole project is one idea: hide *all* of that behind one click. You describe what you want in plain English. It detects your PC. It picks the model that'll run well on your hardware. It installs it. You never see a single piece of jargon.
 >
 > **4/** Then you drag in your PDFs, Word docs, and spreadsheets. It indexes them — locally. You ask questions and get answers that cite the exact source. Not "trust me," but "here's the page it came from," which you can click and verify.
 >
@@ -466,83 +469,17 @@
 >
 > **6/** Being honest about the tradeoff: a local model won't out-reason a frontier cloud model on general questions. But for private work on your own files, on hardware you already own? I'll take it every time. And so will a lot of people who simply can't use cloud AI at all.
 >
-> **7/** It's free to start — no signup — and free during the beta. Windows + NVIDIA for now (where it's rock solid); more coming.
+> **7/** It's free and open-source — no signup — non-commercial, code on GitHub. Windows + NVIDIA for now (where it's rock solid); more coming.
 >
-> **8/** If you've ever wanted AI on your own documents but not at the cost of your privacy, try it and tell me what breaks: [URL] 🙏 RTs genuinely help a solo-ish launch.
+> **8/** If you've ever wanted AI on your own documents but not at the cost of your privacy, try it, self-host it, and tell me what breaks: [URL] · Repo: [repo URL] 🙏 Stars, forks, and PRs genuinely help a solo-ish project.
 
-🇨🇳 **说明**:thread 首推是钩子,末推给链接 + 请求 RT。第 6 推的"承认局限"是 X 上建立可信度的关键,别删。
-
----
-
-### 4.g Google Search Ads(3 组)
-
-🇨🇳 **说明**:RSA(响应式搜索广告)。Headline ≤30 字符、Description ≤90 字符(下面每条已控制字数,发布前用字符计数器复核)。三组对应三种意图,各配独立着陆页(见 §5 关键词地图)。
+🇨🇳 **说明**:thread 首推是钩子,末推给链接 + 仓库 + 请求 star/PR。第 6 推的"承认局限"是 X 上建立可信度的关键,别删。
 
 ---
 
-#### Ad Group 1 — 意图:Private AI(隐私通用)
+### 4.g Newsletter / Email 序列(3 封)
 
-🇺🇸 **Headlines(≤30 chars,每条已数):**
-1. `Your Own Private AI` (19)
-2. `AI That Keeps Files Private` (27)
-3. `No Cloud. No Code. Just AI.` (27)
-4. `Private AI On Your PC` (21)
-5. `Data Never Leaves Your PC` (25)
-
-🇺🇸 **Descriptions(≤90 chars):**
-1. `Build a private AI that reads your files and works offline. Free to start, no signup.` (85)
-2. `No Docker, no coding. One click. Your documents stay on your own computer.` (74)
-3. `Answers with citations from your own PDFs, Word & Excel. Windows + NVIDIA.` (73)
-
-🇺🇸 **Keywords:** `private ai`, `private ai assistant`, `local ai app`, `offline ai`, `ai that keeps data private`, `secure ai for documents`, `[exact] "private chatgpt alternative"`
-
----
-
-#### Ad Group 2 — 意图:Local LLM(技术向搜索)
-
-🇺🇸 **Headlines(≤30 chars):**
-1. `Run a Local LLM, No Setup` (25)
-2. `Local LLM Without Docker` (24)
-3. `One-Click Local AI Model` (24)
-4. `Local LLM for Windows` (21)
-5. `Best Local LLM, Auto-Picked` (27)
-
-🇺🇸 **Descriptions(≤90 chars):**
-1. `Skip the CUDA and Docker setup. One installer picks the right model for your GPU.` (80)
-2. `Run open-source LLMs locally on Windows + NVIDIA. Free to start, no signup needed.` (81)
-3. `Hardware-aware model routing. Drag in docs for RAG. Everything runs offline.` (75)
-
-🇺🇸 **Keywords:** `run local llm`, `local llm windows`, `local llm nvidia`, `easiest local llm`, `local llm installer`, `open source llm app`, `local rag`, `[phrase] "local llm no coding"`
-
----
-
-#### Ad Group 3 — 意图:Chat With Your PDFs(文档问答)
-
-🇺🇸 **Headlines(≤30 chars):**
-1. `Chat With Your PDFs` (19)
-2. `Ask Your Documents Anything` (27)
-3. `Private PDF AI, Offline` (23)
-4. `Chat With Files, Privately` (26)
-5. `AI For Your PDFs & Excel` (24)
-
-🇺🇸 **Descriptions(≤90 chars):**
-1. `Drag in PDFs, Word & Excel. Ask questions, get answers with cited sources.` (74)
-2. `Your files never upload. Chat with documents offline on your own computer.` (74)
-3. `No account needed to start. Build a private document AI in about 20 minutes.` (76)
-
-🇺🇸 **Keywords:** `chat with pdf`, `chat with pdf offline`, `chat with pdf privately`, `ai read my documents`, `ask questions about pdf`, `excel ai assistant`, `[exact] "private chat with pdf"`
-
-🇨🇳 **Sitelink / 附加信息(通用):**
-- `Free to Start` → build.html
-- `How It Works` → index.html#how
-- `Pricing` → index.html#pricing
-- `See a Demo` → chat.html
-
----
-
-### 4.h Email 序列(3 封)
-
-🇨🇳 **说明**:Beta 期 Pro/Business 才需要账户,所以邮件序列主要面向**注册了免费账户或订阅了 newsletter 的人**。每封给 2 个 A/B 主题行。正文简短、口语、单一 CTA。
+🇨🇳 **说明**:这是一个开源项目,没有付费账户体系。邮件序列主要面向**订阅了 newsletter、注册了可选账户、或下载后留了邮箱的人**,目的是**帮他们跑通首个能用的 AI,并把他们引回社区(GitHub / Discord)**。每封给 2 个 A/B 主题行。正文简短、口语、单一 CTA。
 
 ---
 
@@ -564,7 +501,7 @@
 >
 > Everything runs on your computer. Your files never leave it.
 >
-> 👉 [Start building — it's free](URL)
+> 👉 [Start building — it's free and open-source](URL)
 >
 > If you get stuck anywhere, just reply to this email. A real person (me) reads these.
 >
@@ -574,7 +511,7 @@
 
 ---
 
-#### Email 2 — Activation Nudge(注册后 48h 未激活发)
+#### Email 2 — Activation Nudge(注册后 48h 未上手发)
 
 🇺🇸 **Subject A:** `Still thinking about it? Here's the 2-minute version`
 🇺🇸 **Subject B:** `Your private AI is one click away`
@@ -596,39 +533,36 @@
 
 ---
 
-#### Email 3 — Free → Pro Upgrade(活跃免费用户,用量达到某阈值后发)
+#### Email 3 — Join the Community(成功上手/活跃后发)
 
-🇺🇸 **Subject A:** `You've been using your AI a lot — here's what Pro adds`
-🇺🇸 **Subject B:** `Ready to give your private AI more room?`
+🇺🇸 **Subject A:** `You've been using your AI a lot — want to help shape it?`
+🇺🇸 **Subject B:** `Your private AI is working. Here's how to make it better`
 
 🇺🇸 **正文(英文成稿):**
 > Hey [First Name],
 >
-> You've clearly been putting your private AI to work — that's exactly what I hoped to see. If it's become part of how you get things done, Pro is built for people right where you are.
+> You've clearly been putting your private AI to work — that's exactly what I hoped to see. Since this is a free, open-source project, the way it gets better is people like you getting involved. No pressure at all, but here are the ways that actually help:
 >
-> **What Pro ($29/mo) adds:**
-> - Bigger, smarter models (as much as your hardware can handle)
-> - More documents indexed at once for larger knowledge bases
-> - A more powerful "Teach My AI" so it adapts faster to how you work
-> - Priority support — you reply, I actually answer
+> - **Star or fork it on GitHub** — it helps others find the project. [repo URL]
+> - **Tell it what's missing.** Bugs, rough edges, a model that didn't route well? Open an issue — I read every one. [issues URL]
+> - **Share what you built.** A screenshot, a workflow, a "here's how I use it" post does more than any ad ever could.
+> - **Contribute if you're technical.** Docs, model routing heuristics, new platforms — PRs are genuinely welcome. [contributing URL]
 >
-> Same promise, more power: everything still runs locally, and your files still never leave your computer.
+> Same promise as day one: everything runs locally, your files never leave your computer, and the whole thing stays free and open.
 >
-> During the beta it's free, so this is really just a heads-up on where things are headed — and a chance to lock in early if you want.
->
-> 👉 [See what Pro includes](URL)
+> 👉 [See the roadmap and open issues](URL)
 >
 > Either way, thank you for building with me this early. It means a lot.
 >
 > — [Your name]
 >
-> P.S. Running a team or business? Business plans start at $299/mo with multi-user setup — just reply and I'll walk you through it.
+> P.S. Not technical? Just replying with what you wish it did is one of the most useful things you can send me.
 
-🇨🇳 **说明**:Email 3 明确点出 Beta 免费(诚实),不制造虚假紧迫感。Pro 的卖点措辞需与 [`docs/05`](./05-business-model.md) 保持一致——上线前对齐功能清单。
+🇨🇳 **说明**:Email 3 把原本的"升级付费"完全换成**贡献/参与漏斗**(star → issue → share → PR)。不制造虚假紧迫感,单一目标是把活跃用户变成社区成员。功能与路线图需与 [`docs/11`](./11-ai-architecture-and-model-routing.md) 及仓库 README 对齐。
 
 ---
 
-### 4.i LinkedIn 帖(面向 SMB / 专业人士)
+### 4.h LinkedIn 帖(面向 SMB / 专业人士)
 
 🇺🇸 **正文(英文成稿):**
 > Most small businesses I talk to have the same quiet problem with AI:
@@ -639,23 +573,23 @@
 >
 > The fix turns out to be simpler than most people expect: run the AI *locally*, on a computer you already own, so nothing ever gets uploaded. The only reason more businesses don't is that setting that up used to require an engineer.
 >
-> That's the gap we built Build My AI to close. You describe what you need in plain English, it sets itself up on your Windows + NVIDIA machine in about 20 minutes, and then it reads your documents and answers questions with citations — entirely offline. No IT team, no per-seat cloud contract, no files leaving the building.
+> That's the gap we built Build My AI to close — a free, open-source project. You describe what you need in plain English, it sets itself up on your Windows + NVIDIA machine in about 20 minutes, and then it reads your documents and answers questions with citations — entirely offline. No IT team, no cloud contract, no files leaving the building.
 >
 > I'll be honest about the tradeoff: a local model won't beat a frontier cloud model on general reasoning. But for private work on your own documents, that's not the comparison that matters. "Useful and confidential" beats "brilliant and off-limits."
 >
-> It's free to start. If your team has been holding back on AI because of where the data goes, this might be the version you can actually say yes to.
+> It's free and open-source. If your team has been holding back on AI because of where the data goes, this might be the version you can actually say yes to — and you can self-host it entirely.
 >
 > Link in the comments. Happy to answer questions here.
 >
-> #SmallBusiness #AI #DataPrivacy #Productivity
+> #SmallBusiness #AI #DataPrivacy #OpenSource #SelfHosted #Productivity
 
-🇨🇳 **说明**:LinkedIn 语气更克制专业,链接放评论区(平台对外链降权)。锚定"合规/机密"痛点,直接指向 Business 计划线索。
+🇨🇳 **说明**:LinkedIn 语气更克制专业,链接放评论区(平台对外链降权)。锚定"合规/机密/自托管"痛点,面向对隐私敏感的团队与专业人士——目标是让他们采纳并自托管,不是销售线索。
 
 ---
 
 ## 5. SEO / 关键词地图
 
-🇨🇳 按**搜索意图**分组。每组标注对应落地页/教程,保证"关键词—页面"一一对应。
+🇨🇳 按**搜索意图**分组。每组标注对应落地页/教程,保证"关键词—页面"一一对应。SEO 是本项目最重要的长期有机获客渠道。
 
 ### 5.1 关键词按意图分组
 
@@ -667,122 +601,131 @@
 | **ChatGPT 替代** | chatgpt alternative | private chatgpt alternative, chatgpt alternative that keeps data private, offline chatgpt | 教程 #4 |
 | **行业场景** | ai for lawyers, ai for small business | ai for lawyers confidentiality, private ai for accountants, ai assistant for small business | 教程 #5、#9 + LinkedIn |
 | **研究** | ai literature review | ai for research papers with citations, chat with research pdfs | 教程 #6 |
-| **成本对比** | ai subscription cost | cost of running local ai vs chatgpt, free chatgpt alternative | 教程 #7 |
+| **自托管 / 开源** | self hosted ai, open source ai app | run your own local ai, self hosted chatgpt alternative, open source private ai | 教程 #7 |
 | **模型选择** | best open source llm | which local llm should i run, best llm for 8gb vram | 教程 #8 |
 
 ### 5.2 落地页—关键词映射原则
 
 🇨🇳
-- **`index.html`**:承接品牌词 + "private ai"泛意图。H1 用 Tagline #1 或 #6。
-- **`build.html`**:承接"run local llm / installer"类高意图动作词,页面 CTA = 开始构建。
+- **`index.html`**:承接品牌词 + "private ai / open source ai"泛意图。H1 用 Tagline #1 或 #6。
+- **`build.html`**:承接"run local llm / installer / self host"类高意图动作词,页面 CTA = 开始构建。
 - **`chat.html`**:承接"chat with pdf / demo"类,展示带引用问答。
-- **教程博客**:每篇 target 一个长尾主关键词,内部链接指向对应产品页,形成 topic cluster(隐私 / 本地 LLM / 文档问答三大簇)。
+- **GitHub 仓库 README**:承接"open source / self hosted"类,是开发者搜索的落点,链回文档与落地页。
+- **教程博客**:每篇 target 一个长尾主关键词,内部链接指向对应产品页,形成 topic cluster(隐私 / 本地 LLM / 文档问答 / 自托管四大簇)。
 - 每个页面 title/meta description 复用 §1.3 的 headline,避免重复 title。
 
 ---
 
 ## 6. 发布日历(30 / 60 / 90 天)
 
-🇨🇳 三阶段:**软启动(建信任)→ 社区放大 → 发布日爆发 + 付费放量**。日期为相对周,可平移。
+🇨🇳 三阶段:**软启动(建信任)→ 社区放大 → 发布日爆发 + 持续放大**。日期为相对周,可平移。
 
-### 阶段一:0–30 天 · Beta 软启动(埋种子)
+### 阶段一:0–30 天 · 软启动(埋种子)
 
 | 周 | 渠道 | 动作 | 交付物 |
 |----|------|------|--------|
+| W1 | GitHub | 打磨仓库:清晰 README、快速上手、CONTRIBUTING、Issues 模板 | 可读可跑的仓库 |
 | W1 | 内容 | 发布教程博客 #1、#2 | 2 篇 SEO 文 |
 | W1 | YouTube | 上线主教程视频(§4.a) | 1 长视频 |
 | W2 | Reddit | 发 r/LocalLLaMA Show 帖(§4.c#1) | 1 帖 + 蹲评论 |
 | W2 | 短视频 | 发短视频 #1(隐私)(§4.b) | 1 竖屏 |
 | W3 | Reddit | 发 r/privacy 帖(§4.c#2) | 1 帖 |
 | W3 | X | 开始 build-in-public,发独立推文 #1–#3 | 3 推 |
-| W4 | Email | 配好 Welcome + Activation 序列(§4.h) | 2 封自动化 |
-| W4 | 复盘 | 看哪条 message/hook 最转化,定发布日主叙事 | 数据 memo |
+| W4 | Email | 配好 Welcome + Activation 序列(§4.g) | 2 封自动化 |
+| W4 | 复盘 | 看哪条 message/hook 最能带来上手与 star,定发布日主叙事 | 数据 memo |
 
 ### 阶段二:31–60 天 · 社区放大
 
 | 周 | 渠道 | 动作 | 交付物 |
 |----|------|------|--------|
 | W5 | 内容 | 教程 #3、#9 + 短视频 #2(非技术) | 2 文 1 视频 |
-| W6 | Reddit | r/smallbusiness 场景帖(改写 §4.i 角度) | 1 帖 |
-| W6 | LinkedIn | 发 SMB 帖(§4.i) | 1 帖 |
-| W7 | 内容 | 教程 #5(律师)、#7(成本)+ 短视频 #3 | 2 文 1 视频 |
+| W6 | Reddit | r/smallbusiness / r/selfhosted 场景帖(改写 §4.h 角度) | 1 帖 |
+| W6 | LinkedIn | 发 SMB 帖(§4.h) | 1 帖 |
+| W7 | 内容 | 教程 #5(律师)、#7(自托管)+ 短视频 #3 | 2 文 1 视频 |
 | W7 | X | 发独立推文 #4–#5 | 2 推 |
-| W8 | 筹备 | 准备 PH/HN 发布物料、预热邮件、招募早鸟 upvoter | 发布清单 |
+| W7 | 社区 | 开 Discord / GitHub Discussions,回应早期 issue 与反馈 | 社区空间 |
+| W8 | 筹备 | 准备 PH/HN 发布物料、预热邮件、招募早鸟支持者 | 发布清单 |
 
-### 阶段三:61–90 天 · 发布日 + 付费放量
+### 阶段三:61–90 天 · 发布日 + 持续放大
 
 | 周 | 渠道 | 动作 | 交付物 |
 |----|------|------|--------|
 | W9 | **Product Hunt** | 发布日(§4.e),全天回评 | PH launch |
 | W9 | **Hacker News** | 同周发 Show HN(§4.d) | HN 帖 |
-| W9 | X | 发 Launch Thread(§4.f),动员 RT | 1 thread |
-| W10 | Google Ads | 上线 3 个 Ad Group(§4.g),小预算测 | 付费测试 |
-| W10 | Email | 对活跃用户发 Free→Pro(§4.h#3) | 1 封 |
-| W11 | 优化 | 按 Ad/落地页数据关停差组、加码优组 | 优化 memo |
-| W12 | 放量 | 扩量表现最好的付费渠道 + 内容再投放 | 规模化计划 |
+| W9 | X | 发 Launch Thread(§4.f),动员 star/RT | 1 thread |
+| W10 | 社区 | 把发布日涌入的用户引到 GitHub/Discord,回应 issue、合并首批社区 PR | 贡献者转化 |
+| W10 | Email | 对活跃用户发 Community 邀请(§4.g#3) | 1 封 |
+| W11 | 优化 | 按各渠道数据关停低效动作、加码高效内容 | 优化 memo |
+| W12 | 放量 | 加码表现最好的有机渠道 + 内容再投放,培育首批常驻贡献者 | 规模化计划 |
 
 ---
 
-## 7. 衡量与预算
+## 7. 衡量与社区健康
 
-🇨🇳 **全部为假设值 `(假设)`**,上线后用真实数据替换。目的是先建立指标框架和归因方法。
+🇨🇳 **全部为假设值 `(假设)`**,上线后用真实数据替换。目的是先建立指标框架和归因方法。这是一个非商业开源项目——我们衡量的是**社区健康与采纳深度**,不是收入。
 
-### 7.1 各渠道核心指标
+### 7.1 采纳漏斗(Adoption Funnel)
+
+🇨🇳 用一条清晰的漏斗取代"付费转化漏斗":
+
+```
+Discover(看到内容/仓库)→ Star(收藏,表达兴趣)→ Try(开始构建/下载)
+  → Self-host(装好并跑通首个能用的 AI)→ Contribute(提 issue / 分享 / PR)
+```
+
+每一步都可埋点观察流失,目标是把尽可能多的人往漏斗下游推,并让最深一层(贡献者)持续壮大。
+
+### 7.2 各渠道核心指标
 
 | 渠道 | 主指标 | 次指标 | 目标(假设) |
 |------|--------|--------|-------------|
+| GitHub 仓库 | 新增 star、fork | issue/PR 数、贡献者数 | 90 天 500 star(假设) |
 | YouTube 长视频 | 观看→点击落地页 CTR | 平均观看时长、订阅 | CTR ≥ 4%(假设) |
 | 短视频 | 完播率、bio 点击 | 分享/存 | 完播 ≥ 30%(假设) |
-| Reddit | 帖→落地页点击、评论质量 | upvote 比 | 单帖 ≥ 200 clicks(假设) |
+| Reddit | 帖→落地页/仓库点击、评论质量 | upvote 比 | 单帖 ≥ 200 clicks(假设) |
 | SEO 博客 | 自然点击、关键词排名 | 页面停留 | 90 天进前 3 页(假设) |
 | Product Hunt | 当日名次、访问 | 评论数 | Top 5 of day(假设) |
-| Google Ads | CTR、CVR(→开始构建) | CPC、质量得分 | CVR ≥ 6%(假设) |
-| Email | 打开率、点击率、激活 | 退订率 | 激活 ≥ 25%(假设) |
-| 全站 | Free 激活率、Free→Pro 转化 | 留存 | Free→Pro ≥ 3%(假设) |
-
-### 7.2 CAC 目标假设
-
-🇨🇳
-- **有机渠道(Reddit/SEO/YouTube 自然)**:目标 CAC 主要是时间成本,趋近于 $0 现金 `(假设)`。
-- **付费渠道(Google Ads)**:目标 **付费 CAC ≤ $60** `(假设)`,对照 Pro 年 LTV(见 [`docs/12`](./12-business-plan.md) / [`docs/05`](./05-business-model.md))判断可承受上限。Pro $29/mo 若留存 12 个月 → LTV ≈ $348 `(假设)`,则 CAC/LTV 应 < 1/3,即 CAC 天花板约 $115 `(假设)`。
-- 优先扩量的是**有机 + 高质量社区**,付费只买高意图搜索词,不买泛展示。
+| Email | 打开率、点击率、上手率 | 退订率 | 上手 ≥ 25%(假设) |
+| 全站 | Try→Self-host 上手率 | 留存、回流社区 | 上手 ≥ 40%(假设) |
 
 ### 7.3 UTM / 归因规范
 
 🇨🇳 统一 UTM 命名,进 GA/自建看板:
 
 ```
-utm_source   = youtube | reddit | producthunt | hackernews | x | google | linkedin | email
-utm_medium   = video | social | community | cpc | email | organic
-utm_campaign = beta-softlaunch | ph-launch | q3-search
-utm_content  = 具体素材,如 short-privacy-01 / rebuttal-comment / ad-group-privatepdf
+utm_source   = github | youtube | reddit | producthunt | hackernews | x | linkedin | email | discord
+utm_medium   = repo | video | social | community | email | organic
+utm_campaign = softlaunch | ph-launch | tutorial-cluster
+utm_content  = 具体素材,如 short-privacy-01 / rebuttal-comment / readme-cta
 ```
 
 - 落地页按受众加 `?aud=smb|pro|research|privacy`(见 §1.4)做分流分析。
-- Beta 期无强登录,用**匿名 usage id**做激活漏斗(需与隐私声明一致,见 §8)。
+- 无强登录,用**匿名 usage id**做上手漏斗(需与隐私声明一致,见 §8;遥测 opt-in)。
 - 每条对外链接都带 UTM;短视频 bio/评论链接用短链承载 UTM。
 
-### 7.4 预算分配建议(发布季,假设)
+### 7.4 投入优先级(以时间/精力为主)
+
+🇨🇳 这是非商业项目,没有广告预算——真正稀缺的是**时间**。建议把精力这样分配(假设,按投入占比):
 
 | 项目 | 占比(假设) | 说明 |
 |------|-----------|------|
 | 内容制作(视频/博客) | 40% | 主引擎,长期资产 |
-| Google Ads 测试 | 25% | 只测高意图词 |
-| 短视频投放/加热 | 15% | 放大验证过的 hook |
-| PH/HN 发布支持 | 10% | 物料、设计 |
-| 工具/归因/落地页优化 | 10% | 分析与 A/B |
+| 仓库与社区维护(issue/PR/文档/答疑) | 30% | 开源项目的命脉,决定能否留住贡献者 |
+| 短视频/社媒(放大验证过的 hook) | 15% | 放大表现好的叙事 |
+| PH/HN 发布支持 | 10% | 物料、设计、发布日在场 |
+| 归因/落地页优化 | 5% | 分析与 A/B |
 
 ---
 
 ## 8. 品牌与合规注意
 
-🇨🇳 隐私是本产品的核心承诺,**营销宣称必须能兑现**,否则反噬最严重。
+🇨🇳 隐私是本项目的核心承诺,**对外宣称必须能兑现**,否则反噬最严重。开源意味着任何人都能核对代码——宣称越诚实越安全。
 
 ### 8.1 诚实营销红线
 
-- ✅ **可以说**:*"Your data never leaves your computer" / "runs offline" / "free to start, no signup"* —— 前提是产品**确实**如此(本地 RAG、匿名 usage data)。
-- ⚠️ **必须澄清**:如果收集**匿名使用数据**,文案里的"nothing leaves your computer"要精确为 *"your **files/documents** never leave your computer"*,并在隐私页说明匿名遥测。**文档 ≠ 遥测**,措辞别混。
-- ❌ **不要说**:"100% no data collected"(若有匿名遥测则不实)、"forever free"(定价含 Pro/Business)、"better than ChatGPT"(§8.3 商标 + 夸大)。
+- ✅ **可以说**:*"Your data never leaves your computer" / "runs offline" / "free and open-source, no signup"* —— 前提是产品**确实**如此(本地 RAG、匿名 opt-in usage data、代码开源)。
+- ⚠️ **必须澄清**:如果收集**匿名使用数据**,文案里的"nothing leaves your computer"要精确为 *"your **files/documents** never leave your computer"*,并在隐私页说明匿名遥测(且遥测为 opt-in)。**文档 ≠ 遥测**,措辞别混。
+- ❌ **不要说**:"100% no data collected"(若有匿名遥测则不实)、"better than ChatGPT"(§8.3 商标 + 夸大)、任何暗示官方关联或背书的表述。
 
 ### 8.2 隐私宣称的可兑现清单
 
@@ -790,29 +733,28 @@ utm_content  = 具体素材,如 short-privacy-01 / rebuttal-comment / ad-group-p
 |------|---------|--------|
 | "Files never leave your computer" | RAG 索引与推理全本地,无文档上传 | 工程 |
 | "Works offline" | 安装后断网可用(视频要真演示) | 工程 |
-| "Free to start, no signup" | Free 层确实无需注册 | 产品 |
-| "Anonymous usage data only" | 遥测不含个人身份/文件内容,可关闭 | 工程 + 法务 |
+| "Free and open-source, no signup" | 无需注册即可开始;代码公开可审计 | 产品 + 工程 |
+| "Anonymous usage data only" | 遥测 opt-in、不含个人身份/文件内容、可关闭 | 工程 + 法务 |
 
 ### 8.3 开源模型 License 与商标
 
 🇨🇳
-- **模型 License**:分发/推荐开源模型前,逐个核对其 License(如 Llama 社区许可、Apache-2.0、Qwen 许可等)对**再分发、商用、命名署名**的要求。Business 商用尤其要确认允许商用。See also [`docs/11`](./11-ai-architecture-and-model-routing.md) 模型路由清单。
-- **商标**:不得暗示与 OpenAI/ChatGPT、NVIDIA、Microsoft 等有官方关联或背书。用 "ChatGPT-style" / "ChatGPT alternative" 做**描述性/比较性**表述可以,但**不要**把 "ChatGPT" 放进产品名、logo、域名,或写成 "the new ChatGPT"。"Windows" / "NVIDIA" 仅作兼容性说明("for Windows + NVIDIA PCs"),不做背书暗示。
-- **比较广告**:任何"vs ChatGPT / vs 订阅"内容基于**事实与场景**(隐私、本地、成本),不贬低、不虚假对比。
+- **模型 License**:分发/推荐开源模型前,逐个核对其 License(如 Llama 社区许可、Apache-2.0、Qwen 许可等)对**再分发、命名署名、以及用户可能的商用**的要求。虽然本项目本身非商业,但用户会在各自场景(含商业)自托管使用,推荐前需确认所选模型的许可允许这些用途。See also [`docs/11`](./11-ai-architecture-and-model-routing.md) 模型路由清单。
+- **商标**:不得暗示与 OpenAI/ChatGPT、NVIDIA、Microsoft 等有官方关联或背书。用 "ChatGPT-style" / "ChatGPT alternative" 做**描述性/比较性**表述可以,但**不要**把 "ChatGPT" 放进项目名、logo、域名,或写成 "the new ChatGPT"。"Windows" / "NVIDIA" 仅作兼容性说明("for Windows + NVIDIA PCs"),不做背书暗示。
+- **比较内容**:任何"vs ChatGPT / vs 云端订阅"内容基于**事实与场景**(隐私、本地、自托管、拥有),不贬低、不虚假对比。
 
 ### 8.4 不夸大原则(贯穿全文脚本)
 
-🇨🇳 本文所有脚本都刻意保留了**主动承认局限**的句子(*"a local model won't out-reason a frontier cloud model on general reasoning"*)。这不是软弱,而是本品牌可信度的核心资产,面向的又是隐私敏感、反营销的人群。**审稿时不要为了"更有力"而删掉这些句子。**
+🇨🇳 本文所有脚本都刻意保留了**主动承认局限**的句子(*"a local model won't out-reason a frontier cloud model on general reasoning"*)。这不是软弱,而是本项目可信度的核心资产,面向的又是隐私敏感、反营销、且会去读源码的人群。**审稿时不要为了"更有力"而删掉这些句子。**
 
 ---
 
 ## 交叉引用(Cross-links)
 
-- 商业模式、单元经济与 Go-to-Market 策略(§7):[`docs/12-business-plan.md`](./12-business-plan.md)
-- 定价与套餐(Pro/Business 功能清单,邮件/广告需对齐):[`docs/05-business-model.md`](./05-business-model.md)
-- AI 架构与模型路由(License 核对、推荐模型依据):[`docs/11-ai-architecture-and-model-routing.md`](./11-ai-architecture-and-model-routing.md)
-- 落地页与演示(投放去向):[`frontend/index.html`](../frontend/index.html)、[`frontend/build.html`](../frontend/build.html)、[`frontend/chat.html`](../frontend/chat.html)(演示机上运行本机 llm-lab 时,由真实本地模型给出带来源引用的回答,可用于录制真实演示素材,见 [`docs/16`](./16-local-ai-web-integration.md))、[`frontend/dashboard.html`](../frontend/dashboard.html)、[`frontend/signup.html`](../frontend/signup.html)
+- AI 架构与模型路由(License 核对、推荐模型依据、路线图):[`docs/11-ai-architecture-and-model-routing.md`](./11-ai-architecture-and-model-routing.md)
+- 本地 AI 与网站集成(录制真实演示素材的技术依据):[`docs/16-local-ai-web-integration.md`](./16-local-ai-web-integration.md)
+- 落地页与演示(内容去向):[`frontend/index.html`](../frontend/index.html)、[`frontend/build.html`](../frontend/build.html)、[`frontend/chat.html`](../frontend/chat.html)(演示机上运行本机 llm-lab 时,由真实本地模型给出带来源引用的回答,可用于录制真实演示素材)、[`frontend/dashboard.html`](../frontend/dashboard.html)、[`frontend/signup.html`](../frontend/signup.html)
 
 ---
 
-> **维护说明**:本文的英文成稿为"可发布母版"。每次投放后,把真实数据回填到 §7 指标表,并把表现最好的 hook/headline 标记为"已验证",反哺 §1.3 与 §4。所有 `(假设)` 数字在有真实数据后替换并去掉标注。
+> **维护说明**:本文的英文成稿为"可发布母版"。每次投放后,把真实数据回填到 §7 指标表,并把表现最好的 hook/headline 标记为"已验证",反哺 §1.3 与 §4。所有 `(假设)` 数字在有真实数据后替换并去掉标注。项目保持免费、开源、非商业——任何新增文案先过 §8 诚实红线。

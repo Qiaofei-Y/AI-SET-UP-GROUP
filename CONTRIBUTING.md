@@ -19,7 +19,7 @@ python3 backend/api/server.py          # API on 127.0.0.1:8940
 cd frontend && python3 -m http.server 8931   # site on :8931 (fetch is blocked on file://)
 ```
 
-Or the whole stack: `BMA_LICENSE_SECRET=$(openssl rand -hex 32) docker compose up -d --build`.
+Or the whole stack: `BMA_ADMIN_SECRET=$(openssl rand -hex 32) docker compose up -d --build`.
 
 ## Definition of done
 
@@ -48,7 +48,7 @@ If a change genuinely needs to relax an assertion, update the test in the same P
 
 ## Docs mirror the code
 
-The site's copy/flow/pricing must stay consistent with `docs/` (esp. 02, 04, 05, 11) and the design system in `figma/`. Change one side, check the other. Never ship a claim the code can't back — honesty is a project invariant, not a nicety.
+The site's copy and flow must stay consistent with `docs/` (esp. 02, 04, 11) and the design system in `figma/`. Change one side, check the other. Never ship a claim the code can't back — honesty is a project invariant, not a nicety.
 
 ## Style
 

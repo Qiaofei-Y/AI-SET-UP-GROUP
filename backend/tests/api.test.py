@@ -256,22 +256,6 @@ class ApiTest(unittest.TestCase):
         with open(os.environ['BMA_DB'], 'rb') as f:
             self.assertNotIn(b'SECRET-MARKER-456', f.read())
 
-    # ---- license ----
-    def test_license_roundtrip(self):
-        key = server.mint_license('pro')
-        s, j, _ = call(self.port, '/v1/license/verify',
-                       {'license_key': key, 'device_fingerprint': 'abc123def456'})
-        self.assertEqual((s, j['valid'], j['tier']), (200, True, 'pro'))
-        self.assertGreater(j['grace_until'], 0)
-
-    def test_license_tampered_and_garbage(self):
-        key = server.mint_license('business')
-        bad = key[:-1] + ('0' if key[-1] != '0' else '1')
-        for k in (bad, 'BMA-PRO-zzz', '', 'x' * 64):
-            s, j, _ = call(self.port, '/v1/license/verify',
-                           {'license_key': k, 'device_fingerprint': 'abc123def456'})
-            self.assertEqual((s, j['valid']), (200, False), k)
-
     # ---- privacy red lines: schema whitelist ----
     def test_telemetry_accepts_whitelisted(self):
         s, j, _ = call(self.port, '/v1/telemetry/deploy', {
@@ -346,13 +330,12 @@ class ApiTest(unittest.TestCase):
     def test_auth_signup_login_me_logout_roundtrip(self):
         s, j = self._call_auth('/v1/auth/signup', {
             'name': 'Ada Lovelace', 'email': 'Ada@Example.com',
-            'password': 'correct-horse-9', 'plan': 'pro', 'accept_tos': True})
+            'password': 'correct-horse-9', 'accept_tos': True})
         self.assertEqual((s, j['ok']), (200, True))
         self.assertRegex(j['token'], r'^[0-9a-f]{48}$')
-        # P0-3: the requested plan never becomes the actual plan at signup;
         # P0-15: a fresh account starts unverified until the emailed link is clicked
         self.assertEqual(j['user'], {'name': 'Ada Lovelace', 'email': 'ada@example.com',
-                                     'plan': 'free', 'email_verified': False})
+                                     'email_verified': False})
         s, j = self._call_auth('/v1/auth/me', token=j['token'])
         self.assertEqual((s, j['user']['email']), (200, 'ada@example.com'))
 
@@ -364,29 +347,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(s, 200)
         s, j = self._call_auth('/v1/auth/me', token=token)
         self.assertEqual((s, j['error']), (401, 'not_logged_in'))
-
-    def test_auth_plan_is_server_authoritative(self):
-        # P0-3: client-reported plan lands as intent only; entitlements start free
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'Plan Probe', 'email': 'planprobe@example.com',
-            'password': 'longenough1', 'plan': 'business', 'accept_tos': True})
-        self.assertEqual((s, j['user']['plan']), (200, 'free'))
-        import sqlite3
-        con = sqlite3.connect(os.environ['BMA_USERS_DB'])
-        row = con.execute('SELECT plan, plan_intent FROM users WHERE email = ?',
-                          ('planprobe@example.com',)).fetchone()
-        con.close()
-        self.assertEqual(row, ('free', 'business'))
-        # the only upgrade path is the server-side set_plan()
-        self.assertTrue(server.set_plan('planprobe@example.com', 'pro'))
-        s, j = self._call_auth('/v1/auth/login',
-                               {'email': 'planprobe@example.com', 'password': 'longenough1'})
-        self.assertEqual((s, j['user']['plan']), (200, 'pro'))
-        s, j = self._call_auth('/v1/auth/me', token=j['token'])
-        self.assertEqual((s, j['user']['plan']), (200, 'pro'))
-        # guardrails: unknown user / bogus tier change nothing
-        self.assertFalse(server.set_plan('nobody@example.com', 'pro'))
-        self.assertFalse(server.set_plan('planprobe@example.com', 'enterprise'))
 
     def test_account_password_change_revokes_other_sessions(self):
         self._call_auth('/v1/auth/signup', {'name': 'PW', 'email': 'pw@example.com',
@@ -440,15 +400,15 @@ class ApiTest(unittest.TestCase):
     def test_account_export(self):
         s, j = self._call_auth('/v1/auth/signup', {
             'name': 'Export Me', 'email': 'export@example.com', 'password': 'longenough1',
-            'company': 'ACME', 'plan': 'pro', 'accept_tos': True})
+            'company': 'ACME', 'accept_tos': True})
         tok = j['token']
         s, _ = self._call_auth('/v1/account/export')
         self.assertEqual(s, 401)
         s, j = self._call_auth('/v1/account/export', token=tok)
         self.assertEqual((s, j['ok']), (200, True))
         u = j['user']
-        self.assertEqual((u['email'], u['company'], u['plan'], u['plan_intent'], u['tos_accepted']),
-                         ('export@example.com', 'ACME', 'free', 'pro', server.TOS_VERSION))
+        self.assertEqual((u['email'], u['company'], u['tos_accepted']),
+                         ('export@example.com', 'ACME', server.TOS_VERSION))
         self.assertGreater(u['created_ts'], 0)
         self.assertTrue(any(sess['current'] for sess in j['sessions']))
         # security material never leaves: no token hashes, no password fields
@@ -501,7 +461,7 @@ class ApiTest(unittest.TestCase):
                                (dict(base, email='not-an-email'), 'invalid_field:email'),
                                (dict(base, name='line\nbreak'), 'invalid_field:name'),
                                (dict(base, bio='free text about me'), 'unknown_field:bio'),
-                               (dict(base, plan='enterprise'), 'invalid_field:plan'),
+                               (dict(base, plan='pro'), 'unknown_field:plan'),
                                (dict(base, accept_tos=False), 'invalid_field:accept_tos'),
                                ({k: v for k, v in base.items() if k != 'accept_tos'},
                                 'missing_field:accept_tos')):
@@ -779,276 +739,6 @@ class ApiTest(unittest.TestCase):
         codes = [call(self.port, '/v1/feedback', body)[0] for _ in range(3)]
         self.assertEqual(codes, [200, 200, 429])
 
-    # ---- billing (P0-1/2/3): Stripe payment loop -------------------------------
-    def _webhook(self, event, secret='whsec_test', ts=None):
-        """POST a raw Stripe-style event with a valid-by-default signature header."""
-        import hashlib
-        import hmac
-        import time as _t
-        raw = json.dumps(event).encode()
-        ts = str(int(_t.time())) if ts is None else str(ts)
-        sig = hmac.new(secret.encode(), (ts + '.').encode() + raw, hashlib.sha256).hexdigest()
-        req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
-                                     data=raw, method='POST')
-        req.add_header('Content-Type', 'application/json')
-        req.add_header('Stripe-Signature', 't=%s,v1=%s' % (ts, sig))
-        try:
-            with urllib.request.urlopen(req) as r:
-                return r.status, json.loads(r.read() or b'{}')
-        except urllib.error.HTTPError as e:
-            return e.code, json.loads(e.read() or b'{}')
-
-    def test_billing_migration_columns_exist(self):
-        import sqlite3
-        con = sqlite3.connect(os.environ['BMA_USERS_DB'])
-        cols = {r[1] for r in con.execute('PRAGMA table_info(users)')}
-        con.close()
-        self.assertLessEqual({'stripe_customer_id', 'subscription_status', 'plan_period_end'}, cols)
-
-    def test_billing_checkout_requires_login(self):
-        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro', 'accept_terms': True})
-        self.assertEqual((s, j['error']), (401, 'not_logged_in'))
-
-    def test_billing_checkout_requires_consent(self):
-        # P0-4: no recurring subscription without the auto-renewal clickwrap
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'No Consent', 'email': 'noconsent@example.com',
-            'password': 'longenough1', 'accept_tos': True})
-        tok = j['token']
-        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'pro'}, token=tok)
-        self.assertEqual((s, j['error']), (400, 'missing_field:accept_terms'))
-        s, j = self._call_auth('/v1/billing/checkout',
-                               {'plan': 'pro', 'accept_terms': False}, token=tok)
-        self.assertEqual((s, j['error']), (400, 'invalid_field:accept_terms'))
-
-    def test_billing_checkout_records_consent(self):
-        # accepting the disclosure is recorded (version + time) even if billing is
-        # un-provisioned — there is always proof the terms were shown and accepted
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'Consenter', 'email': 'consent@example.com',
-            'password': 'longenough1', 'accept_tos': True})
-        tok = j['token']
-        s, j = self._call_auth('/v1/billing/checkout',
-                               {'plan': 'pro', 'accept_terms': True}, token=tok)
-        self.assertEqual((s, j['error']), (503, 'billing_unavailable'))  # beta: no keys
-        s, j = self._call_auth('/v1/account/export', token=tok)
-        self.assertEqual(j['user']['billing_consent'], server.BILLING_TOS_VERSION)
-        self.assertGreater(j['user']['billing_consent_ts'], 0)
-
-    def test_billing_checkout_unprovisioned_503(self):
-        # no BMA_STRIPE_SECRET/price in the test env → honest 503, not a half-checkout
-        self.assertEqual(os.environ.get('BMA_STRIPE_SECRET', ''), '')
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'Buyer One', 'email': 'buyer1@example.com',
-            'password': 'longenough1', 'accept_tos': True})
-        s, j = self._call_auth('/v1/billing/checkout',
-                               {'plan': 'pro', 'accept_terms': True}, token=j['token'])
-        self.assertEqual((s, j['error']), (503, 'billing_unavailable'))
-
-    def test_billing_checkout_rejects_bad_plan(self):
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'Buyer Two', 'email': 'buyer2@example.com',
-            'password': 'longenough1', 'accept_tos': True})
-        s, j = self._call_auth('/v1/billing/checkout', {'plan': 'free'}, token=j['token'])
-        self.assertEqual((s, j['error']), (400, 'invalid_field:plan'))
-
-    def test_billing_portal_without_customer_409(self):
-        os.environ['BMA_STRIPE_SECRET'] = 'sk_test_dummy'  # provisioned...
-        try:
-            s, j = self._call_auth('/v1/auth/signup', {
-                'name': 'No Sub', 'email': 'nosub@example.com',
-                'password': 'longenough1', 'accept_tos': True})
-            # ...but this user never checked out, so there's no customer to manage
-            s, j = self._call_auth('/v1/billing/portal', {}, token=j['token'])
-            self.assertEqual((s, j['error']), (409, 'no_customer'))
-        finally:
-            del os.environ['BMA_STRIPE_SECRET']
-
-    def test_billing_webhook_rejects_bad_signature(self):
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        try:
-            raw = json.dumps({'type': 'checkout.session.completed'}).encode()
-            req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
-                                         data=raw, method='POST')
-            req.add_header('Stripe-Signature', 't=1,v1=deadbeef')
-            try:
-                urllib.request.urlopen(req)
-                self.fail('expected 400')
-            except urllib.error.HTTPError as e:
-                self.assertEqual(e.code, 400)
-        finally:
-            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
-
-    def test_verify_stripe_signature_accepts_any_v1_during_rotation(self):
-        """Stripe includes one v1 signature per active secret during a signing-secret
-        rotation; verification must accept the event if ANY v1 matches — not only the
-        last one in the header. A valid v1 followed by a bogus v1 must still verify."""
-        import hashlib
-        import hmac
-        import time as _t
-        secret, raw = 'whsec_test', b'{"type":"x"}'
-        ts = str(int(_t.time()))
-        good = hmac.new(secret.encode(), (ts + '.').encode() + raw, hashlib.sha256).hexdigest()
-        # good signature is FIRST, a bogus one is LAST (the old last-wins parse rejected this)
-        hdr = 't=%s,v1=%s,v1=%s' % (ts, good, 'deadbeef' * 8)
-        self.assertTrue(server.verify_stripe_signature(raw, hdr, secret))
-        # sanity: the single-signature happy path and an all-bogus header still behave
-        self.assertTrue(server.verify_stripe_signature(raw, 't=%s,v1=%s' % (ts, good), secret))
-        self.assertFalse(server.verify_stripe_signature(raw, 't=%s,v1=%s' % (ts, 'ff' * 32), secret))
-
-    def test_billing_webhook_drives_plan_lifecycle(self):
-        """The webhook is the ONLY thing that moves a paying user's plan (P0-3):
-        checkout completes → pro; subscription canceled → back to free."""
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
-        try:
-            s, j = self._call_auth('/v1/auth/signup', {
-                'name': 'Pay Ing', 'email': 'paying@example.com',
-                'password': 'longenough1', 'accept_tos': True})
-            token = j['token']
-            self.assertEqual(j['user']['plan'], 'free')
-            cust = 'cus_test_paying'
-
-            # 1) checkout completes → account linked to the customer + upgraded to pro
-            s, j = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
-                'client_reference_id': 'paying@example.com', 'customer': cust,
-                'metadata': {'plan': 'pro'}}}})
-            self.assertEqual(s, 200)
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'pro')
-
-            # 2) a bad-signature copy of the SAME event must not move anything
-            raw = json.dumps({'type': 'customer.subscription.deleted',
-                              'data': {'object': {'customer': cust}}}).encode()
-            req = urllib.request.Request('http://127.0.0.1:%d/v1/billing/webhook' % self.port,
-                                         data=raw, method='POST')
-            req.add_header('Stripe-Signature', 't=1,v1=0000')
-            try:
-                urllib.request.urlopen(req)
-            except urllib.error.HTTPError as e:
-                self.assertEqual(e.code, 400)
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'pro', 'forged event must not downgrade')
-
-            # 3) subscription canceled → entitlement drops back to free
-            s, j = self._webhook({'type': 'customer.subscription.deleted', 'data': {'object': {
-                'customer': cust, 'status': 'canceled', 'current_period_end': 1900000000}}})
-            self.assertEqual(s, 200)
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'free')
-        finally:
-            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
-            del os.environ['BMA_STRIPE_PRICE_PRO']
-
-    def test_billing_webhook_stale_timestamp_rejected(self):
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        try:
-            # correctly signed but 10 minutes old → outside tolerance (replay lid)
-            s, j = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {}}},
-                                 ts=1000000000)
-            self.assertEqual((s, j['error']), (400, 'bad_signature'))
-        finally:
-            del os.environ['BMA_STRIPE_WEBHOOK_SECRET']
-
-    def test_billing_webhook_subscription_created_maps_price_and_propagates_period(self):
-        """customer.subscription.created: the price id maps to a plan and the
-        subscription's status + current_period_end are mirrored into users.db so
-        the app can gate offline without a round-trip to Stripe."""
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
-        os.environ['BMA_STRIPE_PRICE_BUSINESS'] = 'price_biz_456'
-        try:
-            s, j = self._call_auth('/v1/auth/signup', {
-                'name': 'Sub Create', 'email': 'subcreate@example.com',
-                'password': 'longenough1', 'accept_tos': True})
-            token = j['token']
-            cust = 'cus_subcreate'
-            # link the customer first (checkout completed with no plan metadata)
-            s, _ = self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
-                'client_reference_id': 'subcreate@example.com', 'customer': cust}}})
-            self.assertEqual(s, 200)
-            # subscription.created carries the price -> plan mapping and a period end
-            period = 1999999999
-            s, _ = self._webhook({'type': 'customer.subscription.created', 'data': {'object': {
-                'customer': cust, 'status': 'active',
-                'items': {'data': [{'price': {'id': 'price_biz_456'}}]},
-                'current_period_end': period}}})
-            self.assertEqual(s, 200)
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'business')   # price_biz_456 -> business
-            import sqlite3
-            con = sqlite3.connect(os.environ['BMA_USERS_DB'])
-            row = con.execute('SELECT subscription_status, plan_period_end FROM users '
-                              'WHERE stripe_customer_id = ?', (cust,)).fetchone()
-            con.close()
-            self.assertEqual(row, ('active', period), 'status + current_period_end must mirror')
-        finally:
-            for k in ('BMA_STRIPE_WEBHOOK_SECRET', 'BMA_STRIPE_PRICE_PRO', 'BMA_STRIPE_PRICE_BUSINESS'):
-                os.environ.pop(k, None)
-
-    def test_billing_webhook_past_due_and_unpaid_drop_to_free(self):
-        """A subscription that goes past_due/unpaid loses its paid entitlement even
-        though its price still maps to a plan — only active/trialing keeps it — while
-        the real subscription status is preserved for support/ops."""
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
-        try:
-            s, j = self._call_auth('/v1/auth/signup', {
-                'name': 'Past Due', 'email': 'pastdue@example.com',
-                'password': 'longenough1', 'accept_tos': True})
-            token = j['token']
-            cust = 'cus_pastdue'
-            self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
-                'client_reference_id': 'pastdue@example.com', 'customer': cust}}})
-            # active first -> pro
-            self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
-                'customer': cust, 'status': 'active',
-                'items': {'data': [{'price': {'id': 'price_pro_123'}}]}}}})
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'pro')
-            # each dunning state drops entitlement to free but records the true status
-            for status in ('past_due', 'unpaid'):
-                self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
-                    'customer': cust, 'status': status,
-                    'items': {'data': [{'price': {'id': 'price_pro_123'}}]}}}})
-                s, j = self._call_auth('/v1/auth/me', token=token)
-                self.assertEqual(j['user']['plan'], 'free', '%s must lose entitlement' % status)
-                import sqlite3
-                con = sqlite3.connect(os.environ['BMA_USERS_DB'])
-                got = con.execute('SELECT subscription_status FROM users WHERE stripe_customer_id = ?',
-                                  (cust,)).fetchone()[0]
-                con.close()
-                self.assertEqual(got, status)
-        finally:
-            os.environ.pop('BMA_STRIPE_WEBHOOK_SECRET', None)
-            os.environ.pop('BMA_STRIPE_PRICE_PRO', None)
-
-    def test_billing_webhook_unknown_price_active_is_noop(self):
-        """An active subscription whose price maps to no configured plan must not
-        change the account (apply_subscription rejects plan=None) — a mis-configured
-        or foreign price can't silently up/down-grade someone."""
-        os.environ['BMA_STRIPE_WEBHOOK_SECRET'] = 'whsec_test'
-        os.environ['BMA_STRIPE_PRICE_PRO'] = 'price_pro_123'
-        try:
-            s, j = self._call_auth('/v1/auth/signup', {
-                'name': 'Unknown Price', 'email': 'unkprice@example.com',
-                'password': 'longenough1', 'accept_tos': True})
-            token = j['token']
-            cust = 'cus_unkprice'
-            self._webhook({'type': 'checkout.session.completed', 'data': {'object': {
-                'client_reference_id': 'unkprice@example.com', 'customer': cust}}})
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'free')
-            s, _ = self._webhook({'type': 'customer.subscription.updated', 'data': {'object': {
-                'customer': cust, 'status': 'active',
-                'items': {'data': [{'price': {'id': 'price_unknown_999'}}]}}}})
-            self.assertEqual(s, 200)   # acked, but nothing moved
-            s, j = self._call_auth('/v1/auth/me', token=token)
-            self.assertEqual(j['user']['plan'], 'free')
-        finally:
-            os.environ.pop('BMA_STRIPE_WEBHOOK_SECRET', None)
-            os.environ.pop('BMA_STRIPE_PRICE_PRO', None)
-
     # ---- migrations: forward-only version tracking (SQLite hardening) -----------
     def test_run_migrations_forward_only_no_downgrade_or_rerun(self):
         """schema_version is a high-water mark: an older build opening a DB a newer
@@ -1166,43 +856,9 @@ class ApiTest(unittest.TestCase):
         self.addCleanup(os.environ.pop, 'BMA_MAIL_FROM', None)
         self.assertEqual(server.mailer.from_addr(), 'BMA <hi@example.com>')
 
-    # ---- entitlements / plan gate (P0-3) ---------------------------------------
-    def test_entitlements_reflect_plan_and_gate_flips_with_it(self):
-        """The plan gate is server-authoritative and honest: a free user is denied
-        the one live Pro capability with a 402 that names the plan to buy; the same
-        user, once moved to pro (the webhook's job), passes — no client say-so."""
-        s, j = self._call_auth('/v1/auth/signup', {
-            'name': 'Gate User', 'email': 'gate@example.com',
-            'password': 'longenough1', 'accept_tos': True})
-        token = j['token']
-        # /v1/auth/me carries the capability set the frontend shows/hides against
-        self.assertEqual(j['user']['plan'], 'free')
-        s, j = self._call_auth('/v1/auth/me', token=token)
-        caps = j['entitlements']['capabilities']
-        self.assertIn('local_chat', caps)
-        self.assertNotIn('advanced_rag', caps)          # coming-of-Pro, not free
-        # the dedicated manifest endpoint agrees
-        s, j = self._call_auth('/v1/entitlements', token=token)
-        self.assertEqual((s, j['entitlements']['plan']), (200, 'free'))
-        # the gated Pro resource: free user gets an honest upgrade prompt, not data
-        s, j = self._call_auth('/v1/pro/rag-manifest', token=token)
-        self.assertEqual((s, j['error'], j['required_plan']), (402, 'upgrade_required', 'pro'))
-
-        # upgrade the ONLY way plans move (server-side), then re-check the gate
-        self.assertTrue(server.set_plan('gate@example.com', 'pro'))
-        s, j = self._call_auth('/v1/auth/me', token=token)
-        self.assertIn('advanced_rag', j['entitlements']['capabilities'])
-        s, j = self._call_auth('/v1/pro/rag-manifest', token=token)
-        self.assertEqual((s, j['ok'], j['citations']), (200, True, True))
-
-    def test_entitlements_requires_login(self):
-        for path in ('/v1/entitlements', '/v1/pro/rag-manifest'):
-            s, j = self._call_auth(path)
-            self.assertEqual((s, j['error']), (401, 'not_logged_in'), path)
-
     def test_default_secret_refuses_public_bind(self):
-        # P0-17 fail-closed: the check fires before any socket is opened
-        self.assertEqual(server.LICENSE_SECRET, 'dev-secret-change-me')
+        # fail-closed: the check fires before any socket is opened
+        self.assertEqual(server.ADMIN_SECRET, 'dev-secret-change-me')
         with self.assertRaises(SystemExit):
             server.create_server(port=0, host='0.0.0.0')
 

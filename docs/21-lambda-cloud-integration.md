@@ -5,7 +5,7 @@
 
 ## 0. 一句话结论
 
-技术上完全可行且顺:Lambda launch API 支持 cloud-init `user_data`(≤1MB,开机自动装好推理服务),SSH key 可由 API 代生成(用户零操作),防火墙可 API 精确放行,按分钟计费无流量费。商业上第一期用 **BYO-key**(用户自己的 Lambda 账号自己付费,我们只代调 API)完全合规;平台代管/代付需 Lambda Partner 计划(联系制),不可悄悄升级。
+技术上完全可行且顺:Lambda launch API 支持 cloud-init `user_data`(≤1MB,开机自动装好推理服务),SSH key 可由 API 代生成(用户零操作),防火墙可 API 精确放行,按分钟计费无流量费。始终采用 **BYO-key**(用户自己的 Lambda 账号、账单直接付给 Lambda,应用只代调 API):项目免费开源、不经手账单、不加价、不抽成。用户看到的价格就是 Lambda 的真实价格。
 
 ## 1. 体验目标与用户流程(修正后)
 
@@ -99,7 +99,7 @@ users.db 新表 `cloud_keys`、`cloud_deployments`(含 endpoint_token_enc、ssh_
 ## 9. 分期
 
 **第一期 · 最小可发布**(验收标准:真实用户用自己的 key,10 分钟内聊上 8B):3 档模型 × 1 主力机型(8B/14B→RTX 6000 $0.69,32B→A6000 $1.09)、2–3 个 us-* region、docker 主路径 bootstrap、CIDR /32 收紧、8 个 /v1/cloud/* 端点、key 双档保险箱、限流队列、auto-off+对账+开机自启、fake Lambda 全套测试、部署面板 + __bmaCloud、手册回退保留。
-**第二期**:后端流式聊天代理(token 后端注入,浏览器零持有,chat.html/Control Center 直聊)+ TLS + 空闲自动关机(代理侧 last_request_ts)+ 进度百分比 + 容量降级链 + hybrid 接入 + RAG 上云(独立同意流程)+ Partner 计划商务接洽。
+**第二期**:后端流式聊天代理(token 后端注入,浏览器零持有,chat.html/Control Center 直聊)+ TLS + 空闲自动关机(代理侧 last_request_ts)+ 进度百分比 + 容量降级链 + hybrid 接入 + RAG 上云(独立同意流程)。
 
 ## 10. 实施前实测清单(拿一个真实 Lambda 账号,半天)
 

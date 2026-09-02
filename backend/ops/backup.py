@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build My AI — database backup + restore drill (P1, docs/23 Week 4).
+"""Build My AI — database backup + restore drill.
 
 Zero-dependency: Python 3 stdlib only. Uses sqlite3's ONLINE backup API, which
 takes a consistent snapshot even while the API server is writing (WAL-safe) — no

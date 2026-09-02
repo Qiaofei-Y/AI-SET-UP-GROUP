@@ -4,11 +4,14 @@
 Zero-dependency: Python 3 stdlib only (http.server, sqlite3, hmac) — same
 philosophy as the frontend (no package manager, runs anywhere, easy to audit).
 
+This is a free, non-commercial project (built for AI enthusiasts and developers
+to own their own stack): no paid tiers, no billing, no license keys — every
+capability is available to everyone.
+
 Endpoints (drafts from the plan, minimal but real):
   GET  /v1/health                     liveness
   GET  /v1/registry/models[?vram=N]   model registry (data file, not hardcoded)
   POST /v1/advise                     need + hardware -> recommended plan
-  POST /v1/license/verify             HMAC-signed key -> {valid, tier, grace_until}
   POST /v1/telemetry/deploy           anonymous deploy stats (schema-whitelisted)
   POST /v1/feedback                   up/down aggregate (no content, ever)
   POST /v1/auth/signup                create account -> session token
@@ -17,7 +20,7 @@ Endpoints (drafts from the plan, minimal but real):
   POST /v1/auth/forgot                email -> constant 200; mails a reset link if it exists
   POST /v1/auth/reset                 reset token + new password -> set password, revoke sessions
   POST /v1/auth/verify                verification token -> mark email confirmed
-  GET  /v1/auth/me                    Bearer token -> {name, email, plan, email_verified}
+  GET  /v1/auth/me                    Bearer token -> {name, email, email_verified}
 
 Identity vs telemetry stay in SEPARATE databases: users/sessions live in
 data/users.db, anonymous events in data/events.db — so the "telemetry is
@@ -34,9 +37,9 @@ Privacy red lines (docs/19 §4), enforced in code and by backend/tests:
     filenames or directory structures
 
 Run:   python3 backend/api/server.py [--port 8940] [--host 127.0.0.1]
-Mint:  python3 backend/api/server.py --mint pro   (demo license for testing)
-Env:   BMA_LICENSE_SECRET (default dev secret; binding a non-loopback --host
-       with the default secret refuses to start — anyone could mint licenses),
+Env:   BMA_ADMIN_SECRET (default dev secret; binding a non-loopback --host with
+       the default secret refuses to start — proves the deployment was
+       configured deliberately before it faces the network),
        BMA_DB (sqlite path), BMA_DEBUG,
        BMA_RATE_AUTH / BMA_RATE_EVENTS ('requests/seconds' per client IP,
        defaults 30/60 and 120/60 — login runs 100k PBKDF2 rounds, telemetry
@@ -69,44 +72,16 @@ REGISTRY_PATH = os.path.join(ROOT, 'registry.json')
 DB_PATH = os.environ.get('BMA_DB', os.path.join(ROOT, 'data', 'events.db'))
 USERS_DB = os.environ.get('BMA_USERS_DB', os.path.join(ROOT, 'data', 'users.db'))
 DEFAULT_SECRET = 'dev-secret-change-me'  # fine on loopback, fatal on a public bind
-LICENSE_SECRET = os.environ.get('BMA_LICENSE_SECRET', DEFAULT_SECRET)
+ADMIN_SECRET = os.environ.get('BMA_ADMIN_SECRET', DEFAULT_SECRET)
 PBKDF2_ITERS = 100000            # stdlib-only password hashing
 TOS_VERSION = 'draft-2026-08-25'  # clickwrap record (P0-5): stamped per signup, bump on policy change
-BILLING_TOS_VERSION = 'billing-draft-2026-08-25'  # auto-renewal disclosure (P0-4): stamped at checkout, bump on terms change
 SESSION_DAYS = 30
 RESET_TTL_S = 3600               # password-reset link lives one hour (short: it grants a password change)
 VERIFY_TTL_S = 48 * 3600         # email-verification link lives 48 hours (longer: low-risk, better UX)
 SQLITE_BUSY_TIMEOUT_MS = 5000     # WAL lets readers and one writer coexist; on a busy-lock, wait this long before erroring
-GRACE_HOURS = 72                 # offline grace: never lock out a user who is offline
 MAX_BODY = 16 * 1024             # nothing legitimate is bigger than this
 MAX_NEED_TEXT = 500              # one sentence, not a document
 LLM_TIMEOUT_S = 4                # advisor LLM is local; anything slower falls back to rules
-STRIPE_TIMEOUT_S = 15            # outbound to api.stripe.com; slower than local, still bounded
-
-# ---------- Stripe billing config (P0-1/2/3) -----------------------------------
-# All read at request time so ops can inject keys without touching code. Card data
-# never touches our system: Checkout + Billing Portal are Stripe-HOSTED pages; we
-# only mint a session and later trust a signature-verified webhook. This keeps the
-# privacy pitch intact (no PAN, no CVC, no card in users.db — only a customer id).
-STRIPE_API = 'https://api.stripe.com'  # the ONLY non-loopback URL the backend dials
-
-
-def stripe_cfg():
-    """Live config, read per request. `secret` empty => billing is un-provisioned
-    and the checkout/portal endpoints 503 instead of half-working."""
-    return {
-        'secret':         os.environ.get('BMA_STRIPE_SECRET', ''),
-        'webhook_secret': os.environ.get('BMA_STRIPE_WEBHOOK_SECRET', ''),
-        'success_url':    os.environ.get('BMA_CHECKOUT_SUCCESS_URL',
-                                         'http://localhost:8931/checkout-success.html'),
-        'cancel_url':     os.environ.get('BMA_CHECKOUT_CANCEL_URL',
-                                         'http://localhost:8931/checkout-cancel.html'),
-        'portal_return':  os.environ.get('BMA_PORTAL_RETURN_URL',
-                                         'http://localhost:8931/dashboard.html'),
-        # plan -> Stripe Price id. A plan with no price id cannot be checked out.
-        'prices': {'pro':      os.environ.get('BMA_STRIPE_PRICE_PRO', ''),
-                   'business': os.environ.get('BMA_STRIPE_PRICE_BUSINESS', '')},
-    }
 
 # BMA_ADVISOR_LLM may only point at this machine: need_text never leaves it
 LOOPBACK_URL = re.compile(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?/?$')
@@ -216,27 +191,6 @@ def advise(body, models):
             'advisor': advisor, 'why': {'en': why_en, 'zh': why_zh}}
 
 
-# ---------- license (HMAC-signed, stateless, offline grace) ----------
-
-def mint_license(tier, secret=None):
-    token = secrets.token_hex(6)
-    sig = _license_sig(tier.upper(), token, secret)
-    return 'BMA-%s-%s-%s' % (tier.upper(), token, sig)
-
-
-def _license_sig(tier, token, secret=None):
-    key = (secret or LICENSE_SECRET).encode()
-    return hmac.new(key, ('%s:%s' % (tier, token)).encode(), hashlib.sha256).hexdigest()[:12]
-
-
-def verify_license(license_key, secret=None):
-    m = re.match(r'^BMA-(PRO|BUSINESS)-([0-9a-f]{12})-([0-9a-f]{12})$', license_key or '')
-    if not m:
-        return None
-    tier, token, sig = m.groups()
-    return tier.lower() if hmac.compare_digest(sig, _license_sig(tier, token, secret)) else None
-
-
 # ---------- sqlite production hardening (WAL + busy_timeout + versioned migrations) ----------
 # Every connection to either database goes through connect_db(): WAL mode lets many
 # readers coexist with one writer instead of the file-level lock that DELETE-journal
@@ -303,20 +257,14 @@ def users_con():
     return connect_db(USERS_DB)
 
 
-# billing columns (P0-1/3): the customer id links a Stripe subscription back to this
-# row; status/period_end mirror the subscription so the app can gate without a
-# round-trip to Stripe. New steps go on the end — never reorder (version = count run).
+# Versioned schema migrations for older DBs (a DB created before schema_version
+# existed gets these ALTERs applied once). New steps go on the end — never reorder
+# (the stored version is the count already run). Fresh DBs get every column from the
+# CREATE TABLE below; the ALTERs then no-op.
 USERS_MIGRATIONS = (
     ('ALTER TABLE users ADD COLUMN tos TEXT',),
-    ('ALTER TABLE users ADD COLUMN plan_intent TEXT',),
-    ('ALTER TABLE users ADD COLUMN stripe_customer_id TEXT',),
-    ('ALTER TABLE users ADD COLUMN subscription_status TEXT',),
-    ('ALTER TABLE users ADD COLUMN plan_period_end INTEGER',),
     # email verification (P0-15): 0/NULL = unverified, 1 = confirmed via emailed link
     ('ALTER TABLE users ADD COLUMN email_verified INTEGER',),
-    # auto-renewal clickwrap (P0-4): accepted terms version + unix time, stamped at checkout
-    ('ALTER TABLE users ADD COLUMN billing_consent TEXT',),
-    ('ALTER TABLE users ADD COLUMN billing_consent_ts INTEGER',),
 )
 
 
@@ -326,10 +274,8 @@ def init_users_db(path=None):
     con = connect_db(path)
     con.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY, ts INTEGER, name TEXT, email TEXT UNIQUE,
-        company TEXT, plan TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
-        plan_intent TEXT, stripe_customer_id TEXT, subscription_status TEXT,
-        plan_period_end INTEGER, email_verified INTEGER,
-        billing_consent TEXT, billing_consent_ts INTEGER)''')
+        company TEXT, pw_salt BLOB, pw_hash BLOB, tos TEXT,
+        email_verified INTEGER)''')
     con.execute('''CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY, user_id INTEGER, ts INTEGER, expires INTEGER)''')
     # one-time link tokens (P0-15). Same shape as sessions: only the sha256 of the
@@ -342,143 +288,6 @@ def init_users_db(path=None):
     con.close()
 
 
-def set_plan(email, plan):
-    """Set a user's plan by email (P0-3). Used by the --set-plan ops CLI; the
-    Stripe webhook uses apply_subscription() (by customer id) instead. Returns
-    True if a row was updated. Takes effect on the user's next /v1/auth/me (plan
-    is read per-request via JOIN — no session invalidation needed)."""
-    if plan not in ('free', 'pro', 'business'):
-        return False
-    con = users_con()
-    try:
-        cur = con.execute('UPDATE users SET plan = ? WHERE email = ?',
-                          (plan, (email or '').strip().lower()))
-        con.commit()
-        return cur.rowcount == 1
-    finally:
-        con.close()
-
-
-# ---------- entitlements (P0-3: what each plan actually unlocks) ----------------
-# Server-authoritative and HONEST: a capability is listed only if it is REAL today.
-# Coming-soon features (memory, fine-tuning, shared KB, audit logs …) are NOT here —
-# gating vaporware would break the repo's honesty invariant (docs/22 P0-6). When a
-# feature ships for real, add it here with its min plan and the gate follows.
-PLAN_RANK = {'free': 0, 'pro': 1, 'business': 2}
-
-# slug -> (min_plan, human label). The frontend renders these; require_plan() guards
-# backend routes against them.
-CAPABILITIES = {
-    'model_advice':   ('free', 'Model recommendation'),
-    'guided_install': ('free', 'Guided local install'),
-    'local_chat':     ('free', 'Chat with your local model'),
-    # the one paid feature that is LIVE today (pricing.html: "live in the demo")
-    'advanced_rag':   ('pro',  'Advanced RAG + citations'),
-}
-
-
-def entitlements_for(plan):
-    """The capability set a plan unlocks — the single source of truth both
-    /v1/auth/me (frontend show/hide) and require_plan() (backend guard) read."""
-    rank = PLAN_RANK.get(plan, 0)
-    caps = [slug for slug, (min_plan, _) in CAPABILITIES.items()
-            if rank >= PLAN_RANK[min_plan]]
-    return {'plan': plan, 'rank': rank, 'capabilities': caps}
-
-
-def plan_allows(plan, capability):
-    """True if `plan` unlocks `capability`. Unknown capability -> False (fail closed)."""
-    spec = CAPABILITIES.get(capability)
-    return bool(spec) and PLAN_RANK.get(plan, 0) >= PLAN_RANK[spec[0]]
-
-
-def link_customer(email, customer_id):
-    """Bind a Stripe customer id to a user row (idempotent). Called the first time
-    we create a checkout session for them so the webhook can find them later."""
-    con = users_con()
-    try:
-        con.execute('UPDATE users SET stripe_customer_id = ? WHERE email = ?',
-                    (customer_id, (email or '').strip().lower()))
-        con.commit()
-    finally:
-        con.close()
-
-
-def record_billing_consent(user_id):
-    """Stamp the auto-renewal clickwrap acceptance (P0-4): the terms version the
-    user agreed to, plus when. Called the moment they confirm the disclosure and
-    proceed to checkout — the record stands even if billing is un-provisioned, so
-    there is always proof the recurring-billing terms were shown and accepted."""
-    con = users_con()
-    try:
-        con.execute('UPDATE users SET billing_consent = ?, billing_consent_ts = ? WHERE id = ?',
-                    (BILLING_TOS_VERSION, int(time.time()), user_id))
-        con.commit()
-    finally:
-        con.close()
-
-
-def apply_subscription(customer_id, plan, status, period_end):
-    """The billing counterpart to set_plan(): the Stripe webhook is the ONLY caller
-    (P0-3, entitlements stay server-authoritative). Resolves the user by their
-    Stripe customer id and mirrors the subscription. Returns True if a row moved."""
-    if plan not in ('free', 'pro', 'business') or not customer_id:
-        return False
-    con = users_con()
-    try:
-        cur = con.execute(
-            'UPDATE users SET plan = ?, subscription_status = ?, plan_period_end = ? '
-            'WHERE stripe_customer_id = ?', (plan, status, period_end, customer_id))
-        con.commit()
-        return cur.rowcount == 1
-    finally:
-        con.close()
-
-
-def verify_stripe_signature(payload, header, secret, now=None, tolerance=300):
-    """Stripe's scheme: header is 't=<unix>,v1=<hex hmac>,...'; the signed message
-    is '<t>.<raw payload>' under HMAC-SHA256(secret). Reject on missing parts, bad
-    digest, or a timestamp outside the tolerance window (replay lid). Pure stdlib.
-
-    A single header can carry MORE THAN ONE v1 signature — Stripe includes one per
-    active secret during a signing-secret rotation — so we collect every v1 and
-    accept if ANY matches (mirrors Stripe's own libraries). Keying by the last v1
-    alone would spuriously reject a valid event mid-rotation."""
-    if not secret or not header:
-        return False
-    ts = None
-    v1s = []
-    for p in header.split(','):
-        if '=' not in p:
-            continue
-        k, v = p.split('=', 1)
-        if k == 't':
-            ts = v
-        elif k == 'v1':
-            v1s.append(v)
-    if not ts or not v1s or not ts.isdigit():
-        return False
-    now = int(time.time()) if now is None else now
-    if abs(now - int(ts)) > tolerance:
-        return False
-    expected = hmac.new(secret.encode(), (ts + '.').encode() + payload,
-                        hashlib.sha256).hexdigest()
-    return any(hmac.compare_digest(expected, s) for s in v1s)
-
-
-def stripe_post(cfg, path, fields):
-    """Form-encode `fields` and POST to Stripe with the secret key. Nested keys use
-    Stripe's bracket convention (e.g. line_items[0][price]). Returns parsed JSON or
-    raises urllib.error.* / ValueError — callers turn failures into a 502."""
-    import urllib.parse
-    data = urllib.parse.urlencode(fields).encode()
-    req = urllib.request.Request(STRIPE_API + path, data=data, method='POST')
-    req.add_header('Authorization', 'Bearer ' + cfg['secret'])
-    req.add_header('Content-Type', 'application/x-www-form-urlencoded')
-    with urllib.request.urlopen(req, timeout=STRIPE_TIMEOUT_S) as r:
-        return json.loads(r.read())
-
-
 def create_session(con, user_id):
     token = secrets.token_hex(24)
     now = int(time.time())
@@ -489,13 +298,11 @@ def create_session(con, user_id):
 
 
 def session_user(con, token):
-    """token -> (id, name, email, plan, email_verified) or None (unknown / expired).
-    email_verified is appended last so the many callers that index [0..3] are
-    untouched; only responses that surface verification status read [4]."""
+    """token -> (id, name, email, email_verified) or None (unknown / expired)."""
     if not token:
         return None
     row = con.execute(
-        'SELECT u.id, u.name, u.email, u.plan, u.email_verified FROM sessions s '
+        'SELECT u.id, u.name, u.email, u.email_verified FROM sessions s '
         'JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND s.expires > ?',
         (_token_hash(token), int(time.time()))).fetchone()
     return row
@@ -599,7 +406,7 @@ TELEMETRY_SCHEMA = {
     'success':    (True,  _bool),
     'duration_s': (False, _int(0, 86400)),
     'error_code': (False, _enum('gpu_check_failed', 'download_failed', 'runtime_failed', 'other')),
-    # segments install success by delivery path (docs/22: prices the Tauri build)
+    # segments install success by delivery path (guided engine vs manual cloud)
     'install_method': (False, _enum('ollama_guided', 'cloud_manual')),
 }
 
@@ -609,11 +416,6 @@ FEEDBACK_SCHEMA = {
     # shape-limited id, not an enum: chat feedback may name any local model the
     # user runs (e.g. Qwen2.5-7B-Instruct); the pattern still shuts out free text
     'model':    (True, _short_id),
-}
-
-LICENSE_SCHEMA = {
-    'license_key':        (True, lambda v: isinstance(v, str) and len(v) <= 64),
-    'device_fingerprint': (True, _short_id),
 }
 
 HARDWARE_SCHEMA = {
@@ -647,10 +449,6 @@ SIGNUP_SCHEMA = {
     'email':      (True,  _email_shape),
     'password':   (True,  _password_shape),
     'company':    (False, _identity_name),
-    # requested plan — recorded as INTENT only (funnel signal). Accounts always
-    # start on 'free'; users.plan changes solely server-side via set_plan()
-    # (future Stripe webhook / ops CLI). P0-3: no client-reported entitlements.
-    'plan':       (False, _enum('free', 'pro', 'business')),
     # clickwrap (P0-5): consent must be explicit and true — the accepted policy
     # version + signup timestamp form the acceptance record in users.tos
     'accept_tos': (True,  lambda v: v is True),
@@ -680,7 +478,7 @@ VERIFY_SCHEMA = {
     'token': (True, _opaque_token),
 }
 
-# account self-service (docs/22 P1: password change / logout-all / CCPA delete+export)
+# account self-service (password change / logout-all / CCPA delete+export)
 PASSWORD_CHANGE_SCHEMA = {
     'current_password': (True, _password_shape),
     'new_password':     (True, _password_shape),
@@ -693,13 +491,6 @@ DELETE_ACCOUNT_SCHEMA = {  # destructive: re-authenticate with the password
 EMAIL_CHANGE_SCHEMA = {  # sensitive: re-auth, then the new address must be verified
     'password':  (True, _password_shape),
     'new_email': (True, _email_shape),
-}
-
-BILLING_CHECKOUT_SCHEMA = {  # which paid tier to start a hosted checkout for
-    'plan': (True, _enum('pro', 'business')),
-    # auto-renewal clickwrap (P0-4): the disclosure must be shown and accepted
-    # before a recurring subscription can begin — the server records it (version+time)
-    'accept_terms': (True, lambda v: v is True),
 }
 
 EMPTY_SCHEMA = {}  # body must be {} — unknown keys still 400
@@ -759,10 +550,6 @@ RATE_BUCKETS = {  # only endpoints that burn CPU (auth) or write unauthenticated
     '/v1/account/password': 'auth', '/v1/account/logout-all': 'auth',
     '/v1/account/delete': 'auth', '/v1/account/email': 'auth',
     '/v1/telemetry/deploy': 'events', '/v1/feedback': 'events',
-    # billing checkout/portal mint Stripe sessions (outbound cost); webhook is
-    # public and signature-gated — bucket it too so a bad-sig flood can't hammer us
-    '/v1/billing/checkout': 'auth', '/v1/billing/portal': 'auth',
-    '/v1/billing/webhook': 'events',
 }
 RATE_DEFAULTS = {'auth': '30/60', 'events': '120/60'}
 _RATE = {}                       # (bucket, ip) -> [window_start, count]
@@ -856,21 +643,6 @@ class Api(BaseHTTPRequestHandler):
             self._json(400, {'error': 'bad_json'})
             return None
 
-    def _raw_body(self):
-        """Raw bytes for signature-verified endpoints (the webhook). Same length
-        guards as _body(); returns None after emitting an error response."""
-        try:
-            n = int(self.headers.get('Content-Length', 0) or 0)
-        except ValueError:
-            n = -1
-        if n < 0:
-            self._json(400, {'error': 'bad_content_length'})
-            return None
-        if n > MAX_BODY:
-            self._json(413, {'error': 'body_too_large'})
-            return None
-        return self.rfile.read(n)
-
     def log_message(self, fmt, *args):
         # never log request bodies (need_text privacy); path-only line in debug mode
         if os.environ.get('BMA_DEBUG'):
@@ -899,10 +671,6 @@ class Api(BaseHTTPRequestHandler):
                                     'recommended': models[0]['id'] if models else None})
         if path == '/v1/auth/me':
             return self._auth_me()
-        if path == '/v1/entitlements':
-            return self._entitlements()
-        if path == '/v1/pro/rag-manifest':
-            return self._pro_rag_manifest()
         if path == '/v1/account/export':
             return self._account_export()
         return self._json(404, {'error': 'not_found'})
@@ -912,13 +680,8 @@ class Api(BaseHTTPRequestHandler):
         bucket = RATE_BUCKETS.get(self.path)
         if bucket and rate_limited(bucket, self.client_address[0]):
             return self._json(429, {'error': 'rate_limited'})
-        # webhook is signed over the EXACT bytes Stripe sent — it must see the raw
-        # body, never the re-serialized JSON, so it's routed before _body() parses
-        if self.path == '/v1/billing/webhook':
-            return self._billing_webhook()
         handlers = {
             '/v1/advise': self._advise,
-            '/v1/license/verify': self._license,
             '/v1/telemetry/deploy': self._telemetry,
             '/v1/feedback': self._feedback,
             '/v1/auth/signup': self._auth_signup,
@@ -931,8 +694,6 @@ class Api(BaseHTTPRequestHandler):
             '/v1/account/logout-all': self._account_logout_all,
             '/v1/account/delete': self._account_delete,
             '/v1/account/email': self._account_email,
-            '/v1/billing/checkout': self._billing_checkout,
-            '/v1/billing/portal': self._billing_portal,
         }
         h = handlers.get(self.path)
         if not h:
@@ -950,16 +711,6 @@ class Api(BaseHTTPRequestHandler):
             return self._json(400, {'error': err})
         # need_text lives and dies inside this call: not logged, not stored, not echoed
         return self._json(200, advise(body, load_registry()['models']))
-
-    def _license(self, body):
-        err = validate(body, LICENSE_SCHEMA)
-        if err:
-            return self._json(400, {'error': err})
-        tier = verify_license(body['license_key'])
-        if not tier:
-            return self._json(200, {'valid': False})
-        return self._json(200, {'valid': True, 'tier': tier,
-                                'grace_until': int(time.time()) + GRACE_HOURS * 3600})
 
     def _telemetry(self, body):
         err = validate(body, TELEMETRY_SCHEMA)
@@ -996,12 +747,11 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             cur = con.execute(
-                'INSERT INTO users (ts, name, email, company, plan, pw_salt, pw_hash, tos, '
-                'plan_intent, email_verified) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                'INSERT INTO users (ts, name, email, company, pw_salt, pw_hash, tos, '
+                'email_verified) VALUES (?,?,?,?,?,?,?,?)',
                 (int(time.time()), body['name'].strip(), email,
                  (body.get('company') or '').strip() or None,
-                 'free',  # P0-3: entitlements are server-authoritative — see set_plan()
-                 salt, pw, TOS_VERSION, body.get('plan'), 0))  # unverified until the link is clicked
+                 salt, pw, TOS_VERSION, 0))  # unverified until the emailed link is clicked
             uid = cur.lastrowid
             token = create_session(con, uid)
             verify_token = new_link_token(con, 'email_verifications', uid, VERIFY_TTL_S)
@@ -1014,7 +764,7 @@ class Api(BaseHTTPRequestHandler):
         send_verification_email(email, verify_token)
         return self._json(200, {'ok': True, 'token': token,
                                 'user': {'name': body['name'].strip(), 'email': email,
-                                         'plan': 'free', 'email_verified': False}})
+                                         'email_verified': False}})
 
     def _auth_login(self, body):
         err = validate(body, LOGIN_SCHEMA)
@@ -1024,20 +774,20 @@ class Api(BaseHTTPRequestHandler):
         con = users_con()
         try:
             row = con.execute(
-                'SELECT id, name, plan, pw_salt, pw_hash, email_verified FROM users WHERE email = ?',
+                'SELECT id, name, pw_salt, pw_hash, email_verified FROM users WHERE email = ?',
                 (email,)).fetchone()
             # unknown email still runs the hash: same timing, same error either way
-            salt = row[3] if row else b'\x00' * 16
+            salt = row[2] if row else b'\x00' * 16
             _, pw = hash_password(body['password'], salt)
-            if not row or not hmac.compare_digest(pw, row[4]):
+            if not row or not hmac.compare_digest(pw, row[3]):
                 return self._json(401, {'error': 'bad_credentials'})
             token = create_session(con, row[0])
             con.commit()
         finally:
             con.close()
         return self._json(200, {'ok': True, 'token': token,
-                                'user': {'name': row[1], 'email': email, 'plan': row[2],
-                                         'email_verified': bool(row[5])}})
+                                'user': {'name': row[1], 'email': email,
+                                         'email_verified': bool(row[4])}})
 
     def _auth_logout(self, body):
         token = self._bearer()
@@ -1123,46 +873,10 @@ class Api(BaseHTTPRequestHandler):
         if not row:
             return self._json(401, {'error': 'not_logged_in'})
         return self._json(200, {'ok': True,
-                                'user': {'name': row[1], 'email': row[2], 'plan': row[3],
-                                         'email_verified': bool(row[4])},
-                                # server-authoritative capability set: the frontend
-                                # shows/hides against this, never against a client guess
-                                'entitlements': entitlements_for(row[3])})
+                                'user': {'name': row[1], 'email': row[2],
+                                         'email_verified': bool(row[3])}})
 
-    # -- entitlements (P0-3: the plan gate, server-authoritative) --
-    def _require_capability(self, capability):
-        """Guard for plan-gated routes. Returns (id, name, email, plan) row on
-        success, or None after already emitting the right response: 401 if not
-        logged in, 402 upgrade_required (with the plan that unlocks it) otherwise."""
-        row = self._session_user()
-        if not row:
-            self._json(401, {'error': 'not_logged_in'})
-            return None
-        if not plan_allows(row[3], capability):
-            spec = CAPABILITIES.get(capability)
-            self._json(402, {'error': 'upgrade_required', 'capability': capability,
-                             'required_plan': spec[0] if spec else None,
-                             'current_plan': row[3]})
-            return None
-        return row
-
-    def _entitlements(self):
-        row = self._session_user()
-        if not row:
-            return self._json(401, {'error': 'not_logged_in'})
-        return self._json(200, {'ok': True, 'entitlements': entitlements_for(row[3])})
-
-    def _pro_rag_manifest(self):
-        # a real Pro-only resource: the Advanced-RAG capability descriptor (the one
-        # paid feature that is live today). Free users get an honest 402, not a
-        # half-answer — this is what the plan gate looks like end to end.
-        if not self._require_capability('advanced_rag'):
-            return
-        return self._json(200, {'ok': True, 'capability': 'advanced_rag',
-                                'formats': ['pdf', 'docx', 'xlsx', 'txt', 'md'],
-                                'citations': True, 'chunk_tokens': 512, 'overlap_tokens': 64})
-
-    # -- account self-service (docs/22 P1: the privacy policy's promises, executable) --
+    # -- account self-service (the privacy policy's promises, executable) --
     def _verify_password(self, con, user_id, password):
         """Constant-work re-auth for sensitive operations."""
         row = con.execute('SELECT pw_salt, pw_hash FROM users WHERE id = ?', (user_id,)).fetchone()
@@ -1215,7 +929,7 @@ class Api(BaseHTTPRequestHandler):
                 return self._json(403, {'error': 'bad_credentials'})
             if new_email == row[2]:   # no change: don't reset verification for nothing
                 return self._json(200, {'ok': True, 'email': new_email,
-                                        'email_verified': bool(row[4])})
+                                        'email_verified': bool(row[3])})
             try:
                 con.execute('UPDATE users SET email = ?, email_verified = 0 WHERE id = ?',
                             (new_email, row[0]))
@@ -1253,8 +967,7 @@ class Api(BaseHTTPRequestHandler):
             row = session_user(con, token)
             if not row:
                 return self._json(401, {'error': 'not_logged_in'})
-            u = con.execute('SELECT ts, name, email, company, plan, plan_intent, tos, '
-                            'email_verified, billing_consent, billing_consent_ts '
+            u = con.execute('SELECT ts, name, email, company, tos, email_verified '
                             'FROM users WHERE id = ?', (row[0],)).fetchone()
             sess = con.execute('SELECT ts, expires, token_hash FROM sessions WHERE user_id = ? '
                                'ORDER BY ts', (row[0],)).fetchall()
@@ -1264,9 +977,7 @@ class Api(BaseHTTPRequestHandler):
             'ok': True,
             'exported_at': int(time.time()),
             'user': {'created_ts': u[0], 'name': u[1], 'email': u[2], 'company': u[3],
-                     'plan': u[4], 'plan_intent': u[5], 'tos_accepted': u[6],
-                     'email_verified': bool(u[7]),
-                     'billing_consent': u[8], 'billing_consent_ts': u[9]},
+                     'tos_accepted': u[4], 'email_verified': bool(u[5])},
             'sessions': [{'created_ts': s[0], 'expires_ts': s[1],
                           'current': s[2] == _token_hash(token)} for s in sess],
             'note': 'Telemetry and feedback are anonymous, schema-whitelisted events '
@@ -1302,129 +1013,12 @@ class Api(BaseHTTPRequestHandler):
         finally:
             con.close()
 
-    # -- billing (P0-1/2/3): Stripe-hosted checkout & portal; webhook is the only
-    #    thing that moves users.plan for a paying account (entitlements stay
-    #    server-authoritative). Card data never touches this process. --
-    def _session_user(self):
-        con = users_con()
-        try:
-            return session_user(con, self._bearer())
-        finally:
-            con.close()
-
-    def _billing_checkout(self, body):
-        err = validate(body, BILLING_CHECKOUT_SCHEMA)
-        if err:
-            return self._json(400, {'error': err})
-        row = self._session_user()
-        if not row:
-            return self._json(401, {'error': 'not_logged_in'})
-        # the user confirmed the auto-renewal disclosure (accept_terms, enforced by
-        # the schema) — record that acceptance before anything else (P0-4)
-        record_billing_consent(row[0])
-        cfg = stripe_cfg()
-        price = cfg['prices'].get(body['plan'])
-        if not cfg['secret'] or not price:
-            # billing un-provisioned: say so honestly instead of half-working
-            return self._json(503, {'error': 'billing_unavailable'})
-        email = row[2]
-        try:
-            sess = stripe_post(cfg, '/v1/checkout/sessions', {
-                'mode': 'subscription',
-                'line_items[0][price]': price,
-                'line_items[0][quantity]': 1,
-                'customer_email': email,
-                # echoed back on checkout.session.completed so the webhook can link
-                # the new Stripe customer to this account and set the right plan
-                'client_reference_id': email,
-                'metadata[plan]': body['plan'],
-                'subscription_data[metadata][plan]': body['plan'],
-                'success_url': cfg['success_url'],
-                'cancel_url': cfg['cancel_url'],
-            })
-        except Exception:
-            return self._json(502, {'error': 'stripe_error'})
-        return self._json(200, {'ok': True, 'url': sess.get('url')})
-
-    def _billing_portal(self, body):
-        err = validate(body, EMPTY_SCHEMA)
-        if err:
-            return self._json(400, {'error': err})
-        row = self._session_user()
-        if not row:
-            return self._json(401, {'error': 'not_logged_in'})
-        cfg = stripe_cfg()
-        if not cfg['secret']:
-            return self._json(503, {'error': 'billing_unavailable'})
-        con = users_con()
-        try:
-            cust = con.execute('SELECT stripe_customer_id FROM users WHERE id = ?',
-                               (row[0],)).fetchone()
-        finally:
-            con.close()
-        if not cust or not cust[0]:
-            # no subscription ever started — nothing for the portal to manage
-            return self._json(409, {'error': 'no_customer'})
-        try:
-            sess = stripe_post(cfg, '/v1/billing_portal/sessions', {
-                'customer': cust[0], 'return_url': cfg['portal_return']})
-        except Exception:
-            return self._json(502, {'error': 'stripe_error'})
-        return self._json(200, {'ok': True, 'url': sess.get('url')})
-
-    def _billing_webhook(self):
-        raw = self._raw_body()
-        if raw is None:
-            return
-        cfg = stripe_cfg()
-        sig = self.headers.get('Stripe-Signature', '')
-        if not verify_stripe_signature(raw, sig, cfg['webhook_secret']):
-            return self._json(400, {'error': 'bad_signature'})
-        try:
-            event = json.loads(raw or b'{}')
-        except (ValueError, UnicodeDecodeError):
-            return self._json(400, {'error': 'bad_json'})
-        self._handle_stripe_event(event, cfg)
-        # ack fast: any real work already happened; Stripe retries on non-2xx
-        return self._json(200, {'ok': True})
-
-    def _price_to_plan(self, cfg, price_id):
-        for plan, pid in cfg['prices'].items():
-            if pid and pid == price_id:
-                return plan
-        return None
-
-    def _handle_stripe_event(self, event, cfg):
-        etype = event.get('type', '')
-        obj = (event.get('data') or {}).get('object') or {}
-        if etype == 'checkout.session.completed':
-            email, customer = obj.get('client_reference_id'), obj.get('customer')
-            plan = (obj.get('metadata') or {}).get('plan')
-            if email and customer:
-                link_customer(email, customer)
-            if customer and plan:
-                apply_subscription(customer, plan, 'active', None)
-        elif etype in ('customer.subscription.updated', 'customer.subscription.created'):
-            customer, status = obj.get('customer'), obj.get('status')
-            items = ((obj.get('items') or {}).get('data') or [{}])
-            price_id = (items[0].get('price') or {}).get('id')
-            plan = self._price_to_plan(cfg, price_id)
-            # a past_due/unpaid/canceled subscription loses entitlements; only an
-            # active/trialing one keeps the paid plan it maps to
-            entitled = plan if status in ('active', 'trialing') else 'free'
-            if customer:
-                apply_subscription(customer, entitled, status, obj.get('current_period_end'))
-        elif etype == 'customer.subscription.deleted':
-            customer = obj.get('customer')
-            if customer:
-                apply_subscription(customer, 'free', 'canceled', obj.get('current_period_end'))
-
 
 def create_server(port=8940, host='127.0.0.1'):
-    if host not in ('127.0.0.1', 'localhost', '::1') and LICENSE_SECRET == DEFAULT_SECRET:
-        # P0-17 fail-closed: with the shipped secret anyone could mint pro licenses,
-        # so a public bind must prove a real secret was injected — before any socket opens
-        raise SystemExit('refusing to bind %s with the default BMA_LICENSE_SECRET — '
+    if host not in ('127.0.0.1', 'localhost', '::1') and ADMIN_SECRET == DEFAULT_SECRET:
+        # fail-closed: a public bind must prove the deployment was configured
+        # deliberately (a real BMA_ADMIN_SECRET injected) before any socket opens
+        raise SystemExit('refusing to bind %s with the default BMA_ADMIN_SECRET — '
                          'inject a real secret first' % host)
     init_db()
     init_users_db()
@@ -1436,25 +1030,8 @@ def main():
     ap.add_argument('--port', type=int, default=8940)
     ap.add_argument('--host', default='127.0.0.1',
                     help='bind address (default loopback; non-loopback requires '
-                         'a non-default BMA_LICENSE_SECRET and a TLS reverse proxy in front)')
-    ap.add_argument('--mint', metavar='TIER', choices=['pro', 'business'],
-                    help='print a demo license key and exit')
-    ap.add_argument('--set-plan', nargs=2, metavar=('EMAIL', 'TIER'),
-                    help='ops: set a user\'s plan (free|pro|business) and exit — '
-                         'the manual override; the Stripe webhook is the automated path')
+                         'a non-default BMA_ADMIN_SECRET and a TLS reverse proxy in front)')
     args = ap.parse_args()
-    if args.mint:
-        print(mint_license(args.mint))
-        return
-    if args.set_plan:
-        init_users_db()
-        email, tier = args.set_plan
-        if set_plan(email, tier):
-            print('plan set: %s -> %s' % (email, tier))
-        else:
-            print('no such user or invalid tier (free|pro|business): %s' % email)
-            raise SystemExit(1)
-        return
     httpd = create_server(args.port, args.host)
     llm = os.environ.get('BMA_ADVISOR_LLM', '')
     if llm and not LOOPBACK_URL.match(llm):
