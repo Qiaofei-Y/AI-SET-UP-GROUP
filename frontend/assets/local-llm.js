@@ -34,7 +34,7 @@
   // suggested questions that the indexed project corpus can actually answer
   var RAG_CHIPS = [
     { en: 'What does the MVP include?', zh: 'MVP 都包含什么?' },
-    { en: 'What is the pricing model?', zh: '定价策略是怎样的?' },
+    { en: 'Is it free and open source?', zh: '它是免费开源的吗?' },
     { en: 'Who are the target users?', zh: '目标用户是谁?' },
     { en: 'What is the product roadmap?', zh: '产品路线图是什么?' }
   ];
