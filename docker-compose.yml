@@ -1,0 +1,43 @@
+# Build My AI — one-command self-host (local / single-host).
+#
+#   BMA_LICENSE_SECRET=$(openssl rand -hex 32) docker compose up -d
+#   open http://localhost:8931
+#
+# Two services from one zero-dependency image:
+#   api  — the stdlib backend, bound inside the container and published only to
+#          127.0.0.1:8940 (the frontend's localhost build talks to it directly).
+#   web  — serves the static frontend on 127.0.0.1:8931.
+#
+# The API binds 0.0.0.0 inside the container, so it REFUSES to start with the
+# default secret (a real minting key would be exposed) — set BMA_LICENSE_SECRET.
+# For a real public domain with same-origin TLS + reverse proxy, use
+# deploy/Caddyfile + deploy/README.md instead of this file.
+services:
+  api:
+    build: .
+    command: ["python3", "backend/api/server.py", "--host", "0.0.0.0", "--port", "8940"]
+    environment:
+      # No default: an unset/empty secret keeps the non-loopback bind guard armed.
+      BMA_LICENSE_SECRET: ${BMA_LICENSE_SECRET:?set BMA_LICENSE_SECRET, e.g. $(openssl rand -hex 32)}
+    volumes:
+      - bma-data:/app/data
+    ports:
+      - "127.0.0.1:8940:8940"
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: ["python3", "-m", "http.server", "8931", "--directory", "frontend"]
+    ports:
+      - "127.0.0.1:8931:8931"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8931/', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  bma-data:

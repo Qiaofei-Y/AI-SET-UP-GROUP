@@ -1,0 +1,12 @@
+.git
+.github
+data
+docs
+figma
+installer
+deploy
+**/tests
+**/*.md
+scratchpad
+*.db
+.DS_Store
