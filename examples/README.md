@@ -28,6 +28,8 @@ curl -s http://127.0.0.1:8940/v1/health
 | File | What it does |
 |------|--------------|
 | [`api-tour.sh`](./api-tour.sh) | End-to-end tour of the public API: health check, a model recommendation from `/v1/advise`, then a full signup → login → `/v1/auth/me` session round-trip. |
+| [`call-the-api.md`](./call-the-api.md) | Call the backend from your own code — dependency-free Python (`urllib`) and JS (`fetch`) snippets for `/v1/advise` + the Bearer session flow. |
+| [`local-model.md`](./local-model.md) | Point the chat page at your own local model — the four connector tiers (project RAG → streaming chat → Ollama → demo) and how to light each one up. |
 
 ### Running the tour
 
