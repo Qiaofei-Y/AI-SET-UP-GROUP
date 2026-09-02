@@ -89,15 +89,29 @@ bash   frontend/tests/run.sh             # 218 static+unit + headless-Chrome XSS
 |------|--------------|
 | [`backend/`](backend/) | Zero-dependency stdlib API v0 — advise/registry/license/telemetry/feedback/auth/billing, mailer, backup script |
 | [`frontend/`](frontend/) | Zero-build static site — marketing, guided wizard, chat demo, account center, checkout/recovery pages, and the test suite |
-| [`installer/`](installer/) | Self-host installer contract — manifest schema, pinned llama.cpp runtime, GGUF fetch policy (all test-verified) |
+| [`examples/`](examples/) | Copy-pasteable, dependency-free API tours (`curl` + shell) against the real backend |
+| [`installer/`](installer/) | Desktop-installer contract (Batch-2, planned) — manifest schema, pinned llama.cpp runtime, GGUF fetch policy (all test-verified). Today's shipped install path is Ollama-guided. |
 | [`deploy/`](deploy/) | Production self-host — same-origin Caddy/nginx reverse proxy, systemd units, backup timer, runbook |
 | [`docs/`](docs/) | Engineering & product docs (Chinese) — see the index below |
 | [`figma/`](figma/) | High-fidelity UI prototypes |
-| `Dockerfile` · `docker-compose.yml` | One-command local self-host |
+| `Dockerfile` · `docker-compose.yml` · `docker-compose.prod.yml` | One-command self-host (dev, and same-origin HTTPS prod) |
 
 ## Self-hosting in production
 
-For a real domain with automatic HTTPS and the **same-origin** topology (one host serves the site and proxies `/v1/*` to the loopback-bound API), use [`deploy/`](deploy/):
+> Full walkthrough of all four paths (local, Docker dev, Docker HTTPS, bare metal) — env vars, data persistence, backups, acceptance checks — in **[SELF-HOSTING.md](SELF-HOSTING.md)**.
+
+Serve one domain that hosts the site **and** proxies `/v1/*` to the API (the **same-origin** topology — the frontend's API constant resolves to `''`, and card/model data never crosses an origin).
+
+**Docker + Caddy (automatic HTTPS):**
+
+```bash
+BMA_DOMAIN=ai.example.com BMA_LICENSE_SECRET=$(openssl rand -hex 32) \
+  docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Caddy gets a real cert via ACME for `BMA_DOMAIN` and reverse-proxies to the API container (the API is never published to the host). Leave `BMA_DOMAIN` unset to smoke-test on `https://localhost` with Caddy's internal CA. Config: `deploy/docker/Caddyfile`.
+
+**Bare metal:** use [`deploy/`](deploy/) —
 
 - `deploy/Caddyfile` / `deploy/nginx.conf` — reverse proxy + full security headers (CSP/HSTS, per `docs/19`)
 - `deploy/systemd/` — API service (sandboxed, real secret injected) + backup timer
