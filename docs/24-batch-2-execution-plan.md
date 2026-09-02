@@ -18,7 +18,7 @@
 
 | 状态 | 侧 | 条目 | 验收信号 | 关联 |
 |---|---|---|---|---|
-| ☐ | 外部 | **EV/OV 代码签名证书申请**(周期数周,越早越好) | 拿到证书,能对 `.exe`/`.msi` 签名且 SmartScreen 不拦 | P0-8 / P1 签名 |
+| ◐ | 混合 | **代码签名证书申请**(周期数周,越早越好) | ✅ 决策已定 **Azure Trusted Signing**(利弊分析见 [`installer/code-signing.md`](../installer/code-signing.md))+ CI 签名骨架预置(`.github/workflows/sign-desktop.yml`,`workflow_dispatch`、OIDC 无密钥、未配则 no-op、不进 PR 门禁)。**待办(外部)**:确认 ATS 主体验证门槛 → 建签名账户/profile/OIDC 联合凭据 → 填仓库 Variables。验收:干净 Windows 双击签名 `.msi` 无「未知发布者」硬拦 | P0-8 / P1 签名 |
 | ☐ | 外部 | **真机测试台就位**:至少一台 NVIDIA GPU 的 Windows 机(自有或云 GPU Windows 实例) | 能跑完整安装→首答链路,度量安装成功率 | P0-8/9 |
 | ☐ | 外部 | **Apple Developer 账户**(macOS 公证,若排 macOS) | 拿到 Developer ID,可 notarize | 批次 3 macOS |
 
@@ -30,8 +30,8 @@
 - *为什么长*:CA 需做企业实体验证(注册地址/电话回访/D-U-N-S 或等价),EV 还需硬件密钥(HSM/USB token)或云签名开通。
 - *前置*:公司主体已注册(批次 0「注册公司主体」,与 Stripe 同一主体)、可验证的公司电话+地址、**D-U-N-S 号**(免费申请但本身也要时间,先去 dnb.com 申请)。
 - *选型(美国渠道)*:① **Azure Trusted Signing**——微软托管签名,免自管 token、按月订阅,CI 接入最省事(近年首选);② **DigiCert / Sectigo EV**——传统,发云 HSM 或实体 token。
-- *产出/验收*:能对 `.exe`/`.msi` 签名;干净 Windows 双击签名 `.msi` 无「未知发布者」硬拦(EV 通常即时过 SmartScreen)。
-- *待你拍板*:Azure Trusted Signing vs 传统 EV token——决定 CI 里签名步骤怎么接(前者用服务凭据,后者需 token/HSM 接入)。
+- *产出/验收*:能对 `.exe`/`.msi` 签名;干净 Windows 双击签名 `.msi` 无「未知发布者」硬拦。
+- *决策已定(2026-09-01)*:**Azure Trusted Signing**(云 CI 无密钥自动签名,免实体 token)。利弊分析 + 前置步骤 + CI 集成见 [`installer/code-signing.md`](../installer/code-signing.md);签名骨架 `.github/workflows/sign-desktop.yml` 已预置未激活。**启动前第一件事**:核实 ATS 对新公司主体的身份验证门槛。
 
 **B · NVIDIA Windows 真机测试台**(P0-8/9,与 A 并行) — 负责人:☐ ______ · 目标就位日:☐ ______
 - *为什么需要*:安装成功率、GPU/显存真检测、llama.cpp CUDA 运行、GGUF 加载、RAG 首答——都必须真机验证;CI 的 Windows runner **无 GPU**,覆盖不到。
