@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 安全测试(唯一的测试套件;任一失败退出码 1,可作 pre-commit)
 bash frontend/tests/run.sh              # 静态+单元测试(node,零依赖)+ 无头 Chrome XSS 实测(无 Chrome 自动跳过)
-node frontend/tests/security.test.js    # 只跑静态+单元部分(208 项,含 pickModel↔registry 同步校验、生成物实跑断言、installer manifest schema/runtime 钉版校验)
+node frontend/tests/security.test.js    # 只跑静态+单元部分(218 项,含 pickModel↔registry 同步校验、生成物实跑断言、installer manifest schema/runtime 钉版/GGUF 拉取策略校验)
 
 # 本地跑网站(chat.html 的 fetch 在 file:// 下被禁,必须走 http://)
 cd frontend && python3 -m http.server 8931

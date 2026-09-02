@@ -59,7 +59,7 @@
 | [frontend/ 可用网站](frontend/) | 营销首页 + 引导流程 + 聊天演示 + 账号中心(account.html)+ 下载页(downloads.html)+ 结账/找回/验证页 |
 | [backend/ 后端演进计划 + API v0](backend/) | 分阶段计划、SaaS 选型与自建边界、隐私红线;已含零依赖 API v0(advise/registry/license/telemetry/feedback/auth/billing + 找回/验证发信)与备份脚本(ops/backup.py) |
 | [deploy/ 生产部署脚本](deploy/) | 同源反代(Caddyfile / nginx.conf,`/v1/*` 转后端)+ systemd 服务单元与备份 timer |
-| [installer/ 批次 2 安装器契约](installer/) | 付费安装器代码地基:`manifest.schema.json`(向导↔安装器共享契约)+ `runtime.json`(llama.cpp digest 钉版决策,单一真相源),均由 `security.test.js §8c` 校验 |
+| [installer/ 批次 2 安装器契约](installer/) | 付费安装器代码地基:`manifest.schema.json`(向导↔安装器共享契约)+ `runtime.json`(llama.cpp digest 钉版决策)+ `fetch-policy.json`(GGUF 拉取白名单+强制 sha256),均由 `security.test.js §8c/§8d` 校验 |
 
 ## 一句话定位
 

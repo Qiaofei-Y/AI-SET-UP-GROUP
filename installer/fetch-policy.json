@@ -1,0 +1,17 @@
+{
+  "_comment": "Batch-2 (docs/24) model-artifact fetch policy for the llama.cpp desktop installer — single source of truth. The installer pulls GGUF weights DIRECTLY from Hugging Face (a different path from today's shipped Ollama-guided install, which uses `ollama pull`). Language-neutral data: the Rust installer and the security tests both read it. NOT user-facing until the signed installer ships.",
+  "model_artifacts": {
+    "url_template": "https://huggingface.co/{repo}/resolve/main/{file}",
+    "allowed_hosts": ["huggingface.co"],
+    "integrity": {
+      "required": true,
+      "algorithm": "sha256",
+      "digest_status": "measured per model at the release build and frozen alongside the registry; the installer refuses a file whose sha256 does not match. Not fabricated here."
+    }
+  },
+  "retry": {
+    "idempotent": true,
+    "resume": true,
+    "note": "Partial downloads resume; a failed integrity check re-fetches; re-running the installer is safe (no duplicate or half-written state)."
+  }
+}
