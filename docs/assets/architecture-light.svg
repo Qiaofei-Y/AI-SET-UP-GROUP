@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" width="100%" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" role="img" aria-label="Build My AI architecture: a zero-dependency static site whose only networked file (local-llm.js) climbs a priority ladder — Project RAG, streaming chat, the Ollama engine, then an offline static demo — with an optional local backend API, all on your own hardware.">
+<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L7,3 L0,6 Z" fill="#7a8595"/></marker></defs>
+<rect x="360" y="10" width="808" height="620" rx="16" fill="#f5f7f7" stroke="#12695e" stroke-width="1.5"/>
+<text x="380" y="38" font-size="14" font-weight="600" fill="#0f5147">Your Hardware &#8212; 100% local · data never leaves the device</text>
+<path d="M170,320 H392" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M572,320 H612" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M808,322 H866 V84 H924" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M808,322 H866 V205 H924" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M808,322 H866 V319 H924" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M808,322 H866 V433 H924" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M710,364 V508" fill="none" stroke="#7a8595" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#ah)"/>
+<path d="M904,554 H930" fill="none" stroke="#7a8595" stroke-width="2" marker-end="url(#ah)"/>
+<text x="895" y="74" font-size="12.5" font-weight="600" fill="#425065" text-anchor="middle">1 · best</text>
+<text x="895" y="195" font-size="12.5" font-weight="600" fill="#425065" text-anchor="middle">2</text>
+<text x="895" y="309" font-size="12.5" font-weight="600" fill="#425065" text-anchor="middle">3</text>
+<text x="895" y="423" font-size="12.5" font-weight="600" fill="#425065" text-anchor="middle">4 · offline</text>
+<text x="700" y="462" font-size="12.5" font-weight="600" fill="#425065" text-anchor="end">optional · auto-enhances when online</text>
+<rect x="30" y="284" width="140" height="72" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="100" y="326" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">You</text>
+<rect x="392" y="284" width="180" height="72" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="482" y="317" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">Static Site</text>
+<text x="482" y="341" font-size="12.5" fill="#586472" text-anchor="middle">zero-dep · offline-first</text>
+<rect x="612" y="280" width="196" height="84" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="710" y="310" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">local-llm.js</text>
+<text x="710" y="334" font-size="12.5" fill="#586472" text-anchor="middle">the only file that</text>
+<text x="710" y="352" font-size="12.5" fill="#586472" text-anchor="middle">touches the network</text>
+<rect x="924" y="38" width="216" height="92" rx="10" fill="#12695e" stroke="#12695e" stroke-width="1.5"/>
+<text x="1032" y="72" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">Project RAG</text>
+<text x="1032" y="96" font-size="12.5" fill="#d7ece8" text-anchor="middle">8080 + 8090</text>
+<text x="1032" y="114" font-size="12.5" fill="#d7ece8" text-anchor="middle">answers with citations</text>
+<rect x="924" y="168" width="216" height="74" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="1032" y="202" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">Streaming chat</text>
+<text x="1032" y="226" font-size="12.5" fill="#586472" text-anchor="middle">8080 · SSE</text>
+<rect x="924" y="282" width="216" height="74" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="1032" y="316" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">Ollama engine</text>
+<text x="1032" y="340" font-size="12.5" fill="#586472" text-anchor="middle">11434 · pinned model</text>
+<rect x="924" y="396" width="216" height="74" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="1032" y="430" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">Static demo</text>
+<text x="1032" y="454" font-size="12.5" fill="#586472" text-anchor="middle">built-in sample answers</text>
+<rect x="612" y="508" width="292" height="96" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="758" y="535" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">Backend API v0</text>
+<text x="758" y="559" font-size="12.5" fill="#586472" text-anchor="middle">127.0.0.1:8940</text>
+<text x="758" y="577" font-size="12.5" fill="#586472" text-anchor="middle">advise · registry · telemetry</text>
+<text x="758" y="595" font-size="12.5" fill="#586472" text-anchor="middle">feedback · auth</text>
+<rect x="930" y="512" width="210" height="88" rx="10" fill="#ffffff" stroke="#9aa4af" stroke-width="1.5"/>
+<text x="1035" y="544" font-size="16" font-weight="600" fill="#1f2937" text-anchor="middle">SQLite · WAL</text>
+<text x="1035" y="568" font-size="12.5" fill="#586472" text-anchor="middle">users.db + events.db</text>
+<text x="1035" y="586" font-size="12.5" fill="#586472" text-anchor="middle">(split)</text>
+</svg>

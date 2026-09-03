@@ -30,7 +30,10 @@ Everything runs on your box. Your data and inference stay local by default — t
 ## How it works
 
 <p align="center">
-  <img alt="Build My AI architecture: a zero-dependency static site whose only networked file (local-llm.js) probes local AI services in a priority ladder — Project RAG, streaming chat, the Ollama engine, then an offline static demo — with an optional local backend API, all running on your own hardware." src="docs/assets/architecture.png" width="100%">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
+    <img alt="Build My AI architecture: a zero-dependency static site whose only networked file (local-llm.js) probes local AI services in a priority ladder — Project RAG, streaming chat, the Ollama engine, then an offline static demo — with an optional local backend API, all running on your own hardware." src="docs/assets/architecture-light.svg" width="100%">
+  </picture>
 </p>
 
 The static site is **offline-first**: `local-llm.js` — the only file allowed to touch the network — probes your machine and climbs a priority ladder, from a citation-backed **Project RAG** down to a built-in **static demo** if nothing local is running. An optional **backend API** (`127.0.0.1:8940`) auto-enhances the experience when it's online. Nothing leaves the device.
