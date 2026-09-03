@@ -12,7 +12,6 @@ assignees: ""
 
 - [ ] Backend API (`backend/`)
 - [ ] Frontend site / wizard / chat (`frontend/`)
-- [ ] Installer contract (`installer/`)
 - [ ] Deploy / self-hosting (`deploy/`, Docker, reverse proxy)
 - [ ] Docs
 - [ ] Other:

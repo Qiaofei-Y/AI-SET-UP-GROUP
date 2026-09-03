@@ -18,7 +18,7 @@ open http://localhost:8931/index.html
 python3 backend/api/server.py            # 127.0.0.1:8940
 
 # 两套测试(提交前的硬门槛,详见 §3)
-bash frontend/tests/run.sh               # 前端:198 静态/单元 + XSS 实测 + 20 页冒烟(无 Chrome 自动跳过后两项)
+bash frontend/tests/run.sh               # 前端:172 静态/单元 + XSS 实测 + 20 页冒烟(无 Chrome 自动跳过后两项)
 python3 backend/tests/api.test.py        # 后端:56 项,起真实服务打真实 HTTP
 ```
 
@@ -59,7 +59,7 @@ python3 backend/tests/api.test.py        # 后端:56 项,起真实服务打真�
 ## 5. 现在做到哪了 / 下一步
 
 - **已完成**:演示站全站(双语 + FX 动效层,含账号设置/找回三件套/下载中心 + 法律条款草案)、后端五组端点 v0(advise/registry/telemetry/feedback/auth,auth 含找回/验证 + 账号自助五端点)、前后端打通(部署同源拓扑)、生产化地基(WAL/迁移、限速/fail-closed 密钥/`--host`、结构化 body-free 日志、备份+恢复演练、CI 双套件、同源反代+CSP 部署配置)、双套件测试体系。
-- **路线图**:批次 2 = 真实自包含安装器(llama.cpp,见 [installer/](installer/))+ RAG 组件;签名安装器就绪前不放真实下载按钮。
+- **路线图**:批次 2 = RAG 组件 + 云端部署(BYO-key,见 [docs/21](docs/21-lambda-cloud-integration.md));当前装机走 Ollama 引导。
 - 工程任务拆解与验收标准:[docs/09](docs/09-mvp-engineering-tasks.md)。
 
 ## 6. 协作约定

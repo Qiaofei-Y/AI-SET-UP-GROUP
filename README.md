@@ -10,7 +10,7 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="https://github.com/Qiaofei-Y/AI-SET-UP-GROUP/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/Qiaofei-Y/AI-SET-UP-GROUP/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-brightgreen">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-backend%2056%20%C2%B7%20frontend%20198-success">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-backend%2056%20%C2%B7%20frontend%20172-success">
   <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
 
@@ -74,7 +74,7 @@ The one test suite doubles as the security spec — a non-zero exit fails CI.
 ```bash
 python3 backend/tests/api.test.py        # 56 tests: boots a real server, speaks real HTTP
 python3 backend/ops/backup.py --selftest # backup → encrypt → restore → row-compare drill
-bash   frontend/tests/run.sh             # 198 static+unit + headless-Chrome XSS + all-page smoke
+bash   frontend/tests/run.sh             # 172 static+unit + headless-Chrome XSS + all-page smoke
 ```
 
 ## How it works
@@ -87,7 +87,7 @@ bash   frontend/tests/run.sh             # 198 static+unit + headless-Chrome XSS
                                                            └──► your local model engine (Ollama :11434 / llm-lab)
 ```
 
-- The **wizard** turns a plain-language need into a model choice + a guided installer (the install contract lives in [`installer/`](installer/) and is verified by the test suite).
+- The **wizard** turns a plain-language need into a model choice + a guided Ollama installer, generated client-side (`install-my-ai.bat` + a step-by-step guide + a machine-readable `install-plan.json`).
 - The **chat demo** tiers itself to whatever is running locally: project RAG → streaming chat → an Ollama fallback → a static demo, re-probing every 15s.
 - **Identity and telemetry are split** across two SQLite databases and never cross-contaminate. Telemetry and feedback are **opt-in**.
 
@@ -98,7 +98,6 @@ bash   frontend/tests/run.sh             # 198 static+unit + headless-Chrome XSS
 | [`backend/`](backend/) | Zero-dependency stdlib API v0 — advise/registry/telemetry/feedback/auth, mailer, backup script |
 | [`frontend/`](frontend/) | Zero-build static site — marketing, guided wizard, chat demo, account center, account-recovery pages, and the test suite |
 | [`examples/`](examples/) | Copy-pasteable, dependency-free API tours (`curl` + shell) against the real backend |
-| [`installer/`](installer/) | Desktop-installer contract (Batch-2, planned) — manifest schema, pinned llama.cpp runtime, GGUF fetch policy (all test-verified). Today's shipped install path is Ollama-guided. |
 | [`deploy/`](deploy/) | Production self-host — same-origin Caddy/nginx reverse proxy, systemd units, backup timer, runbook |
 | [`docs/`](docs/) | Engineering & product docs (Chinese) — see the index below |
 | [`figma/`](figma/) | High-fidelity UI prototypes |

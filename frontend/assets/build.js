@@ -320,7 +320,7 @@
         runtime: cloud ? 'llama.cpp server (CUDA)' : 'ollama',
         ollama_tag: cloud ? null : p.model.ollama,
         api: 'openai-compatible @ localhost:11434',
-        rag: { enabled: false, planned: p.rag, note: 'knowledge base ships with the desktop app' }
+        rag: { enabled: false, planned: p.rag, note: 'knowledge base (RAG) is on the roadmap' }
       }
     }, null, 2);
   }
@@ -358,7 +358,7 @@
       (p.rag ?
       '## 5. Add your knowledge (RAG) — outline\n' +
       'The indexing pipeline (embed with bge-base-en-v1.5 → local Chroma store → retrieve top-k\n' +
-      'into the prompt) ships with our desktop app. Until then this is an outline, not runnable code.\n\n' +
+      'into the prompt) is on our roadmap. Until then this is an outline, not runnable code.\n\n' +
       '## 6. Connect your apps\n' :
       '## 5. Connect your apps\n') +
       'Point any OpenAI-compatible app at:\n' +
