@@ -21,6 +21,11 @@ Endpoints (drafts from the plan, minimal but real):
   POST /v1/auth/reset                 reset token + new password -> set password, revoke sessions
   POST /v1/auth/verify                verification token -> mark email confirmed
   GET  /v1/auth/me                    Bearer token -> {name, email, email_verified}
+  POST /v1/account/password           Bearer + old/new password -> rotate, revoke other sessions
+  POST /v1/account/email              Bearer + new email -> change, re-trigger verification
+  POST /v1/account/logout-all         Bearer -> invalidate every session for the account
+  POST /v1/account/delete             Bearer + password -> erase the account and its data
+  GET  /v1/account/export             Bearer -> the account's own data (self-service export)
 
 Identity vs telemetry stay in SEPARATE databases: users/sessions live in
 data/users.db, anonymous events in data/events.db — so the "telemetry is

@@ -26,7 +26,7 @@ Or the whole stack: `BMA_ADMIN_SECRET=$(openssl rand -hex 32) docker compose up 
 A change isn't done until all of these are green (they're what CI runs):
 
 ```bash
-python3 backend/tests/api.test.py         # 75 tests, real HTTP
+python3 backend/tests/api.test.py         # 56 tests, real HTTP
 python3 backend/ops/backup.py --selftest  # backup/restore drill
 bash   frontend/tests/run.sh              # static + unit + headless-Chrome XSS + all-page smoke
 ```

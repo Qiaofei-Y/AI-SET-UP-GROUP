@@ -10,7 +10,7 @@
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
   <a href="https://github.com/Qiaofei-Y/AI-SET-UP-GROUP/actions/workflows/tests.yml"><img alt="CI" src="https://github.com/Qiaofei-Y/AI-SET-UP-GROUP/actions/workflows/tests.yml/badge.svg"></a>
   <img alt="Zero dependencies" src="https://img.shields.io/badge/dependencies-0-brightgreen">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-backend%2075%20%C2%B7%20frontend%20218-success">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-backend%2056%20%C2%B7%20frontend%20198-success">
   <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
 
@@ -26,6 +26,14 @@ It ships as two halves you host together:
 - **The full frontend** (`frontend/`) — marketing site, a guided setup wizard, an account center, and a chat demo. Zero-build **vanilla JS**: no npm, no bundler.
 
 Everything runs on your box. Your data and inference stay local by default — the browser only ever talks to `127.0.0.1` and your own origin.
+
+## How it works
+
+<p align="center">
+  <img alt="Build My AI architecture: a zero-dependency static site whose only networked file (local-llm.js) probes local AI services in a priority ladder — Project RAG, streaming chat, the Ollama engine, then an offline static demo — with an optional local backend API, all running on your own hardware." src="docs/assets/architecture.png" width="100%">
+</p>
+
+The static site is **offline-first**: `local-llm.js` — the only file allowed to touch the network — probes your machine and climbs a priority ladder, from a citation-backed **Project RAG** down to a built-in **static demo** if nothing local is running. An optional **backend API** (`127.0.0.1:8940`) auto-enhances the experience when it's online. Nothing leaves the device.
 
 ## Why self-host it
 
@@ -64,9 +72,9 @@ open http://localhost:8931
 The one test suite doubles as the security spec — a non-zero exit fails CI.
 
 ```bash
-python3 backend/tests/api.test.py        # 75 tests: boots a real server, speaks real HTTP
+python3 backend/tests/api.test.py        # 56 tests: boots a real server, speaks real HTTP
 python3 backend/ops/backup.py --selftest # backup → encrypt → restore → row-compare drill
-bash   frontend/tests/run.sh             # 218 static+unit + headless-Chrome XSS + all-page smoke
+bash   frontend/tests/run.sh             # 198 static+unit + headless-Chrome XSS + all-page smoke
 ```
 
 ## How it works
