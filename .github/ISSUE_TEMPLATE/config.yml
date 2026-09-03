@@ -3,12 +3,11 @@ contact_links:
   - name: Security vulnerability (report privately)
     url: mailto:michael.yan@purehd.com
     about: >-
-      Do not open a public issue for security problems. Email us privately.
-      During the beta this is our support/security inbox; a dedicated
-      security@ address will be published once the company domain is live.
-      See SECURITY.md.
+      Do not open a public issue for security problems. Email the maintainer
+      privately at this address. See SECURITY.md for what to include and how
+      disclosure is handled.
   - name: Support & general questions
     url: mailto:michael.yan@purehd.com
     about: >-
-      Beta support inbox — we read everything. For bugs and feature ideas,
+      Maintainer inbox — we read everything. For bugs and feature ideas,
       please use the issue templates above.

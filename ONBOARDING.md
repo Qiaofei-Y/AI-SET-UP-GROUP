@@ -18,8 +18,8 @@ open http://localhost:8931/index.html
 python3 backend/api/server.py            # 127.0.0.1:8940
 
 # 两套测试(提交前的硬门槛,详见 §3)
-bash frontend/tests/run.sh               # 前端:192 静态/单元 + XSS 实测 + 24 页冒烟(无 Chrome 自动跳过后两项)
-python3 backend/tests/api.test.py        # 后端:74 项,起真实服务打真实 HTTP
+bash frontend/tests/run.sh               # 前端:198 静态/单元 + XSS 实测 + 20 页冒烟(无 Chrome 自动跳过后两项)
+python3 backend/tests/api.test.py        # 后端:56 项,起真实服务打真实 HTTP
 ```
 
 零依赖是刻意的:**没有 npm、没有 pip install、没有构建步骤**。只需要 Python 3 和 Node(跑测试),Chrome 可选(跑浏览器实测)。
